@@ -576,3 +576,205 @@
 .dbi-community-ranking{border:1px solid #365a72;border-radius:7px;background:#102437;padding:28px;color:#d9e8f2;min-height:240px}
 .dbi-community-ranking h2{margin:0 0 16px;color:#f2c775}
 .dbi-community-ranking p{color:#a7c0d0}
+/* v2.36 — gildie */
+.dbi-guild{min-height:510px;background:#0b1b2b;border:1px solid #3c5870;border-radius:6px;padding:20px;color:#c9d9e6;position:relative}
+.dbi-guild-title{text-align:center;font-size:18px;font-weight:800;color:#edca86;border-bottom:1px solid #4b6479;padding:6px 0 18px;margin-bottom:20px}
+.dbi-guild button{background:#193347;color:#f3d9a5;border:1px solid #547086;border-radius:3px;padding:9px 13px;cursor:pointer;font-weight:700}
+.dbi-guild button:hover{background:#28516b}.dbi-guild button.active{background:#826335;color:#fff}
+.dbi-guild input,.dbi-guild select,.dbi-guild textarea{display:block;width:100%;min-width:0;box-sizing:border-box;background:#091b2a;color:#e9e2d5;border:1px solid #526e80;border-radius:3px;padding:10px;font:inherit}
+.dbi-guild label{display:block;font-size:12px;color:#a9c1cf;margin-bottom:14px}.dbi-guild label input,.dbi-guild label select,.dbi-guild label textarea{margin-top:7px}
+.dbi-guild-create-area{display:flex;align-items:flex-start;gap:25px;flex-wrap:wrap}
+.dbi-guild-create{border:1px solid #60778a;background:#10283a;padding:20px;width:min(370px,100%);box-sizing:border-box}.dbi-guild-create h2{margin:0 0 18px;font-size:17px;color:#efcb8e}.dbi-guild-create>button{width:100%;background:#8b693c}
+.dbi-guild-pending{flex:1;min-width:230px;border:1px solid #4b6479;padding:15px}.dbi-guild-pending>div{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0}
+.dbi-guild-alert{background:#143b36;color:#91e4c0;border:1px solid #427b68;padding:9px 12px}.dbi-guild-alert.error{background:#3c2229;color:#ffb7b7;border-color:#87505b}
+.dbi-guild-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.dbi-guild-top small{color:#94aebd}.dbi-guild-top h2{font-size:19px;color:#f0cc90;margin:5px 0}.dbi-guild-top h2 span{font-size:13px;color:#a9b9c7}
+.dbi-guild-tabs{display:flex;flex-wrap:wrap;gap:4px;border:1px solid #587086;padding:5px;margin-bottom:15px}.dbi-guild-tabs button{font-size:12px;padding:8px 10px}
+.dbi-guild-tabcontent{min-height:380px}.dbi-guild-home{display:grid;grid-template-columns:minmax(190px,32%) 1fr;gap:14px}.dbi-guild-journal,.dbi-guild-message{border:1px solid #4b6479;background:#10283a;padding:15px}.dbi-guild-journal{min-height:310px}.dbi-guild h3{font-size:15px;color:#e9c98e;margin:0 0 12px}.dbi-guild-journal p{border-top:1px solid #365267;padding:9px 0;font-size:12px}.dbi-guild-journal small{color:#87a7b8}.dbi-guild-main{min-width:0}.dbi-guild-avatar{display:flex;align-items:center;justify-content:center;width:108px;height:108px;border:1px solid #648094;background:#193c52;color:#e6c68b;font-size:54px;font-weight:800;margin-bottom:12px}.dbi-guild-message{min-height:205px}.dbi-guild-message p{white-space:pre-wrap;overflow-wrap:anywhere}.dbi-guild-list>div{display:flex;align-items:center;gap:10px;border-bottom:1px solid #365267;padding:12px 0;flex-wrap:wrap}.dbi-guild-list span{color:#8cb5c9;margin-right:auto}.dbi-guild-invite{max-width:440px}.dbi-guild-dialog{position:absolute;inset:0;background:#07121de8;display:flex;align-items:center;justify-content:center;z-index:10}.dbi-guild-dialog>div{background:#152b3b;border:1px solid #98733d;padding:24px;max-width:370px}.dbi-guild-dialog button{margin-right:8px}
+@media(max-width:650px){.dbi-guild-home{grid-template-columns:1fr}.dbi-guild-top{align-items:flex-start}.dbi-guild{padding:12px}}
+
+.dbi-gm-extra{display:grid;grid-template-columns:1fr 1.3fr;gap:14px;margin-top:14px}.dbi-gm-form{display:grid;gap:12px;margin-top:14px}.dbi-gm-form label{display:grid;gap:6px;color:#bdd0df;font-size:12px}.dbi-gm-form input{width:100%;min-width:0;background:#0a1b2a;color:#f4dca8;border:1px solid #527086;border-radius:4px;padding:9px}.dbi-gm-form button{padding:10px;background:#8b693d;border:1px solid #bd9659;color:#fff;cursor:pointer}.dbi-gm-form fieldset{min-width:0;border:1px solid #476579;padding:12px}.dbi-gm-form legend{color:#f0c887}.dbi-gm-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.dbi-gm-form [role=status]{min-height:18px;color:#e2c790}@media(max-width:850px){.dbi-gm-extra{grid-template-columns:1fr}}@media(max-width:500px){.dbi-gm-stat-grid{grid-template-columns:1fr}}
+
+/* v2.39 — uniwersalny katalog GM */
+.dbi-gm-filters{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.dbi-gm-filters input,.dbi-gm-filters select{background:#0b2132;color:#e8d6ac;border:1px solid #4e6476;border-radius:4px;padding:9px;min-width:0;flex:1}
+.dbi-gm-catalog-row{display:flex;align-items:center;gap:6px;border-bottom:1px solid #30495c}
+.dbi-gm-catalog-row[hidden]{display:none!important}
+.dbi-gm-catalog-row .gm-item{flex:1;min-width:0;text-align:left;border:0}
+.dbi-gm-catalog-row .dbi-item-image{height:30px;width:30px;object-fit:contain;vertical-align:middle;margin-right:5px}
+.dbi-gm-quickgrant{background:#73562d;color:#ffedcc;border:1px solid #af8849;border-radius:4px;padding:8px;white-space:nowrap;cursor:pointer}
+
+.dbi-gm-enhancement-label{display:inline-flex;align-items:center;gap:4px;color:#d6bd8a;font-size:12px;white-space:nowrap}
+.dbi-gm-enhancement-label select{background:#0b2030;color:#f7e1b2;border:1px solid #537184;border-radius:4px;padding:6px;min-width:50px}
+.dbi-gm-catalog-row{gap:8px}
+
+/* v2.46 — panel świata: dwie równe kolumny i responsywne okna */
+.game.world-view .world-grid{width:100%;max-width:1100px;margin:15px auto 0;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:stretch}
+.game.world-view .world-shell{min-width:0;display:flex;flex-direction:column}
+.game.world-view .world-frame{height:clamp(410px,52vw,580px);flex:none}
+.game.world-view .world-side{min-width:0;height:auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.game.world-view .world-mobs{max-height:none;min-height:100px;flex:1;overflow-y:auto}
+.game.world-view .world-side-actions{flex-wrap:wrap}
+.game.world-view .world-side h2{overflow-wrap:anywhere}
+.world-quest-header{border-bottom:1px solid #65513a;padding-bottom:12px;margin-bottom:14px}
+.world-quest-header h2{margin-bottom:6px}.world-quest-header small{color:#a5b9c8}
+.world-quest-section{padding:12px 0;border-bottom:1px solid #3e454b}
+.world-quest-section>strong{display:block;color:#f0ce8d;font-size:12px;margin-bottom:8px}
+.world-quest-section p{overflow-wrap:anywhere;line-height:1.65;margin:0}
+.world-quest-footer{margin-top:auto;padding-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+.world-quest-footer .world-action{max-width:100%}
+@media(max-width:850px){.game.world-view .world-grid{grid-template-columns:minmax(0,1fr)}.game.world-view .world-frame{height:clamp(380px,72vw,560px)}.game.world-view .world-side{min-height:300px;max-height:570px}.game.world-view .world-mobs{max-height:350px}}
+
+/* v2.47: spójne rozmiary mapy i panelu; lista mobów przewija się wewnątrz */
+.game.world-view .world-grid{
+  align-items:start;
+}
+.game.world-view .world-side{
+  box-sizing:border-box;
+  height:clamp(410px,52vw,580px);
+  min-height:0;
+  max-height:clamp(410px,52vw,580px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.game.world-view .world-side .world-mobs{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:none;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#63798a #141e27;
+}
+.game.world-view .world-side .world-side-actions{
+  flex:0 0 auto;
+  margin-top:10px;
+}
+.game.world-view .world-frame.world-island{
+  background:#087eb2;
+}
+/* Quest: treść u góry, przyciski na dole kafelka */
+.game.world-view .world-side:has(.world-quest-footer) .world-quest-footer{
+  margin-top:auto;
+  padding-top:14px;
+  border-top:1px solid #48515a;
+  align-items:center;
+}
+.game.world-view .world-side:has(.world-quest-footer) .world-quest-section{
+  flex:0 0 auto;
+}
+@media(max-width:850px){
+ .game.world-view .world-side{height:440px;max-height:440px}
+ .game.world-view .world-mobs{min-height:0}
+}
+
+/* v2.48 — zwężony zewnętrzny kafel świata; równe górne i dolne krawędzie mapy i panelu */
+.game.world-view{width:min(1160px,calc(100% - 24px))}
+.game.world-view .world-grid{
+  width:100%;max-width:none;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  align-items:start;
+  gap:14px;
+}
+.game.world-view .world-shell{min-width:0}
+.game.world-view .world-toolbar{min-height:27px}
+.game.world-view .world-frame{height:clamp(410px,52vw,580px)}
+.game.world-view .world-side{
+  margin-top:27px;
+  height:clamp(410px,52vw,580px);
+  min-height:0;
+  max-height:clamp(410px,52vw,580px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.game.world-view .world-side .world-mobs{
+  min-height:0;
+  max-height:none;
+  flex:1 1 auto;
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.game.world-view .world-side:has(.world-quest-footer) .world-quest-footer{margin-top:auto}
+@media(max-width:850px){
+  .game.world-view .world-grid{grid-template-columns:minmax(0,1fr)}
+  .game.world-view .world-side{margin-top:0;height:440px;max-height:440px}
+  .game.world-view .world-frame{height:clamp(380px,72vw,560px)}
+}
+
+/* v2.49 — dopasowanie szerokości ŚWIATA do menu oraz wyrównanie kafelków */
+.game.world-view{width:min(1120px,calc(100% - 24px))}
+@media(min-width:851px){
+ .game.world-view .world-side{margin-top:37px;height:clamp(400px,calc(52vw - 10px),570px);max-height:clamp(400px,calc(52vw - 10px),570px)}
+}
+
+
+/* Prywatny pulpit — styl dopasowany do istniejącego interfejsu */
+.dbi-dash{display:grid;grid-template-columns:minmax(215px,30%) minmax(0,1fr);gap:18px;align-items:stretch;color:#e9e3d5}
+.dbi-dash-figure,.dbi-dash-details{border:1px solid #695633;border-radius:8px;background:linear-gradient(145deg,#19242c,#111a21);padding:18px}
+.dbi-dash-figure{display:flex;flex-direction:column;align-items:center;gap:12px}
+.dbi-dash-caption,.dbi-dash-head span{color:#d6b46c;font-size:12px;font-weight:800;letter-spacing:1.5px}
+.dbi-dash-stage{width:100%;min-height:290px;display:flex;align-items:center;justify-content:center;border:1px solid #3d4c52;border-radius:6px;background:radial-gradient(ellipse at center,#30464b 0%,#17242b 65%,#11191e 100%)}
+#dbiDashSprite{width:min(100%,240px);height:auto;image-rendering:pixelated;cursor:grab;touch-action:none;outline-offset:4px}
+#dbiDashSprite:active{cursor:grabbing}
+.dbi-dash-turn{display:flex;align-items:center;justify-content:center;gap:16px;width:100%}
+.dbi-dash-turn button{border:1px solid #826839;border-radius:5px;background:#293039;color:#f0d391;padding:7px 12px;cursor:pointer}
+.dbi-dash-turn span{min-width:55px;text-align:center}
+.dbi-dash-change{width:100%;padding:12px;border-radius:5px;border:1px solid #585b60;background:#333940;color:#aaa;cursor:not-allowed;opacity:.65}
+.dbi-dash-hint{color:#8d9ca5;text-align:center}
+.dbi-dash-details{display:flex;flex-direction:column}
+.dbi-dash-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding-bottom:14px;border-bottom:1px solid #6c5632}
+.dbi-dash-head strong{font-size:20px;color:#f5e5c2}
+.dbi-dash-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 8px;border-bottom:1px solid #34414a}
+.dbi-dash-row strong{text-align:right;color:#f1d38d}
+@media(max-width:700px){.dbi-dash{grid-template-columns:1fr}.dbi-dash-stage{min-height:240px}.dbi-dash-row{padding:12px 4px}}
+/* Rozwój Duchowy — układ zgodny z makietą */
+.dbi-spiritual{border:2px solid #967443;background:linear-gradient(145deg,#192a32,#111a24);border-radius:8px;padding:22px;color:#e8e5dd}
+.dbi-sp-top{display:grid;grid-template-columns:180px 1fr 90px;gap:22px;align-items:start}
+.dbi-sp-art{border:2px solid #8c7449;background:radial-gradient(circle,#4e5875,#1b2732 70%);height:185px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#d5b97c;text-align:center}
+.dbi-sp-orb{font-size:90px;color:#dfca84;text-shadow:0 0 24px #b8a0ff;line-height:1}
+.dbi-sp-main h2{margin:0 0 8px;color:#f3d79b}.dbi-sp-main p{color:#b8c4cc;margin:0 0 16px}.dbi-sp-actions{display:flex;flex-wrap:wrap;gap:10px}
+.dbi-sp-actions select,.dbi-sp-actions button{padding:11px 14px;border:1px solid #806a44;border-radius:5px;background:#283640;color:#f3d89f;cursor:pointer}.dbi-sp-actions button:disabled{opacity:.5;cursor:not-allowed}
+.dbi-sp-level{border:1px solid #a68a58;padding:10px 6px;text-align:center;color:#f4d795}.dbi-sp-main #spStatus{font-size:13px;margin-top:14px}
+.dbi-sp-track-label{display:flex;justify-content:space-between;gap:10px;margin-top:25px;font-size:13px;color:#e6d7b4}.dbi-sp-track{height:14px;border:1px solid #927a51;background:#0b151d;border-radius:3px;margin:9px 0 22px;overflow:hidden}.dbi-sp-track>div{height:100%;width:0;background:linear-gradient(90deg,#987334,#f2c86c);transition:width .3s}
+.dbi-sp-stats{border:1px solid #72664f;border-radius:5px;padding:16px}.dbi-sp-stats h3{text-align:center;color:#e7c889;margin:0 0 15px}.dbi-sp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px}.dbi-sp-stat{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid #52606a;padding:10px 4px;font-size:13px}.dbi-sp-stat small{display:block;color:#9dabb3;margin-top:4px}.dbi-sp-stat strong{color:#f0d394;white-space:nowrap}.dbi-sp-history{margin-top:18px;color:#b6c3cb;font-size:13px}.dbi-sp-history h3{color:#e7c889}
+@media(max-width:850px){.dbi-sp-top{grid-template-columns:125px 1fr}.dbi-sp-art{height:150px}.dbi-sp-level{grid-column:1/-1}.dbi-sp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:530px){.dbi-spiritual{padding:12px}.dbi-sp-top{grid-template-columns:1fr}.dbi-sp-art{height:145px}.dbi-sp-grid{grid-template-columns:1fr}.dbi-sp-track-label{font-size:11px}}
+
+.dbi-sp-source{color:#a9a9a9;font-size:.8em;font-weight:normal}
+/* Ranking lokalnych postaci */
+.dbi-ranking{padding:18px;border:1px solid #695633;border-radius:9px;background:#15212a;color:#e9e2d4}.dbi-ranking h2{margin:0 0 20px;color:#e4c27e}.dbi-ranking-controls{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}.dbi-ranking-controls label{display:flex;flex-direction:column;gap:6px;flex:1;min-width:210px}.dbi-ranking-controls select,.dbi-ranking-controls input{padding:10px;background:#24333b;border:1px solid #77643d;color:#fff;border-radius:5px}.dbi-ranking-scroll{overflow-x:auto}.dbi-ranking-table{width:100%;border-collapse:collapse;min-width:590px}.dbi-ranking-table th,.dbi-ranking-table td{padding:12px;text-align:left;border-bottom:1px solid #34424c}.dbi-ranking-table th{color:#e5c27d}.dbi-ranking-name{border:0;background:transparent;color:#9dcfff;cursor:pointer;text-decoration:underline;font:inherit;padding:0}.dbi-ranking-name:hover{color:white}.dbi-ranking-empty{text-align:center!important;color:#9da9b2}.dbi-ranking-footer{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}.dbi-ranking-footer>div{display:flex;align-items:center;gap:12px}.dbi-ranking-footer button,.dbi-ranking-close{padding:8px 12px;background:#283a43;color:#e9e2d4;border:1px solid #8b744a;border-radius:5px;cursor:pointer}.dbi-ranking-footer button:disabled{opacity:.4;cursor:default}.dbi-ranking-overlay{position:fixed;inset:0;background:#000b;z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px}.dbi-ranking-dialog{position:relative;background:#111d26;border:1px solid #a98a4c;border-radius:10px;width:min(1150px,100%);max-height:90vh;overflow:auto;padding:45px 16px 18px}.dbi-ranking-close{position:absolute;right:12px;top:10px;z-index:1}.dbi-ranking-profile .character-profile-layout{width:100%}@media(max-width:650px){.dbi-ranking{padding:10px}.dbi-ranking-dialog{padding:50px 8px 12px}}
+
+/* Pole Bitwy — arena PvP */
+.dbi-arena{background:#15212a;border:1px solid #806a41;border-radius:9px;color:#eee6d8;padding:22px;min-height:470px}.dbi-arena h2{text-align:center;color:#e4c27e;margin:0 0 15px}.dbi-arena-intro{text-align:center;font-size:13px;margin-bottom:26px}.dbi-arena-stats{display:flex;justify-content:center;margin:0 auto 30px;max-width:450px}.dbi-arena-stats>div{flex:1;border:1px solid #746344;padding:12px;text-align:center;display:grid;gap:8px}.dbi-arena-stats>div+div{border-left:0}.dbi-arena-stats small{color:#b4c0c8}.dbi-arena-stats strong{font-size:22px;color:#e8c681}.dbi-arena-toolbar,.dbi-arena-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}.dbi-arena-toolbar button,.dbi-arena-fight,.dbi-arena-battle-dialog button{background:#30434d;border:1px solid #a88b50;border-radius:5px;padding:9px 14px;color:#f6e5c4;cursor:pointer}.dbi-arena button:disabled{opacity:.45;cursor:not-allowed}.dbi-arena-scroll{overflow-x:auto}.dbi-arena-table{border-collapse:collapse;width:100%;min-width:520px}.dbi-arena-table th,.dbi-arena-table td{border:1px solid #56606a;text-align:center;padding:12px 9px}.dbi-arena-table th{background:#28343d;color:#edc981}.dbi-arena-name{border:0;background:none;color:#9ed1ff;text-decoration:underline;cursor:pointer;font:inherit}.dbi-arena-warning{display:block;color:#f2a89c;margin-top:5px}.dbi-arena-empty{color:#aeb9c1}.dbi-arena-footer{margin-top:20px}.dbi-arena-hint{font-size:12px;color:#b8c2c9;margin-top:24px}.dbi-arena-battle-dialog{width:min(520px,95vw);background:#15212a;border:1px solid #b69754;border-radius:10px;color:#eee6d8;text-align:center;padding:32px}.dbi-arena-battle-dialog h2{color:#e4c27e}@media(max-width:650px){.dbi-arena{padding:12px}.dbi-arena-toolbar button{width:100%}}
+
+/* Techniki — kafelki według makiety; katalog pusty do ustalenia zawartości */
+.dbi-techniques{min-height:460px;border:1px solid #826c45;border-radius:8px;padding:24px;background:#15212a;color:#e9e2d4}
+.dbi-techniques h2{text-align:center;margin:0 0 15px;color:#e8c782}
+.dbi-techniques-divider{height:1px;background:#9b855a;margin-bottom:18px}
+.dbi-tech-card{display:grid;grid-template-columns:170px minmax(0,1fr) 95px;gap:15px;align-items:start;position:relative;padding:12px;border:1px solid #746344;margin-bottom:12px;min-height:185px;background:#1b2933}
+.dbi-tech-art{height:155px;border:1px solid #776f61;background:#101a22;display:flex;align-items:center;justify-content:center;color:#9eabb4;text-align:center;font-size:12px}
+.dbi-tech-art img{width:100%;height:100%;object-fit:contain}
+.dbi-tech-details h3{margin:0 0 10px;color:#efcf8e}
+.dbi-tech-details p{margin:5px 0;font-size:13px}
+.dbi-tech-requirements{color:#cdb781}
+.dbi-tech-upgrade{align-self:end;padding:9px 12px;border:1px solid #a88b50;background:#31424b;color:#f5e2b8;cursor:pointer}
+.dbi-tech-upgrade:disabled{opacity:.45;cursor:not-allowed}
+.dbi-tech-empty{border:1px dashed #706143;padding:32px 20px;text-align:center;color:#b7c3c8;line-height:1.7}
+.dbi-tech-note{font-size:12px;color:#a9b8c2;margin-top:18px}
+@media(max-width:650px){.dbi-techniques{padding:12px}.dbi-tech-card{grid-template-columns:105px 1fr}.dbi-tech-art{height:105px}.dbi-tech-upgrade{grid-column:2;justify-self:end}}
+
+.dbi-tech-level{font-size:12px;color:#b5c5d0;font-weight:normal;margin-left:8px}
+.dbi-tech-description{max-width:610px;line-height:1.5}
+.dbi-tech-lock{color:#e0b56b;font-weight:700}
+.dbi-tech-art img{object-fit:contain}
+
+/* Minimalna poprawka: rozmiar ikony kamienia i szare niesprzedawalne łupy. */
+.world-loot-grid .world-loot-tile{box-sizing:border-box;overflow:hidden;padding:2px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.world-loot-grid .world-loot-tile>span{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
+.world-loot-grid .world-loot-tile>span>img{max-width:100%;max-height:100%;object-fit:contain}
+.world-loot-grid .world-loot-tile.world-loot-unsellable{background:#292b2d;border-color:#666;filter:grayscale(1);opacity:.55;cursor:default;box-shadow:none}
+
+/* DBO Idle: liczniki stosow, bez zmian rozmiaru kafelkow */
+.inv-grid>.inv-cell.has-item .dbi-stack-count,.world-loot-grid .world-loot-tile .world-stack-count{position:absolute;right:1px;bottom:1px;z-index:3;padding:0 2px;border-radius:2px;background:#101820d9;color:#fff;font:700 10px/14px Arial,sans-serif;pointer-events:none;white-space:nowrap}
+.world-loot-grid .world-loot-tile .world-stack-count{font-size:9px;line-height:12px}
