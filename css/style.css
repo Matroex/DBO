@@ -769,12 +769,78 @@
 .dbi-tech-lock{color:#e0b56b;font-weight:700}
 .dbi-tech-art img{object-fit:contain}
 
-/* Minimalna poprawka: rozmiar ikony kamienia i szare niesprzedawalne łupy. */
-.world-loot-grid .world-loot-tile{box-sizing:border-box;overflow:hidden;padding:2px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-.world-loot-grid .world-loot-tile>span{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
-.world-loot-grid .world-loot-tile>span>img{max-width:100%;max-height:100%;object-fit:contain}
-.world-loot-grid .world-loot-tile.world-loot-unsellable{background:#292b2d;border-color:#666;filter:grayscale(1);opacity:.55;cursor:default;box-shadow:none}
+/* Sklep Smoczych Monet — torebka fasolek Senzu */
+.dbi-senzu-bag-offer{gap:7px;justify-content:flex-start;text-align:center;min-height:315px;padding:12px 10px}
+.dbi-senzu-bag-main{width:70px;height:70px;object-fit:contain;image-rendering:auto}
+.dbi-senzu-bag-offer>strong{color:#f1cf91;font-size:13px}
+.dbi-senzu-bag-description{font-size:11px;color:#b9c9d2;line-height:1.4}
+.dbi-senzu-bag-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;width:100%;font-size:10px;color:#c8b58f}
+.dbi-senzu-bag-meta b{color:#f4d08b}
+.dbi-senzu-bag-contents{width:100%;text-align:left;border-top:1px solid #496575;padding-top:6px;display:grid;gap:3px}
+.dbi-senzu-bag-contents>b{font-size:11px;color:#e8c68a;margin-bottom:2px}
+.dbi-senzu-bag-row{display:flex;align-items:center;gap:7px;font-size:11px;color:#e2eaf0;min-height:24px}
+.dbi-senzu-bag-row img{width:23px;height:23px;object-fit:contain}
+.dbi-senzu-bag-offer>button{margin-top:auto}
 
-/* DBO Idle: liczniki stosow, bez zmian rozmiaru kafelkow */
-.inv-grid>.inv-cell.has-item .dbi-stack-count,.world-loot-grid .world-loot-tile .world-stack-count{position:absolute;right:1px;bottom:1px;z-index:3;padding:0 2px;border-radius:2px;background:#101820d9;color:#fff;font:700 10px/14px Arial,sans-serif;pointer-events:none;white-space:nowrap}
-.world-loot-grid .world-loot-tile .world-stack-count{font-size:9px;line-height:12px}
+
+/* Czytelniejsze ikony i liczniki w ekwipunku */
+.inv-cell.has-item{position:relative}
+.inv-cell.has-item .dbi-stack-count{position:absolute;z-index:6;left:2px;bottom:2px;right:auto;top:auto;font-size:9px;line-height:1;font-weight:700;color:#fff5da;text-shadow:0 1px 2px #000,1px 0 2px #000,-1px 0 2px #000;pointer-events:none;background:rgba(5,13,21,.7);border-radius:2px;padding:1px 2px}
+.inv-cell.has-item.dbi-senzu-inventory-cell{overflow:hidden}
+.inv-cell.has-item.dbi-senzu-inventory-cell>span{display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:hidden}
+.inv-cell.has-item.dbi-senzu-inventory-cell img.dbi-item-image{width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;transform:scale(1.35);transform-origin:center}
+/* Potwierdzenie zakupu w sklepie Smoczych Monet */
+.dbi-senzu-bag-offer>button:not(:disabled){transition:background .16s,border-color .16s,box-shadow .16s,transform .12s}
+.dbi-senzu-bag-offer>button:not(:disabled):hover{background:#b88a43;border-color:#f6d38a;box-shadow:0 0 0 2px rgba(246,211,138,.18),0 0 13px rgba(245,180,64,.3);transform:translateY(-1px)}
+.dbi-senzu-bag-offer>button:not(:disabled):active{transform:translateY(1px) scale(.97);background:#d3a65b}
+.dbi-senzu-bag-offer>button.dbi-senzu-purchase-success:disabled{opacity:1;background:#276d4c;border-color:#75e5a7;color:#eafff1;box-shadow:0 0 0 2px rgba(117,229,167,.3),0 0 16px rgba(67,210,128,.4);animation:dbi-senzu-purchase-flash .36s ease-out}
+@keyframes dbi-senzu-purchase-flash{0%{transform:scale(.96)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
+
+/* Dymek statystyk potworów: niezależny od panelu i przewijania listy */
+.world-mob-stats-trigger{display:inline-flex;align-items:center;justify-content:center;cursor:help}
+.world-mob-stats-tip{box-sizing:border-box;background:#0c2031;border:1px solid #bd9954;border-radius:6px;color:#e8f1f7;font:12px/1.55 Segoe UI,Arial,sans-serif;box-shadow:0 10px 26px #000b;text-align:left;white-space:nowrap}
+.world-mob-stats-tip>div{border-bottom:1px solid #ffffff16;padding:1px 0}
+.world-mob-stats-tip>div:last-child{border-bottom:0}
+
+/* Lupa mobów: usuń domyślną jasną ramkę przycisku przeglądarki. */
+.world-mob-stats-trigger{appearance:none;-webkit-appearance:none;border:0;outline:0;background:transparent;box-shadow:none;padding:0;margin:0;line-height:1}
+.world-mob-stats-trigger:focus-visible{outline:1px solid #bd9954;outline-offset:2px}
+
+/* Aktywne fasolki podczas walki: licznik w lewym dolnym rogu, jak w ekwipunku.
+   Wysoka specyficznosc chroni przed stylami siatki lupow i globalnych licznikow. */
+.world-loot.world-active-items > #worldActiveItems.world-loot-grid:not(.collapsed) {
+  display:flex; flex-wrap:wrap; align-items:flex-start; gap:6px;
+  padding:9px 12px; min-height:50px; box-sizing:border-box;
+}
+.world-loot.world-active-items > #worldActiveItems.world-loot-grid.collapsed {display:none}
+.world-loot.world-active-items #worldActiveItems .world-loot-tile {
+  position:relative; display:block; flex:0 0 46px; width:46px; height:46px;
+  box-sizing:border-box; padding:0; margin:0; overflow:hidden;
+  border:1px solid #8e784b; background:#121c24;
+}
+.world-loot.world-active-items #worldActiveItems .world-loot-tile > img {
+  display:block; width:100% !important; height:100% !important;
+  max-width:100%; max-height:100%; object-fit:contain;
+}
+.world-loot.world-active-items #worldActiveItems .world-loot-tile > .world-stack-count {
+  position:absolute !important; top:auto !important; right:auto !important;
+  left:1px !important; bottom:1px !important; z-index:3;
+  display:block; box-sizing:border-box; max-width:calc(100% - 2px);
+  margin:0; padding:1px 2px; border-radius:2px;
+  background:rgba(8,13,18,.86); color:#fff2d4;
+  font:700 9px/1.1 Arial,sans-serif; letter-spacing:0;
+  white-space:nowrap; text-align:left; text-shadow:0 1px 2px #000;
+  pointer-events:none;
+}
+
+/* Liczniki zdobytych lupow: ten sam minimalistyczny styl co przy aktywnych fasolkach. */
+.world-loot #worldLootGrid .world-loot-tile > .world-stack-count {
+  position:absolute !important; top:auto !important; right:auto !important;
+  left:1px !important; bottom:1px !important; z-index:3;
+  display:block; box-sizing:border-box; max-width:calc(100% - 2px);
+  margin:0; padding:1px 2px; border-radius:2px;
+  background:rgba(8,13,18,.86); color:#fff2d4;
+  font:700 9px/1.1 Arial,sans-serif; letter-spacing:0;
+  white-space:nowrap; text-align:left; text-shadow:0 1px 2px #000;
+  pointer-events:none;
+}
