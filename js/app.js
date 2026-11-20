@@ -2,7 +2,7 @@ const menus=[
  {name:'ŚWIAT',page:'Mapa świata'},
  {name:'POSTAĆ',options:['Pulpit','Statystyki','Profil Postaci','Ekwipunek','Misje','Aktywności']},
  {name:'AKTYWNOŚCI',options:['Turniej','Event','Pole bitwy','Trening','Rozwój Duchowy','Szybka podróż']},
- {name:'WZMOCNIENIA',options:['Techniki','Umiejętności','Smocze kule']},
+ {name:'WZMOCNIENIA',options:['Techniki','Umiejętności','Smocze kule','Ulepszanie','Kowalstwo']},
  {name:'SPOŁECZNOŚĆ',options:['Ranking']},
  {name:'GILDIA',page:'Gildia'},
  {name:'POCZTA',page:'Poczta'},
@@ -37,15 +37,17 @@ function dbiGainExp(amount){
  renderExp();dbiSaveProgress();
  return gained-remaining;
 }
-function dbiMobExp(mobLevel,playerLevel){
- const diff=Math.max(0,playerLevel-mobLevel);
- const multiplier=diff>=5?.01:Math.max(0,1-diff*.1);
- return Math.max(1,Math.ceil(50*multiplier));
+function dbiMobExp(mobLevel,playerLevel,mobName=''){
+ const quality=/\(super\)/i.test(mobName)?3:/\(silny\)/i.test(mobName)?2:1;
+ const baseExp=50*quality+Math.max(1,Math.floor(Number(mobLevel)||1));
+ const difference=mobLevel-playerLevel;
+ const multiplier=difference>=10?1.2:difference>=1?1.1:difference===0?1:difference<=-5?.01:1+difference*.1;
+ return Math.max(1,Math.ceil(baseExp*multiplier));
 }
-function dbiGrantMobKills(count,mobLevel=1){
+function dbiGrantMobKills(count,mobLevel=1,mobName=''){
  let gained=0;
  for(let i=0;i<count&&level<DBI_MAX_LEVEL;i++){
-  const reward=Math.max(1,Math.floor(dbiMobExp(mobLevel,level)*(1+.2*(window.DBISpiritual?.currentBonuses()?.exp||0))));
+  const reward=Math.max(1,Math.floor(dbiMobExp(mobLevel,level,mobName)*(1+.2*(window.DBISpiritual?.currentBonuses()?.exp||0))));
   gained+=reward;exp+=reward;
   while(level<DBI_MAX_LEVEL&&exp>=dbiRequiredExp(level)){
    exp-=dbiRequiredExp(level);level++;
@@ -119,7 +121,9 @@ dbiRefreshHeaderWallet();
 const setLog=t=>document.querySelector('#log').textContent=t;
 function showPage(title,section){
   if(dbiActive?.id)sessionStorage.setItem('dboidle_last_page_'+dbiActive.id,JSON.stringify({title,section}));
-  window.DBIWorld?.stop();
+  // Reset stanu przeciągania przy każdej zmianie widoku.
+  dragIndex=null;dragActive=false;dragSourceElement=null;clearTimeout(tabHoverTimer);tabHoverTimer=null;
+  if(document.querySelector('.game')?.classList.contains('world-view')){try{window.DBIWorld?.stop?.()}catch(error){console.warn('Zatrzymanie widoku świata:',error)}}
   document.querySelector('.game').classList.toggle('world-view',title==='Mapa świata');
   if(title==='Mapa świata'){
     document.querySelector('.game').classList.remove('equipment-view');
@@ -127,7 +131,7 @@ function showPage(title,section){
     window.DBIWorld.start(document.querySelector('#pageBody'),dbiActive?.id);
     opened=null;renderNav();return;
   }
- document.querySelector('.game').classList.toggle('equipment-view',title==='Ekwipunek'||title==='Panel GM');
+ document.querySelector('.game').classList.toggle('equipment-view',title==='Ekwipunek'||title==='Panel GM'||title==='Ulepszanie'||title==='Kowalstwo');
  if(title==='Pulpit'){
    window.DBIPulpit.render(dbiActive?.id,dbiCharacters[dbiCharacterIndex]);
    opened=null;renderNav();return;
@@ -143,6 +147,8 @@ function showPage(title,section){
  if(title==='Ranking'){renderCommunityRanking();opened=null;renderNav();return;}
  if(title==='Pole bitwy'){renderBattlefield();opened=null;renderNav();return;}
  if(title==='Techniki'){renderTechniques();opened=null;renderNav();return;}
+ if(title==='Ulepszanie'){dragIndex=null;dragActive=false;dragSourceElement=null;clearTimeout(tabHoverTimer);tabHoverTimer=null;opened=null;renderNav();renderUpgradePanel();return;}
+ if(title==='Kowalstwo'){opened=null;renderNav();renderBlacksmith();return;}
  if(title==='Gildia'){window.DBIGuild.render();opened=null;renderNav();return;}
  document.querySelector('#pageBody').innerHTML=defaultPage;
 
@@ -459,6 +465,31 @@ renderNav();if(dropdown){dropdown.hidden=true;dropdown.replaceChildren()}renderE
 
 // v0.8 — wspólny katalog, dwukratkowe wyposażenie, lokalny panel GM
 let catalog=dbiLoadCatalog();
+// Unikalny przedmiot kolekcjonerski George — bez statystyk i efektów.
+const DBI_GEORGE_ITEM={id:'george',name:'George',slot:'materiał',icon:'🖼️',image:'assets/items/george.gif',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Ziomek zajebał Ci łup ze skrzyni. No i cały loot poszedł się jebać.'};
+const DBI_FOREST_CHEST={id:'skrzynia-lesnego-wojownika',name:'Skrzynia Leśnego Wojownika',slot:'użytkowy',icon:'📦',image:'assets/items/skrzynia-lesnego-wojownika.png',quality:'Zwykły',requiredLevel:1,attack:0,defense:0,ki:0,description:'Skrzynia zdobyta po pokonaniu Leśnego Wojownika (Boss). Zawiera przedmiot George.'};
+const dbiForestChestExisting=catalog.find(item=>item.id===DBI_FOREST_CHEST.id);
+if(dbiForestChestExisting){dbiForestChestExisting.slot='użytkowy';dbiForestChestExisting.image=DBI_FOREST_CHEST.image;dbiForestChestExisting.description=DBI_FOREST_CHEST.description}
+else catalog.push(DBI_FOREST_CHEST);
+const dbiGeorgeExisting=catalog.find(item=>item.id===DBI_GEORGE_ITEM.id);
+if(dbiGeorgeExisting){Object.assign(dbiGeorgeExisting,DBI_GEORGE_ITEM)}
+else catalog.push(DBI_GEORGE_ITEM);
+dbiSaveCatalog(catalog);
+// Scalenie dwóch strojów: zachowujemy wszystkie statystyki i efekty stroj-001.
+const DBI_TURTLE_OUTFIT_ID='stroj-001';
+const DBI_OLD_TURTLE_OUTFIT_ID='quest-turtle-school-outfit';
+const dbiTurtleOutfit=catalog.find(item=>item.id===DBI_TURTLE_OUTFIT_ID);
+if(dbiTurtleOutfit){
+ dbiTurtleOutfit.name='Strój treningowy szkoły żółwia';
+ dbiTurtleOutfit.slot='stroj';
+ dbiTurtleOutfit.image='assets/items/stroj-treningowy-szkoly-zolwia.png';
+}else catalog.push({...DBI_DEFAULT_ITEMS.find(item=>item.id===DBI_TURTLE_OUTFIT_ID)});
+catalog=catalog.filter(item=>item.id!==DBI_OLD_TURTLE_OUTFIT_ID);
+dbiSaveCatalog(catalog);
+const dbiMigrateTurtleOutfitRef=ref=>typeof ref==='string'&&
+ (ref===DBI_OLD_TURTLE_OUTFIT_ID||ref.startsWith(DBI_OLD_TURTLE_OUTFIT_ID+'~'))
+ ?DBI_TURTLE_OUTFIT_ID+ref.slice(DBI_OLD_TURTLE_OUTFIT_ID.length):ref;
+
 // Przedmioty wbudowane: automatycznie widoczne w katalogu i GM, bez dodatkowych przycisków.
 const DBI_ROYAL_500_CATALOG=[
 {id:'royal-500-miecz-krola-saiyan',name:'Miecz Króla Saiyan',slot:'bron',icon:'⚔️',image:'assets/items/miecz-krola-saiyan.png',requiredLevel:500,quality:"Pospolity",attack:0,defense:0,ki:0,description:"Zestaw Króla Saiyan · 500 LVL. Statystyki do ustalenia."},
@@ -484,16 +515,141 @@ function dbiRegisterBuiltInItems(items){
  }
 }
 dbiRegisterBuiltInItems(DBI_ROYAL_500_CATALOG);
+// Przedmiot fabularny — bez statystyk, ulepszeń i możliwości założenia.
+const DBI_CC_QUEST_CAPSULE={id:'special-cc-capsule',name:'Specjalna Kapsuła CC',slot:'quest',image:'assets/items/specjalna-kapsula-cc.png',icon:'💊',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Specjalna kapsuła Capsule Corporation. Przedmiot questowy.'};
+const dbiCcCapsuleExisting=catalog.find(item=>item.id===DBI_CC_QUEST_CAPSULE.id);
+if(dbiCcCapsuleExisting)Object.assign(dbiCcCapsuleExisting,DBI_CC_QUEST_CAPSULE);
+else catalog.push({...DBI_CC_QUEST_CAPSULE});
+// Torebka kupowana w sklepie; zawartość przyznawana dopiero po otwarciu.
+const DBI_SENZU_BAG={id:'senzu-bean-bag',name:'Torebka Fasolek Senzu',slot:'użytkowy',image:'assets/items/torebka-fasolek-senzu.png',icon:'🎒',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Otwórz, aby otrzymać: 600 czerwonych, 100 niebieskich, 50 fioletowych i 50 zielonych Fasolek Zen.'};
+const dbiBagExisting=catalog.find(x=>x.id===DBI_SENZU_BAG.id);
+if(dbiBagExisting)Object.assign(dbiBagExisting,DBI_SENZU_BAG);else catalog.push({...DBI_SENZU_BAG});
+// Fasolki Zen — przedmioty użytkowe, bez ulepszeń.
+const DBI_ZEN_BEANS=[
+ {id:'zen-bean-red',name:'Czerwona Fasolka Zen',image:'assets/items/fasolka-zen-red.png',description:'Odnawia 10% maksymalnego HP.'},
+ {id:'zen-bean-blue',name:'Niebieska Fasolka Zen',image:'assets/items/fasolka-zen-blue.png',description:'Odnawia 100% brakującej energii KI.'},
+ {id:'zen-bean-green',name:'Zielona Fasolka Zen',image:'assets/items/fasolka-zen-green.png',description:'Zwiększa szybkość ataku o 100% na 10 minut.'},
+ {id:'zen-bean-purple',name:'Fioletowa Fasolka Zen',image:'assets/items/fasolka-zen-purple.png',description:'Zwiększa szybkość ruchu o 50% na godzinę.'}
+];
+for(const bean of DBI_ZEN_BEANS){
+ const existing=catalog.find(item=>item.id===bean.id);
+ if(existing)Object.assign(existing,bean,{slot:'użytkowy',quality:'Pospolity'});
+ else catalog.push({...bean,slot:'użytkowy',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0});
+}
+// Zachowaj istniejący przedmiot Ruda Kowalstwa (również utworzony w GM).
+// Jeśli go nie ma w katalogu, zarejestruj standardową definicję.
+const dbiSmithOre=catalog.find(item=>item.name?.trim().toLocaleLowerCase('pl')==='ruda kowalstwa');
+if(dbiSmithOre){dbiSmithOre.image='assets/items/ruda-kowalstwa.png';dbiSaveCatalog(catalog)}
+else{catalog.push({id:'ruda-kowalstwa',name:'Ruda Kowalstwa',slot:'materiał',icon:'🪨',image:'assets/items/ruda-kowalstwa.png',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Czerwona ruda ukryta w skale. Materiał kowalski.'});dbiSaveCatalog(catalog)}
+// Materiał do ulepszania — mechanika zużycia zostanie dodana osobno.
+const DBI_FATHER_RING={id:'pierscien-ojca',name:'Pierścień Ojca',slot:'quest',icon:'💍',image:'assets/items/pierscien-ojca.png',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Obrączka zaginionego ojca. Przedmiot questowy, przeznaczony do oddania Zagubionej Kobiecie.'};
+const existingFatherRing=catalog.find(item=>item.id===DBI_FATHER_RING.id);
+if(existingFatherRing)Object.assign(existingFatherRing,DBI_FATHER_RING);else catalog.push(DBI_FATHER_RING);
+const DBI_DRAGON_DUST={id:'dragon-ball-dust',name:'Pył smoczych kul',slot:'materiał',image:'assets/items/pyl-smoczych-kul.png',icon:'✨',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Magiczny pył wykorzystywany do ulepszania przedmiotów.'};
+const existingDragonDust=catalog.find(item=>item.id===DBI_DRAGON_DUST.id);
+if(existingDragonDust)Object.assign(existingDragonDust,DBI_DRAGON_DUST);
+else catalog.push(DBI_DRAGON_DUST);
+// Specjalny materiał +10: Przekuwacz.
+const DBI_REFORGER={id:'upgrade-reforger',name:'Przekuwacz',slot:'materiał',image:'assets/items/przekuwacz.png',icon:'🔨',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Specjalny materiał potrzebny do ulepszenia wyposażenia na +10.'};
+const existingReforger=catalog.find(item=>item.id===DBI_REFORGER.id);
+if(existingReforger)Object.assign(existingReforger,DBI_REFORGER);
+else catalog.push(DBI_REFORGER);
+// Nowe materiały i zakładana zbroja. Wymagania i bonusy zbroi do ustalenia.
+const DBI_NEW_ITEMS=[
+ {id:'small-dragon-balls',name:'Małe Smocze Kule',slot:'materiał',image:'assets/items/male-smocze-kule.png',icon:'🟠',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Materiał do ulepszania wyposażenia.'},
+ {id:'dragon-radar',name:'Radar Kul',slot:'materiał',image:'assets/items/radar-kul.png',icon:'📡',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Materiał do ulepszania wyposażenia.'},
+ {id:'red-ribbon-badge',name:'Odznaka Armii Czerwonej Wstęgi',slot:'materiał',image:'assets/items/odznaka-czerwonej-wstegi.png',icon:'🎖️',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Materiał do ulepszania wyposażenia.'},
+ {id:'saiyan-soldier-armor',name:'Zbroja Saiyańskiego Żołnierza',slot:'zbroja',image:'assets/items/zbroja-saiyanskiego-zolnierza.png',icon:'🛡️',quality:'Pospolity',requiredLevel:50,attack:0,defense:105,hp:50,ki:0,description:'Pancerz powstały z przekucia Białego Kimona +9. Obrona +105, maksymalne HP +50.'}
+];
+for(const builtIn of DBI_NEW_ITEMS){
+ const existing=catalog.find(item=>item.id===builtIn.id);
+ if(existing)Object.assign(existing,builtIn);
+ else catalog.push({...builtIn});
+}
+// Podstawowe białe akcesoria — stałe definicje, dostępne również w Panelu GM.
+const DBI_WHITE_ACCESSORIES=[
+ {id:'white-gloves',name:'Białe rękawiczki',slot:'rekawice',image:'assets/items/biale-rekawiczki.png',icon:'🧤',quality:'Pospolity',requiredLevel:1,attack:0,defense:3,ki:0,description:'Proste rękawiczki bojowe. Obrona +3.'},
+ {id:'white-headband',name:'Biała Opaska',slot:'opaska',image:'assets/items/biala-opaska.png',icon:'🎗️',quality:'Pospolity',requiredLevel:1,attack:0,defense:2,ki:0,description:'Biała opaska treningowa. Obrona +2.'},
+ {id:'white-earrings',name:'Białe Kolczyki',slot:'kolczyki',image:'assets/items/biale-kolczyki.png',icon:'💎',quality:'Pospolity',requiredLevel:1,attack:2,attackMin:2,attackMax:2,defense:0,ki:0,description:'Proste białe kolczyki. Wartość ataku +2.'},
+ {id:'white-ring',name:'Biały Pierścień',slot:'pierscien',image:'assets/items/bialy-pierscien.png',icon:'💍',quality:'Pospolity',requiredLevel:1,attack:2,attackMin:2,attackMax:2,defense:0,ki:0,description:'Srebrny pierścień z białym kamieniem. Wartość ataku +2.'},
+ {id:'white-amulet',name:'Biały amulet',slot:'naszyjnik',image:'assets/items/bialy-amulet.png',icon:'📿',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,hp:50,ki:0,description:'Skromny amulet na rzemyku. Maksymalne HP +50.'}
+];
+for(const builtIn of DBI_WHITE_ACCESSORIES){
+ const existing=catalog.find(x=>x.id===builtIn.id);
+ if(existing)Object.assign(existing,builtIn);else catalog.push({...builtIn});
+}
+// Aktualizacja startowego zestawu: zachowujemy istniejące ID i zapisy graczy.
+// Nazwy i bazowe statystyki są nadpisywane również dla starszych zapisów katalogu.
+for(const item of catalog){
+ if(item.id==='starter-blue-kimono'){
+  item.name='Białe Kimono';item.image='assets/items/biale-kimono.png';
+  item.defense=5;item.description='Białe kimono treningowe. Obrona +5.';
+ }
+ if(item.id==='starter-black-boots'){
+  item.name='Białe Skórzane Buty';
+  item.image='assets/items/biale-skorzane-buty.png';
+ }
+ if(item.id==='starter-red-staff'){
+  item.attack=5;item.attackMin=5;item.attackMax=6;
+  item.description='Podstawowa broń. Wartość ataku 5–6.';
+ }
+}
 catalog=catalog.filter(x=>x.id!=='starter-white-belt-plus-one');
 for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';
 dbiSaveCatalog(catalog);
 
 const DBI_INV_KEY='dboidle_inventory_v1_'+String(dbiActive?.id||'test');
-let inventory=DBI_DEFAULT_ITEMS.map(x=>x.id);
+let inventory=[]; // Nowa postać zaczyna z pustym ekwipunkiem.
 try{const stored=JSON.parse(localStorage.getItem(DBI_INV_KEY)||'null');if(Array.isArray(stored))inventory=stored.filter(id=>typeof id==='string').map(id=>id==='starter-white-belt-plus-one'?'starter-white-belt~1':id);}catch{}
-function dbiSaveInventory(){try{localStorage.setItem(DBI_INV_KEY,JSON.stringify(inventory))}catch{}}
-let inventoryTab=0,equipmentSet='Główny',selectedSlot=null;
+// Migracja starych kul Bulmy do istniejącego przedmiotu z grafiką.
+if(inventory.includes('quest-small-dragon-ball')){
+ inventory=inventory.map(id=>id==='quest-small-dragon-ball'?'small-dragon-balls':id);
+ localStorage.setItem(DBI_INV_KEY,JSON.stringify(inventory));
+}
+// Zachowaj kapsuły otrzymane wcześniej w zadaniu Bulmy.
+if(inventory.includes('quest-capsule-special')){
+ inventory=inventory.map(id=>id==='quest-capsule-special'?'special-cc-capsule':id);
+ localStorage.setItem(DBI_INV_KEY,JSON.stringify(inventory));
+}
+// Konwersja starych nagród z zachowaniem poziomu ulepszenia i układu ekwipunku.
+if(inventory.some(ref=>dbiMigrateTurtleOutfitRef(ref)!==ref)){
+ inventory=inventory.map(dbiMigrateTurtleOutfitRef);
+ localStorage.setItem(DBI_INV_KEY,JSON.stringify(inventory));
+ const posKey='dboidle_inventory_positions_v1_'+String(dbiActive?.id||'test');
+ try{
+  const placement=JSON.parse(localStorage.getItem(posKey)||'null');
+  if(placement&&Array.isArray(placement.items)){
+   placement.items=placement.items.map(dbiMigrateTurtleOutfitRef);
+   localStorage.setItem(posKey,JSON.stringify(placement));
+  }
+ }catch{}
+}
+const DBI_INV_POS_KEY='dboidle_inventory_positions_v1_'+String(dbiActive?.id||'test');
 let inventoryPlacement=inventory.map(()=>null);
+try{
+ const saved=JSON.parse(localStorage.getItem(DBI_INV_POS_KEY)||'null');
+ // Nie stosuj pozycji do innego układu przedmiotów (np. po migracji zapisu).
+ if(saved&&Array.isArray(saved.items)&&Array.isArray(saved.positions)&&
+    saved.items.length===inventory.length&&saved.items.every((id,i)=>id===inventory[i])){
+  inventoryPlacement=inventory.map((_,i)=>{
+   const pos=saved.positions[i];
+   return pos&&Number.isInteger(pos.page)&&pos.page>=0&&pos.page<100&&
+     Number.isInteger(pos.cell)&&pos.cell>=0&&pos.cell<60?{page:pos.page,cell:pos.cell}:null;
+  });
+ }
+}catch{}
+let dbiLastPositionSave='';
+function dbiSaveInventoryPositions(){
+ try{
+  const value=JSON.stringify({items:inventory,positions:inventoryPlacement});
+  if(value!==dbiLastPositionSave){localStorage.setItem(DBI_INV_POS_KEY,value);dbiLastPositionSave=value}
+ }catch{}
+}
+function dbiSaveInventory(){
+ try{localStorage.setItem(DBI_INV_KEY,JSON.stringify(inventory))}catch{}
+ dbiSaveInventoryPositions();
+}
+let inventoryTab=0,equipmentSet='Główny',selectedSlot=null;
 const QUALITY=['Pospolity','Zwyczajny','Rzadki','Epicki','Legendarny'];
 let dragIndex=null;
 let dragActive=false;
@@ -502,6 +658,9 @@ let tabHoverTimer=null,dragSourceElement=null,dragCompleted=false;
 const DBI_EQUIP_KEY='dboidle_equipped_v1_'+String(dbiActive?.id||'test');
 let equipped={'Główny':{},'PvP':{}};
 try{const saved=JSON.parse(localStorage.getItem(DBI_EQUIP_KEY)||'null');if(saved&&typeof saved==='object')for(const set of ['Główny','PvP'])if(saved[set]&&typeof saved[set]==='object')equipped[set]=Object.fromEntries(Object.entries(saved[set]).map(([slot,id])=>[slot,id==='starter-white-belt-plus-one'?'starter-white-belt~1':id]));}catch{}
+for(const set of Object.values(equipped))
+ for(const slot of Object.keys(set))set[slot]=dbiMigrateTurtleOutfitRef(set[slot]);
+localStorage.setItem(DBI_EQUIP_KEY,JSON.stringify(equipped));
 function dbiSaveEquipped(){try{localStorage.setItem(DBI_EQUIP_KEY,JSON.stringify(equipped))}catch{}}
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -512,14 +671,109 @@ const dbiDecodeItemRef=ref=>{
  return match?{id:match[1],enhancement:Number(match[2])}:{id:raw,enhancement:0};
 };
 const dbiItemRef=(id,enhancement=0)=>enhancement>0?`${id}~${enhancement}`:id;
+// Ulepszenia skalują wyłącznie bazowe bonusy zapisane w definicji przedmiotu.
+// Nie modyfikujemy katalogu: statystyki są wyliczane z poziomu zapisanego w referencji.
+const DBI_UPGRADE_FLAT_STATS=new Set([
+ 'attack','attackMin','attackMax','defense','hp','maxHp','health',
+ 'ki','maxKi','mana','damage','bonusDamage','physicalAttack',
+ 'physicalAttackPower','attackPower','techniqueAttack','techniqueAttackMin',
+ 'techniqueAttackMax','techniquePower','kiPoints','maxMp'
+]);
+const DBI_UPGRADE_PERCENT_STATS=new Set([
+ 'attackSpeedPct','moveSpeedPct','critChance','criticalChance',
+ 'critDamage','criticalDamage','techniqueCritChance','techCritChance',
+ 'techniqueCritDamage','techCritDamage','armorPenetration',
+ 'enemyArmorReduction','bleedChance','stunChance','dodgeChance',
+ 'criticalDamageReduction','stunResistance','faintResistance',
+ 'expBonusPct','experienceBonusPct','doubleMobDropChance',
+ 'doubleBossRewardsChance','goldBonusPct','battleGoldBonusPct'
+]);
+function dbiEnhancedFlatBonus(value,level){
+ let result=Number(value);
+ for(let i=0;i<level;i++)result=Math.ceil(result*1.5);
+ return result;
+}
+function dbiEnhancedPercentBonus(value,level){
+ const base=Number(value);
+ // Bazowe bonusy 1–5% dochodzą do dokładnie 5% na +9.
+ // Bonusy już większe od 5% nie są obniżane przez ulepszanie.
+ if(base<=0||base>=5)return base;
+ return Math.floor(base+(5-base)*level/9+1e-9);
+}
 const itemById=ref=>{
  const {id,enhancement}=dbiDecodeItemRef(ref);
  const base=catalog.find(x=>x.id===id);
- return base?{...base,enhancement,quality:id.startsWith('royal-500-')?'Pospolity':base.quality}:undefined;
+ if(!base)return undefined;
+ const item={...base,enhancement,quality:id.startsWith('royal-500-')?'Pospolity':base.quality};
+ if(enhancement>0&&base.slot!=='materiał'&&base.slot!=='uzytkowy'&&base.slot!=='quest'){
+  for(const key of DBI_UPGRADE_FLAT_STATS){
+   if(typeof base[key]==='number'&&Number.isFinite(base[key])&&base[key]>0)
+    item[key]=dbiEnhancedFlatBonus(base[key],enhancement);
+  }
+  for(const key of DBI_UPGRADE_PERCENT_STATS){
+   if(typeof base[key]==='number'&&Number.isFinite(base[key])&&base[key]>0)
+    item[key]=dbiEnhancedPercentBonus(base[key],enhancement);
+  }
+ }
+ return item;
 };
-const dbiItemArt=(item)=>item?.image&&/^assets\/items\/[a-z0-9-]+\.png$/.test(item.image)?`<img class="dbi-item-image" src="${item.image}" alt="" draggable="false">`:esc(item?.icon||'');
+// Animowane efekty wizualne dla przedmiotów +8 (srebro) i +9 (złoto).
+// Wspólny renderer obsługuje inwentarz, wyposażenie, GM oraz okno ulepszania.
+const dbiItemArt=item=>{
+ const art=item?.image&&/^assets\/items\/[a-z0-9-]+\.(?:png|gif)$/.test(item.image)
+  ?`<img class="dbi-item-image${item.id==='starter-black-boots'?' dbi-white-boots-art':item.id==='starter-blue-kimono'?' dbi-white-kimono-art':''}" src="${item.image}" alt="" draggable="false">`:esc(item?.icon||'');
+ const lvl=Number(item?.enhancement||0);
+ if(lvl!==8&&lvl!==9)return art;
+ return `<span class="dbi-enhance-glow dbi-enhance-${lvl}">${art}<i class="dbi-enhance-stars" aria-hidden="true"></i></span>`;
+};
+// Korekta skali wyłącznie w kratkach ekwipunku — bez zmian grafiki i innych przedmiotów.
+if(!document.getElementById('dbi-white-set-inventory-size')){
+ const style=document.createElement('style');style.id='dbi-white-set-inventory-size';
+ style.textContent=`
+ .inv-cell.has-item:has(.dbi-white-boots-art),.inv-cell.has-item:has(.dbi-white-kimono-art){overflow:hidden}
+ .inv-cell.has-item .dbi-white-boots-art{transform:scale(1.38);transform-origin:center center;object-fit:contain}
+ .inv-cell.has-item.inv-tall .dbi-white-kimono-art{transform:scale(1.28);transform-origin:center center;object-fit:contain}
+ `;
+ document.head.appendChild(style);
+}
+if(!document.getElementById('dbi-enhance-effects-style')){
+ const style=document.createElement('style');style.id='dbi-enhance-effects-style';
+ style.textContent=`
+ .dbi-enhance-glow{--dbi-shine:#dfe9f5;--dbi-light:rgba(223,233,245,.9);display:flex;align-items:center;justify-content:center;position:relative;width:100%;height:100%;min-width:0;min-height:0;isolation:isolate;overflow:hidden;pointer-events:none}
+ /* Efekt musi pokrywać cały obszar przydzielony przedmiotowi w siatce,
+    niezależnie od rozmiaru samego obrazka PNG. Dotyczy 1x1 i 1x2. */
+ .inv-cell.has-item:has(.dbi-enhance-glow){position:relative;overflow:hidden;isolation:isolate}
+ .inv-cell.has-item:has(.dbi-enhance-glow)>span:first-child{
+   position:absolute!important;inset:0!important;display:block!important;
+   width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+   max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;
+   box-sizing:border-box!important;overflow:hidden!important;
+ }
+ .inv-cell.has-item .dbi-enhance-glow{
+   position:absolute!important;inset:0!important;display:flex!important;
+   width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+   max-width:none!important;max-height:none!important;box-sizing:border-box!important;
+   align-items:center;justify-content:center;overflow:hidden;
+ }
+ .inv-cell.has-item .dbi-enhance-glow>.dbi-item-image{
+   width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;
+ }
+ .dbi-enhance-9{--dbi-shine:#ffe08a;--dbi-light:rgba(255,200,49,.95)}
+ .dbi-enhance-glow>.dbi-item-image{position:relative;z-index:1;max-width:100%;max-height:100%;object-fit:contain}
+ .dbi-enhance-glow:before{content:"";position:absolute;z-index:2;left:-70%;top:0;width:65%;height:100%;background:linear-gradient(90deg,transparent 0%,var(--dbi-light) 40%,rgba(255,255,255,.85) 50%,var(--dbi-light) 60%,transparent 100%);transform:skewX(-17deg);animation:dbi-enhance-sweep 3.4s ease-in-out infinite;mix-blend-mode:screen;pointer-events:none}
+ .dbi-enhance-glow:after,.dbi-enhance-stars:before,.dbi-enhance-stars:after{content:"✦";position:absolute;z-index:3;color:var(--dbi-shine);font-size:clamp(8px,1.1vw,16px);line-height:1;text-shadow:0 0 5px var(--dbi-shine),0 0 12px var(--dbi-shine);animation:dbi-enhance-twinkle 2.1s ease-in-out infinite alternate}
+ .dbi-enhance-glow:after{left:10%;top:15%}
+ .dbi-enhance-stars{position:absolute;inset:0;z-index:3;pointer-events:none}
+ .dbi-enhance-stars:before{right:9%;top:30%;animation-delay:-.8s}
+ .dbi-enhance-stars:after{left:28%;bottom:7%;animation-delay:-1.4s}
+ @keyframes dbi-enhance-sweep{0%,25%{left:-70%;opacity:0}40%{opacity:.85}65%,100%{left:110%;opacity:0}}
+ @keyframes dbi-enhance-twinkle{0%{opacity:.2;transform:scale(.55) rotate(-25deg)}100%{opacity:1;transform:scale(1.25) rotate(25deg)}}
+ @media(prefers-reduced-motion:reduce){.dbi-enhance-glow:before,.dbi-enhance-glow:after,.dbi-enhance-stars:before,.dbi-enhance-stars:after{animation:none}.dbi-enhance-glow:before{display:none}}
+ `;document.head.appendChild(style);
+}
+
 const slotOptions=DBI_SLOTS.map(s=>`<option value="${s[1]}">${s[0]}</option>`).join('');
-const sums=items=>({attack:items.reduce((a,x)=>a+(Number(x.attack)||0),0),attackMin:items.reduce((a,x)=>a+(Number(x.attackMin)||0),0),attackMax:items.reduce((a,x)=>a+(Number(x.attackMax)||0),0),attackSpeedPct:items.reduce((a,x)=>a+(Number(x.attackSpeedPct)||0),0),moveSpeedPct:items.reduce((a,x)=>a+(Number(x.moveSpeedPct)||0),0),defense:items.reduce((a,x)=>a+(Number(x.defense)||0),0),ki:items.reduce((a,x)=>a+(Number(x.ki)||0),0)});
+const sums=items=>({attack:items.reduce((a,x)=>a+(Number(x.attack)||0),0),attackMin:items.reduce((a,x)=>a+(Number(x.attackMin)||0),0),attackMax:items.reduce((a,x)=>a+(Number(x.attackMax)||0),0),attackSpeedPct:items.reduce((a,x)=>a+(Number(x.attackSpeedPct)||0),0),moveSpeedPct:items.reduce((a,x)=>a+(Number(x.moveSpeedPct)||0),0),defense:items.reduce((a,x)=>a+(Number(x.defense)||0),0),hp:items.reduce((a,x)=>a+(Number(x.hp)||0),0),ki:items.reduce((a,x)=>a+(Number(x.ki)||0),0)});
 // Każda zakładka ma 6 kolumn × 10 rzędów = 60 fizycznych kratek.
 // Duże przedmioty rezerwują dwie kratki w tej samej kolumnie.
 const TWO_CELL_TYPES=new Set(['bron','zbroja','stroj']);
@@ -541,14 +795,14 @@ function inventoryPages(){
   const item=itemById(id),tall=itemTall(id);let pos=inventoryPlacement[index];
   if(!pos){let found=false;for(let page=0;!found;page++){used[page]??=new Set();for(let cell=0;cell<60;cell++)if(fits(cell,tall,used[page])){pos={page,cell};inventoryPlacement[index]=pos;reserve(page,cell,tall);found=true;break}}}
   pages[pos.page]??=[];pages[pos.page].push({index,id,item,cell:pos.cell,tall,count:stackCounts.get(id)||1});
- });return pages;
+ });dbiSaveInventoryPositions();return pages;
 }
 function renderInventoryGrid(){
  const entries=inventoryPages()[inventoryTab]||[];
  const cells=Array.from({length:60},(_,i)=>`<span class="inv-cell inv-empty" data-cell="${i}" style="grid-column:${i%6+1};grid-row:${Math.floor(i/6)+1}" aria-label="Puste miejsce"></span>`);
  for(const {index,item,cell,tall,count} of entries){
   const quality=QUALITY.includes(item?.quality)?item.quality:'Pospolity';
-  cells[cell]=`<button type="button" draggable="true" class="inv-cell has-item ${tall?'inv-tall':''} quality-${QUALITY.indexOf(quality)}" data-index="${index}" style="grid-column:${cell%6+1};grid-row:${Math.floor(cell/6)+1} / span ${tall?2:1}" aria-label="${esc(item?.name||'Nieznany przedmiot')}"><span>${dbiItemArt(item)}</span>${count>1?`<b class="dbi-stack-count">×${count}</b>`:""}</button>`;
+  cells[cell]=`<button type="button" draggable="true" class="inv-cell has-item ${item?.id==='senzu-bean-bag'?'dbi-senzu-inventory-cell':''} ${tall?'inv-tall':''} quality-${QUALITY.indexOf(quality)}" data-index="${index}" style="grid-column:${cell%6+1};grid-row:${Math.floor(cell/6)+1} / span ${tall?2:1}" aria-label="${esc(item?.name||'Nieznany przedmiot')}"><span>${dbiItemArt(item)}</span>${count>1?`<b class="dbi-stack-count">×${count}</b>`:""}</button>`;
   if(tall)cells[cell+6]='';
  }
  return cells.join('');
@@ -558,7 +812,69 @@ function moveItem(index,page,cell){
  const tall=itemTall(id),pages=inventoryPages();
  const occupied=new Set();for(const entry of pages[page]||[])if(entry.index!==index){occupied.add(entry.cell);if(entry.tall)occupied.add(entry.cell+6)}
  if(!fits(cell,tall,occupied))return false;
- inventoryPlacement[index]={page,cell};return true;
+ inventoryPlacement[index]={page,cell};dbiSaveInventoryPositions();return true;
+}
+const DBI_USABLE_SLOTS=new Set(['uzytkowy','użytkowy']);
+// Skrzynia bossa jest przedmiotem otwieranym niezależnie od zapisanego slotu.
+
+function dbiIsUsableItem(item){return !!item&&(item.id==='quest-starter-gift'||item.id==='skrzynia-lesnego-wojownika'||DBI_USABLE_SLOTS.has(item.slot))}
+const DBI_STARTER_GIFT_CONTENTS=['starter-blue-kimono','starter-red-staff','starter-white-belt','starter-black-boots'];
+const DBI_ZEN_GIFT=[...Array(20).fill('zen-bean-red'),...Array(10).fill('zen-bean-blue'),...Array(5).fill('zen-bean-green'),...Array(5).fill('zen-bean-purple')];
+const DBI_ZEN_KEY='dboidle_zen_effects_v1_'+String(dbiActive?.id||'test');
+let dbiZenEffects={};
+try{const saved=JSON.parse(localStorage.getItem(DBI_ZEN_KEY)||'{}');if(saved&&typeof saved==='object')dbiZenEffects=saved}catch{}
+function dbiSaveZenEffects(){try{localStorage.setItem(DBI_ZEN_KEY,JSON.stringify(dbiZenEffects))}catch{}}
+function dbiZenActive(type){return Number(dbiZenEffects[type]||0)>Date.now()}
+window.DBIZen={active:dbiZenActive,consumeInBattle:(type)=>false};
+
+function dbiOpenUsableItem(index){
+ const item=itemById(inventory[index]);
+ if(!dbiIsUsableItem(item))return false;
+ if(item.id==='skrzynia-lesnego-wojownika'){
+  if(!itemById('george')){renderEquipment('Nie znaleziono przedmiotu George w katalogu.');return false}
+  // Zamiana jednej skrzyni na jednego George'a w tym samym miejscu ekwipunku.
+  // Zachowuje pozycję i nie wymaga wolnego dodatkowego slotu.
+  inventory[index]='george';
+  dbiSaveInventory();hideItemPopups();
+  renderEquipment('Otwarto Skrzynię Leśnego Wojownika: zdobyto George ×1.');
+  return true;
+ }
+ if(item.id.startsWith('zen-bean-')){
+  const kind=item.id.slice('zen-bean-'.length);
+  let message='';
+  if(kind==='red'||kind==='blue'){
+   const result=window.DBIZen?.consumeInBattle?.(kind);
+   if(result!==true){renderEquipment('Fasolkę odnawiającą HP lub KI można użyć podczas trwającej walki.');return false}
+   message=kind==='red'?'Odzyskano 10% maksymalnego HP.':'Odnowiono całe brakujące KI.';
+  }else if(kind==='green'||kind==='purple'){
+   const duration=kind==='green'?10*60*1000:60*60*1000;
+   dbiZenEffects[kind]=Date.now()+duration;
+   dbiSaveZenEffects();
+   message=kind==='green'?'Szybkość ataku +100% przez 10 minut.':'Szybkość ruchu +50% przez 1 godzinę.';
+  }else return false;
+  inventory.splice(index,1);inventoryPlacement.splice(index,1);
+  dbiSaveInventory();hideItemPopups();renderEquipment(message);return true;
+ }
+ if(item.id==='senzu-bean-bag'){
+  if(DBI_SENZU_BAG_ITEMS.some(([id])=>!itemById(id)))return renderEquipment('Nie znaleziono wszystkich fasolek w katalogu.'),false;
+  const currentDistinct=new Set(inventory.map(ref=>dbiDecodeItemRef(ref).id));
+  const newStacks=DBI_SENZU_BAG_ITEMS.filter(([id])=>!currentDistinct.has(id)).length;
+  // Otwarcie zwalnia miejsce zajmowane przez ostatnią torebkę.
+  if(currentDistinct.size+newStacks>400){renderEquipment('Brak miejsca w ekwipunku na fasolki.');return false}
+  inventory.splice(index,1);inventoryPlacement.splice(index,1);
+  for(const [id,count] of DBI_SENZU_BAG_ITEMS)for(let i=0;i<count;i++){inventory.push(id);inventoryPlacement.push(null)}
+  dbiSaveInventory();hideItemPopups();renderEquipment('Otwarto Torebkę Fasolek Senzu: +600 czerwonych, +100 niebieskich, +50 fioletowych i +50 zielonych Fasolek Zen.');return true;
+ }
+ if(item.id!=='quest-starter-gift')return renderEquipment('Ten przedmiot nie ma jeszcze określonej zawartości.'),false;
+ if(![...DBI_STARTER_GIFT_CONTENTS,...DBI_ZEN_GIFT].every(id=>!!itemById(id)))return renderEquipment('Nie znaleziono wszystkich przedmiotów upominku w katalogu.'),false;
+ // Zmieniamy inwentarz jedną operacją: zużywamy tylko jedną sztukę stosu.
+ inventory.splice(index,1);
+ inventoryPlacement.splice(index,1);
+ for(const id of [...DBI_STARTER_GIFT_CONTENTS,...DBI_ZEN_GIFT]){inventory.push(id);inventoryPlacement.push(null)}
+ dbiSaveInventory();
+ hideItemPopups();
+ renderEquipment('Otwarto Upominek Startowy: Białe Kimono +0, Magiczny Czerwony Kij +0, Biały Pas +0, Białe Skórzane Buty +0 oraz 40 Fasolek Zen.');
+ return true;
 }
 function tooltipMarkup(item){
  const q=QUALITY.includes(item.quality)?item.quality:'Pospolity';
@@ -568,14 +884,22 @@ function tooltipMarkup(item){
  else if(Number(item.attack))stats.push('Atak +'+Number(item.attack));
  if(Number(item.defense))stats.push('Obrona +'+Number(item.defense));
  if(Number(item.ki))stats.push('KI +'+Number(item.ki));
+ if(Number(item.hp))stats.push('Maksymalne HP +'+Number(item.hp));
  if(Number(item.attackSpeedPct))stats.push('Szybkość ataku +'+Number(item.attackSpeedPct)+'%');
  if(Number(item.moveSpeedPct))stats.push('Szybkość ruchu +'+Number(item.moveSpeedPct)+'%');
- const displayName=item.name+' +'+Number(item.enhancement||0);
+ const isMaterial=item.slot==='materiał'||item.slot==='quest';
+ const displayName=item.name+(dbiIsUsableItem(item)||isMaterial?'':' +'+Number(item.enhancement||0));
+ const levelLocked=!dbiIsUsableItem(item)&&!isMaterial&&level<(Number(item.requiredLevel)||1);
+ if(dbiIsUsableItem(item)||isMaterial){
+  return `<div class="tip-name quality-text-${qi}">${esc(displayName)}</div>
+  <div class="tip-icon">${dbiItemArt(item)}</div>
+  <div class="tip-description">${esc(item.id==='quest-starter-gift'?'W środku znajdziesz parę przydatnych przedmiotów na start.':item.description||'Przedmiot użytkowy.')}</div>
+  <div class="tip-bottom"><span>${esc(item.id==='pierscien-ojca'?'Przedmiot misji':item.slot)}</span><strong class="quality-text-${qi}">${esc(q).toUpperCase()}</strong></div>`;
+ }
  return `<div class="tip-name quality-text-${qi}">${esc(displayName)}</div>
  <div class="tip-icon">${dbiItemArt(item)}</div>
- <div class="tip-level">Poziom: ${Number(item.requiredLevel)||1}</div>
+ <div class="tip-level">${levelLocked?'Od Poziomu: ':'Poziom: '}${Number(item.requiredLevel)||1}</div>
  <div class="tip-stats">${stats.length?stats.map(line=>`<div>${esc(line)}</div>`).join(''):'Brak statystyk podstawowych'}</div>
- ${item.description?`<div class="tip-description">${esc(item.description)}</div>`:''}
  <div class="tip-bottom"><span>${esc(item.slot)}</span><strong class="quality-text-${qi}">${esc(q).toUpperCase()}</strong></div>`;
 }
 function showTooltip(event,index){
@@ -584,11 +908,30 @@ function showTooltip(event,index){
 function showTooltipItem(event,item){
  if(!item||dragActive)return;
  let tip=document.querySelector('#itemTooltip');if(!tip){tip=document.createElement('div');tip.id='itemTooltip';tip.className='item-tooltip';document.body.append(tip)}
+ // Czerwony dymek dla wyposażenia, którego poziom postaci nie pozwala założyć.
+ const locked=item.slot!=='materiał'&&!dbiIsUsableItem(item)&&level<(Number(item.requiredLevel)||1);
+ tip.classList.toggle('dbi-level-locked',locked);
+ if(!document.querySelector('#dbi-locked-tooltip-style')){
+  const style=document.createElement('style');style.id='dbi-locked-tooltip-style';
+  style.textContent='#itemTooltip.dbi-level-locked{border-color:#a52b2b!important;box-shadow:0 0 0 1px #5f1515,0 8px 22px rgba(0,0,0,.7)!important;color:#ed4949!important}#itemTooltip.dbi-level-locked .tip-name,#itemTooltip.dbi-level-locked .tip-level,#itemTooltip.dbi-level-locked .tip-stats,#itemTooltip.dbi-level-locked .tip-stats div,#itemTooltip.dbi-level-locked .tip-bottom,#itemTooltip.dbi-level-locked .tip-bottom *{color:#ed4949!important}#itemTooltip.dbi-level-locked .tip-name *,#itemTooltip.dbi-level-locked .tip-stats *,#itemTooltip.dbi-level-locked .tip-level *{color:#ed4949!important}#itemTooltip.dbi-level-locked .tip-stats,#itemTooltip.dbi-level-locked .tip-bottom{border-color:#8d2929!important}#itemTooltip.dbi-level-locked hr{border-color:#8d2929!important;background-color:#8d2929!important}';
+  document.head.appendChild(style);
+ }
  tip.innerHTML=tooltipMarkup(item);tip.hidden=false;positionPopup(tip,event.clientX,event.clientY);
 }
 function positionPopup(el,x,y){const w=el.offsetWidth||240,h=el.offsetHeight||110;el.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';el.style.top=Math.max(8,Math.min(y+14,innerHeight-h-8))+'px'}
 function hideItemPopups(){document.querySelector('#itemTooltip')?.setAttribute('hidden','');document.querySelector('#itemActions')?.remove()}
-function itemActions(event,index){event.preventDefault();hideItemPopups();const item=itemById(inventory[index]);if(!item)return;const menu=document.createElement('div');menu.id='itemActions';menu.className='item-actions';menu.innerHTML=`<div>${esc(item.name)}</div><button type="button">Zniszcz</button>`;document.body.append(menu);positionPopup(menu,event.clientX,event.clientY);menu.querySelector('button').onclick=()=>{inventory.splice(index,1);inventoryPlacement.splice(index,1);hideItemPopups();renderEquipment('Zniszczono: '+item.name)};}
+function itemActions(event,index){
+ event.preventDefault();hideItemPopups();
+ const item=itemById(inventory[index]);if(!item)return;
+ const menu=document.createElement('div');menu.id='itemActions';menu.className='item-actions';
+ menu.innerHTML=`<div>${esc(item.name)}</div>${dbiIsUsableItem(item)?'<button type="button" data-action="open">'+(item.id==='senzu-bean-bag'?'Użyj':'Otwórz')+'</button>':''}<button type="button" data-action="destroy">Zniszcz</button>`;
+ document.body.append(menu);positionPopup(menu,event.clientX,event.clientY);
+ menu.querySelector('[data-action="open"]')?.addEventListener('click',()=>dbiOpenUsableItem(index));
+ menu.querySelector('[data-action="destroy"]').onclick=()=>{
+  inventory.splice(index,1);inventoryPlacement.splice(index,1);
+  dbiSaveInventory();hideItemPopups();if(document.querySelector('.dbi-upgrade'))renderUpgradePanel();else renderEquipment('Zniszczono: '+item.name);
+ };
+}
 
 
 
@@ -772,6 +1115,31 @@ function dbiStatNumber(obj,keys){
  }
  return null;
 }
+// Wartość ataku: procent wzmacnia wyłącznie bazę z Siły, nigdy ekwipunek.
+function dbiAttackRange(character,worn){
+ const sources=[character?.stats,character?.attributes,character?.baseStats,character];
+ const bonusSources=[character?.bonuses,character?.activeStats,character?.passiveStats,character?.stats,character];
+ const read=(keys,from)=>{for(const source of from){const n=dbiStatNumber(source,keys);if(n!==null)return n}return 0};
+ const strength=read(['strength','sila','siła','str'],sources);
+ const percentKeys=['attackValuePct','attackBonusPct','attackPct','attackPowerPct','physicalAttackPct','bonusAttackPct'];
+ const spiritPercent=(Number(window.DBISpiritual?.currentBonuses?.()?.attack)||0)*0.5;
+ const percent=read(percentKeys,bonusSources)+(worn||[]).reduce((sum,item)=>sum+(dbiStatNumber(item,percentKeys)||0),0)+spiritPercent;
+ const base=Math.max(0,Math.ceil(strength*0.5*(1+percent/100)));
+ const flatKeys=['attack','physicalAttack','physicalAttackPower','attackPower'];
+ const fixed=read(flatKeys,bonusSources);
+ const minExtra=read(['attackMin'],bonusSources);
+ const maxExtra=read(['attackMax'],bonusSources);
+ let gearMin=0,gearMax=0;
+ for(const item of worn||[]){
+  const min=dbiStatNumber(item,['attackMin']);
+  const max=dbiStatNumber(item,['attackMax']);
+  const flat=dbiStatNumber(item,flatKeys)||0;
+  // Nie sumujemy pola attack z attackMin/Max tego samego przedmiotu.
+  gearMin+=(min!==null?min:flat);
+  gearMax+=(max!==null?max:(min!==null?min:flat));
+ }
+ return {min:Math.max(0,base+fixed+minExtra+gearMin),max:Math.max(0,base+fixed+maxExtra+gearMax)};
+}
 function dbiAttributeTotal(character){
  const aliases=[['strength','sila'],['speed','szybkosc'],['endurance','wytrzymalosc'],['intelligence','inteligencja'],['ki','KI']];
  return Math.round(aliases.reduce((sum,keys)=>{
@@ -804,6 +1172,11 @@ function renderCharacterStatistics(){
     const minKey=isTechnique?'techniqueAttackMin':'attackMin';
     const maxKey=isTechnique?'techniqueAttackMax':'attackMax';
     const fixedKeys=isTechnique?['techniqueAttack','techniquePower']:['attack','physicalAttack','physicalAttackPower','attackPower'];
+    if(!isTechnique){
+     const range=dbiAttackRange(character,worn);
+     rows.push(renderRow(label,format(range.min)+'–'+format(range.max)));
+     continue;
+    }
     const min=getBase([minKey],bonusSources)+itemSum([minKey]);
     const max=getBase([maxKey],bonusSources)+itemSum([maxKey]);
     const fixed=getBase(fixedKeys,bonusSources)+itemSum(fixedKeys);
@@ -812,7 +1185,7 @@ function renderCharacterStatistics(){
     continue;
    }
    const sources=group==='Podstawowe'?baseSources:bonusSources;
-   const value=(group==='Podstawowe'&&label==='Moc')?dbiAttributeTotal(character):getBase(keys,sources)+itemSum(keys);
+   const value=(group==='Podstawowe'&&label==='Moc')?dbiAttributeTotal(character):getBase(keys,sources)+itemSum(keys)+(group==='Aktywne'&&label==='Obrona'?(Number(character.stats?.questDefenseBonus)||0):0);
    if(value!==0)rows.push(renderRow(label,format(value),suffix));
   }
   return rows.join('')||'<p class="dbi-stat-empty">Brak statystyk w tej kategorii.</p>';
@@ -892,36 +1265,287 @@ function renderCharacterProfile(profileCharacter=null,profileHost=null,readOnly=
   slot.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));
  });
 }
-function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założyć.'){
+
+// Ulepszanie: wspólny magazyn i pozycje z ekwipunkiem; bez losowania/zużywania materiałów.
+const DBI_UPGRADE_SLOT_KEY='dboidle_upgrade_slot_v1_'+String(dbiActive?.id||'test');
+let dbiUpgradeSelected=null,dbiUpgradeTab=0,dbiUpgradeMessage='';
+// Slot jest osobnym miejscem przechowywania; przedmiot nie może jednocześnie
+// znajdować się w siatce inwentarza. Zachowujemy go również po odświeżeniu.
+try{const saved=JSON.parse(localStorage.getItem(DBI_UPGRADE_SLOT_KEY)||'null');
+ if(saved&&typeof saved.ref==='string'&&itemById(saved.ref))dbiUpgradeSelected=saved;
+}catch{}
+function dbiSaveUpgradeSlot(){
+ try{if(dbiUpgradeSelected)localStorage.setItem(DBI_UPGRADE_SLOT_KEY,JSON.stringify(dbiUpgradeSelected));
+ else localStorage.removeItem(DBI_UPGRADE_SLOT_KEY)}catch{}
+}
+function dbiUpgradeReturn(){
+ if(!dbiUpgradeSelected)return;
+ const {ref,position}=dbiUpgradeSelected;
+ inventory.push(ref);inventoryPlacement.push(position||null);
+ dbiUpgradeSelected=null;
+ dbiSaveUpgradeSlot();dbiSaveInventory();
+ dbiUpgradeMessage='Przedmiot wrócił do inwentarza.';
+ renderUpgradePanel();
+}
+function dbiUpgradePick(index){
+ const ref=inventory[index],item=itemById(ref);
+ if(!item||!DBI_SLOTS.some(slot=>slot[1]===item.slot)){
+  dbiUpgradeMessage='Do okienka ulepszania można włożyć wyłącznie wyposażenie.';
+  renderUpgradePanel();return;
+ }
+ // Wymiana przedmiotu zwraca poprzedni do tego samego inwentarza.
+ const old=dbiUpgradeSelected;
+ const position=inventoryPlacement[index]||null;
+ inventory.splice(index,1);inventoryPlacement.splice(index,1);
+ if(old){inventory.push(old.ref);inventoryPlacement.push(old.position||null)}
+ dbiUpgradeSelected={ref,position};
+ dbiSaveUpgradeSlot();dbiSaveInventory();
+ dbiUpgradeMessage='Przedmiot przeniesiono do okienka ulepszania.';
+ renderUpgradePanel();
+}
+// Wymagania ulepszania dla wyposażenia; wyłączone kategorie nie zużywają tych materiałów.
+const DBI_UPGRADE_CHANCES=[95,90,80,75,70,65,60,50,30,100];
+const DBI_UPGRADE_EXCLUDED=['chi','symbol','stroj treningowy','esencja','scouter'];
+function dbiUpgradeExcluded(item){
+ const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pl').trim();
+ const slot=normalize(item?.slot),name=normalize(item?.name);
+ return DBI_UPGRADE_EXCLUDED.some(x=>slot===x||name===x||name.startsWith(x+' '));
+}
+function dbiUpgradeRequirements(level,item){
+ if(!Number.isInteger(level)||level<0||level>=10)return null;
+ const req={chance:DBI_UPGRADE_CHANCES[level],dust:level===9?10:1,
+  reforger:level===9?1:0,materials:[]};
+ if(!dbiUpgradeExcluded(item)){
+  const quantity=level-3;
+  if(level>=4&&level<=6)req.materials=[{id:'quest-turtle-stone',count:quantity},{id:'small-dragon-balls',count:quantity}];
+  if(level>=7&&level<=8)req.materials=[{id:'red-ribbon-badge',count:level-6},{id:'dragon-radar',count:level-6}];
+ }
+ return req;
+}
+function dbiUpgradeMaterialCount(id){
+ return inventory.reduce((n,ref)=>n+(dbiDecodeItemRef(ref).id===id?1:0),0);
+}
+function dbiUpgradeConsumeMaterial(id,count){
+ let remaining=count;
+ for(let i=inventory.length-1;i>=0&&remaining>0;i--){
+  if(dbiDecodeItemRef(inventory[i]).id!==id)continue;
+  inventory.splice(i,1);inventoryPlacement.splice(i,1);remaining--;
+ }
+ return remaining===0;
+}
+// Receptury przekucia: kolejne pary źródło → nowy przedmiot dodamy osobno.
+const DBI_REFORGE_RECIPES={'starter-blue-kimono':'saiyan-soldier-armor'};
+function dbiReforgeDestination(item){
+ if(!item||Number(item.enhancement)!==9)return null;
+ const id=DBI_REFORGE_RECIPES[item.id];
+ return id&&catalog.some(entry=>entry.id===id)?id:null;
+}
+function dbiUpgradeAttempt(){
+ const selected=dbiUpgradeSelected;
+ if(!selected)return;
+ const item=itemById(selected.ref),level=Number(item?.enhancement||0);
+ const req=dbiUpgradeRequirements(level,item);
+ if(!req){dbiUpgradeMessage='Przedmiot osiągnął maksymalny poziom +10.';renderUpgradePanel();return}
+ const destination=req.reforger?dbiReforgeDestination(item):null;
+ if(req.reforger&&!destination){
+  dbiUpgradeMessage='Dla tego przedmiotu nie ustalono jeszcze wyniku przekucia. Materiały nie zostały zużyte.';
+  renderUpgradePanel();return;
+ }
+ const needed=[{id:'dragon-ball-dust',count:req.dust},...req.materials,...(req.reforger?[{id:'upgrade-reforger',count:1}]:[])];
+ const missing=needed.filter(x=>dbiUpgradeMaterialCount(x.id)<x.count);
+ if(missing.length){dbiUpgradeMessage='Brakuje materiałów: '+missing.map(x=>(catalog.find(y=>y.id===x.id)?.name||x.id)+' ('+dbiUpgradeMaterialCount(x.id)+'/'+x.count+')').join(', ')+'.';renderUpgradePanel();return}
+ for(const material of needed)dbiUpgradeConsumeMaterial(material.id,material.count);
+ const success=req.reforger||Math.random()*100<req.chance;
+ if(success){
+  const id=dbiDecodeItemRef(selected.ref).id;
+  // Przekucie podmienia ID przedmiotu i zeruje ulepszenie, bez duplikowania egzemplarza.
+  dbiUpgradeSelected={...selected,ref:req.reforger?destination:dbiItemRef(id,level+1)};
+  dbiSaveUpgradeSlot();
+ }
+ dbiSaveInventory();
+ dbiUpgradeMessage=req.reforger
+  ?'Przekucie udane! Powstała Zbroja Saiyańskiego Żołnierza +0 (obrona +105, maksymalne HP +50).'
+  :success?'Ulepszanie udane! Przedmiot osiągnął +'+(level+1)+'.':
+  'Ulepszanie nieudane. Przedmiot pozostał na +'+level+', materiały zostały zużyte.';
+ renderUpgradePanel();
+}
+function renderUpgradePanel(){
  hideItemPopups();
- dbiSaveInventory();dbiSaveEquipped();
- document.querySelector('#breadcrumb').textContent='POSTAĆ / EKWIPUNEK';
- const current=equipped[equipmentSet], worn=Object.values(current).map(itemById).filter(Boolean),stats=sums(worn);
- document.querySelector('#pageBody').innerHTML=`<div class="equipment-layout">
- <section class="eq-panel eq-left"><h2>EKWIPUNEK</h2><p class="eq-caption">${worn.length} / ${DBI_SLOTS.length} slotów wyposażonych · ${equipmentSet}</p>
- <div class="eq-doll"><div class="eq-body-outline" aria-hidden="true">✦</div><div class="eq-slots">${DBI_SLOTS.map(([label,id,col,row,height])=>{
- const item=itemById(current[id]);return `<button class="eq-slot ${height===2?'eq-tall':''} ${item?'occupied':''} ${selectedSlot===id?'active':''}" data-slot="${id}" style="--col:${col};--row:${row};--span:${height}" title="${item?'':esc(label)}"><span class="slot-art">${dbiItemArt(item)}</span><span class="slot-name">${item?'':esc(label)}</span></button>`}).join('')}</div></div>
- <div class="eq-sets"><button class="eq-set ${equipmentSet==='Główny'?'active':''}" data-set="Główny">Zestaw główny</button><button class="eq-set ${equipmentSet==='PvP'?'active':''}" data-set="PvP">Zestaw PvP</button></div><p class="eq-selection" id="eqSelection" role="status">${esc(message)}</p></section>
- <section class="eq-panel eq-middle"><h2>STATYSTYKI EKWIPUNKU</h2><p class="eq-caption">Suma bonusów założonych przedmiotów</p>${[['OBRAŻENIA I OBRONA',[['Obrażenia',stats.attack],['Wartość ataku',stats.attackMin+'–'+stats.attackMax],['Szybkość ataku',stats.attackSpeedPct+'%'],['Obrona',stats.defense],['Szybkość ruchu',stats.moveSpeedPct+'%']]],['ENERGIA',[['Ki',stats.ki]]],['WYPOSAŻENIE',[['Założone przedmioty',worn.length]]],['ATRYBUTY POSTACI',[['Siła','—'],['Inteligencja','—'],['Szybkość','—'],['Wytrzymałość','—']]]].map(([group,rows])=>`<div class="eq-stat-group"><h3>${group}</h3>${rows.map(([name,val])=>`<div class="eq-stat"><span>${name}</span><strong>${val}</strong></div>`).join('')}</div>`).join('')}</section>
- <section class="eq-panel eq-right"><h2>INWENTARZ</h2><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((x,i)=>`<button class="inv-tab ${inventoryTab===i?'active':''}" data-tab="${i}">${x}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${renderInventoryGrid()}</div></div><div class="inv-actions"><button data-action="Sortuj">Sortuj</button><button data-action="Zaznacz">Zaznacz</button><button data-action="Zablokuj">Zablokuj</button></div></section></div>`;
- // Ten sam dymek co w inwentarzu również na założonych przedmiotach.
- document.querySelectorAll('.eq-slot.occupied').forEach(slot=>{
-  const item=itemById(current[slot.dataset.slot]);
-  if(!item)return;
-  slot.addEventListener('mouseenter',e=>showTooltipItem(e,item));
-  slot.addEventListener('mousemove',e=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,e.clientX,e.clientY)});
-  slot.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));
+ document.querySelector('#breadcrumb').textContent='WZMOCNIENIA / ULEPSZANIE';
+ // Nagłówek startowy znika po otwarciu pierwszej strony; nie można go wymagać przy nawigacji.
+ const upgradeTitle=document.querySelector('#contentTitle');if(upgradeTitle)upgradeTitle.textContent='Ulepszanie';
+ const upgradeDescription=document.querySelector('#contentDescription');if(upgradeDescription)upgradeDescription.textContent='Przygotowanie przedmiotów do ulepszania.';
+ if(!document.querySelector('#dbi-upgrade-style')){
+  const style=document.createElement('style');style.id='dbi-upgrade-style';
+  style.textContent=`
+   .dbi-upgrade{padding:18px 22px;min-height:700px;color:#e9dfcb}
+   .dbi-upgrade h2{text-align:center;margin:0 0 12px;color:#e5bb75}
+   .dbi-upgrade hr{border:0;border-top:1px solid #52606b;margin:0 0 28px}
+   .dbi-upgrade-layout{display:grid;grid-template-columns:minmax(270px,1fr) minmax(360px,440px);gap:26px;align-items:start}
+   .dbi-upgrade-work{display:flex;flex-direction:column;align-items:flex-start;gap:15px}
+   .dbi-upgrade-main{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
+   .dbi-upgrade-target{display:flex;flex-direction:column;align-items:center;gap:8px;width:210px;color:#d8c49f}
+   .dbi-upgrade-target .dbi-upgrade-slot{box-sizing:border-box;width:190px;height:190px;min-width:190px;min-height:190px;border:1px solid #927346;background:#101e2b;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+   .dbi-upgrade-target .dbi-upgrade-slot.drop-target{outline:3px solid #e4b667;outline-offset:3px}
+   .dbi-upgrade-target .dbi-upgrade-slot.occupied{cursor:pointer}
+   .dbi-upgrade-target .dbi-upgrade-slot img.dbi-item-image{display:block;box-sizing:border-box;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;flex:0 1 auto;padding:5px}
+   .dbi-upgrade-target strong{font-size:12px;text-align:center;line-height:1.3}
+   .dbi-upgrade-target small{display:block;font-size:12px;line-height:1.5;text-align:center}
+   .dbi-upgrade-dust{border:1px solid #586575;background:#14222e;border-radius:5px;min-width:84px;padding:9px;text-align:center}
+   .dbi-upgrade-dust img{display:block;width:46px;height:46px;object-fit:contain;margin:0 auto 5px}
+   .dbi-upgrade-dust span{display:block;font-size:12px}
+   .dbi-upgrade-materials{display:flex;gap:10px;width:210px;justify-content:center;box-sizing:border-box}
+   .dbi-upgrade-materials .dbi-material-slot{box-sizing:border-box;width:51px;height:51px;border:1px solid #69737b;background:#101e2b;border-radius:3px}
+   .dbi-upgrade-action{width:190px;margin-left:10px;min-height:38px;background:#876a39;border:1px solid #b39357;color:#e9e1cf;border-radius:4px;cursor:pointer}.dbi-upgrade-action:disabled{cursor:not-allowed;opacity:.65}
+   .dbi-upgrade-note{font-size:12px;color:#aab5c2;max-width:420px}
+   .dbi-reforger-count{box-sizing:border-box;width:190px;margin-left:10px;text-align:center;margin-top:0;margin-bottom:0}
+   .dbi-upgrade-inv{border:1px solid #38516a;background:#102434;border-radius:5px;padding:16px;width:100%;box-sizing:border-box}
+   .dbi-upgrade-inv h3{margin:0 0 12px;color:#e5bb75;font-size:15px}
+   .dbi-upgrade-inv .inv-tabs{display:flex;gap:4px;margin-bottom:12px}
+   .dbi-upgrade-inv .inv-tab{flex:1;min-width:0;padding:8px 0}
+   .dbi-upgrade-inv .inv-scroll{height:550px;overflow:auto}
+   /* Stałe wymiary 6×10 także dla całkowicie pustej karty.
+      Globalne .inv-grid ma width:max-content i max-width:100%,
+      co przy kolumnach 1fr zapadało się do kilku pikseli. */
+   .dbi-upgrade-inv .inv-grid{--dbi-cell:60px;--dbi-gap:4px;display:grid;grid-template-columns:repeat(6,var(--dbi-cell));grid-template-rows:repeat(10,var(--dbi-cell));grid-auto-rows:var(--dbi-cell);gap:var(--dbi-gap);width:max-content;max-width:none;min-width:0;align-content:start;justify-content:start;position:relative}
+   .dbi-upgrade-inv .inv-grid>.inv-cell{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;aspect-ratio:auto;overflow:hidden}
+   .dbi-upgrade-inv .inv-scroll{height:550px;min-height:0;overflow:auto;container-type:normal}
+   .dbi-upgrade-inv .inv-drop-preview{position:absolute;z-index:5;box-sizing:border-box;pointer-events:none}
+   .dbi-upgrade-inv .inv-cell{box-sizing:border-box}
+   .dbi-upgrade-inv .inv-cell{min-width:0;min-height:0}
+   .dbi-upgrade-inv .inv-cell.has-item{cursor:grab}
+   .dbi-upgrade-inv .inv-cell.selected-upgrade{outline:2px solid #edc16c;outline-offset:-2px}
+   .dbi-upgrade-inv .inv-actions{display:flex;gap:6px;margin-top:12px}
+   .dbi-upgrade-inv .inv-actions button{flex:1}
+   @media(max-width:950px){.dbi-upgrade-layout{grid-template-columns:1fr}.dbi-upgrade-inv{max-width:440px}}
+  `;
+  document.head.appendChild(style);
+ }
+ const chosen=dbiUpgradeSelected?itemById(dbiUpgradeSelected.ref):null;
+ const eligible=chosen&&DBI_SLOTS.some(slot=>slot[1]===chosen.slot);
+ const req=eligible?dbiUpgradeRequirements(Number(chosen.enhancement||0),chosen):null;
+ const dustCount=dbiUpgradeMaterialCount('dragon-ball-dust');
+ const reforgerCount=dbiUpgradeMaterialCount('upgrade-reforger');
+ const ready=!!req&&(!req.reforger||!!dbiReforgeDestination(chosen))&&dustCount>=req.dust&&reforgerCount>=req.reforger&&req.materials.every(m=>dbiUpgradeMaterialCount(m.id)>=m.count);
+ dbiUpgradeTab=inventoryTab;
+ const gridHtml=renderInventoryGrid();
+ document.querySelector('#pageBody').innerHTML=`<section class="dbi-upgrade"><h2>Ulepszanie</h2><hr><div class="dbi-upgrade-layout">
+ <div class="dbi-upgrade-work"><div class="dbi-upgrade-main">
+ <div class="dbi-upgrade-target"><div class="dbi-upgrade-slot" id="dbiUpgradeTarget" title="Przeciągnij przedmiot, użyj dwukliku lub kliknij włożony przedmiot, aby go wyjąć">${eligible?dbiItemArt(chosen):''}</div>${eligible?`<strong>${esc(chosen.name)}</strong>`:''}<small>Aktualne ulepszenie: ${eligible?'+'+Number(chosen.enhancement||0):'—'}</small><small>Szansa powodzenia: ${req?req.chance+'%':eligible?'MAX':'—'}</small></div>
+ <div class="dbi-upgrade-dust"><img src="assets/items/pyl-smoczych-kul.png" alt=""><span>Smoczy pył</span><span>Posiadasz: ${dustCount}${req?' / '+req.dust:''}</span></div></div>
+ ${req&&(req.reforger||req.materials.length)?`<div class="dbi-upgrade-materials">${req.reforger?`<div class="dbi-material-slot" title="Przekuwacz: ${reforgerCount}/1"><img src="assets/items/przekuwacz.png" alt="Przekuwacz" style="width:100%;height:100%;object-fit:contain"></div>`:req.materials.map(material=>{const info=catalog.find(x=>x.id===material.id),owned=dbiUpgradeMaterialCount(material.id);return `<div class="dbi-material-slot" title="${esc(info?.name||material.id)}: ${owned}/${material.count}" style="position:relative"><img src="${esc(info?.image||'')}" alt="${esc(info?.name||material.id)}" style="width:100%;height:100%;object-fit:contain"><span style="position:absolute;bottom:0;right:0;background:#101e2be6;color:${owned>=material.count?'#c5e5a8':'#ff9c9c'};font-size:11px;padding:0 2px">${owned}/${material.count}</span></div>`}).join('')}</div>`:''}
+ ${req?.reforger?'<p class="dbi-upgrade-note dbi-reforger-count">Przekuwacz: '+reforgerCount+'/1</p>':''}
+
+ <button class="dbi-upgrade-action" id="dbiUpgradeAction" ${ready?'':'disabled'} title="${req?.reforger?(dbiReforgeDestination(chosen)?'Przekuj przedmiot na nową zbroję +0':'Nie ustalono jeszcze przedmiotu wynikowego'):!ready?'Brakuje wymaganych materiałów':'Ulepsz przedmiot'}">${req?.reforger?'Przekuj':'Ulepsz'}</button>
+ <p class="dbi-upgrade-note" role="status" id="dbiUpgradeStatus">${esc(dbiUpgradeMessage||'Wybierz wyposażenie dwuklikiem albo przeciągnij je do okienka.')}</p>
+ </div><aside class="dbi-upgrade-inv"><h3>INWENTARZ</h3><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((label,i)=>`<button type="button" class="inv-tab ${i===dbiUpgradeTab?'active':''}" data-tab="${i}">${label}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${gridHtml}</div></div><div class="inv-actions"><button type="button" data-upgrade-action="Sortuj">Sortuj</button><button type="button" data-upgrade-action="Zaznacz">Zaznacz</button><button type="button" data-upgrade-action="Zablokuj">Zablokuj</button></div></aside>
+ </div></section>`;
+ document.querySelector('#dbiUpgradeAction')?.addEventListener('click',dbiUpgradeAttempt);
+ const host=document.querySelector('.dbi-upgrade-inv');
+ const target=document.querySelector('#dbiUpgradeTarget');
+ if(eligible){target.classList.add('occupied');target.addEventListener('click',dbiUpgradeReturn);target.addEventListener('mouseenter',e=>showTooltipItem(e,chosen));target.addEventListener('mousemove',e=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,e.clientX,e.clientY)});target.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));}
+ target.addEventListener('dragover',event=>{
+  const candidate=dragIndex!==null?dragIndex:Number(event.dataTransfer?.getData('text/plain'));
+  if(!Number.isInteger(candidate)||candidate<0||candidate>=inventory.length)return;
+  event.preventDefault();event.dataTransfer.dropEffect='move';target.classList.add('drop-target');
  });
- document.querySelectorAll('.eq-slot').forEach(b=>b.onclick=()=>{const id=b.dataset.slot;selectedSlot=id;if(current[id]){const item=itemById(current[id]);inventory.push(current[id]);inventoryPlacement.push(null);delete current[id];renderEquipment('Zdjęto: '+(item?.name||id))}else renderEquipment('Pusty slot: '+DBI_SLOTS.find(x=>x[1]===id)[0]);});
- // Drop na slot postaci: przedmiot zostaje założony, nie trzeba go klikać.
- document.querySelectorAll('.eq-slot').forEach(slot=>{
-  slot.addEventListener('dragover',e=>{if(dragIndex===null)return;const item=itemById(inventory[dragIndex]);if(item?.slot!==slot.dataset.slot||current[slot.dataset.slot])return;e.preventDefault();e.dataTransfer.dropEffect='move';slot.classList.add('drop-target')});
-  slot.addEventListener('dragleave',()=>slot.classList.remove('drop-target'));
-  slot.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();slot.classList.remove('drop-target');const idx=dragIndex;dragIndex=null;dragActive=false;if(idx===null)return;const item=itemById(inventory[idx]);if(!item||item.slot!==slot.dataset.slot){document.querySelector('#eqSelection').textContent='Ten przedmiot nie pasuje do wybranego slotu.';return}if(level<(Number(item.requiredLevel)||1)){document.querySelector('#eqSelection').textContent='Wymagany poziom: '+item.requiredLevel;return}if(current[item.slot]){document.querySelector('#eqSelection').textContent='Slot jest zajęty.';return}current[item.slot]=inventory[idx];inventory.splice(idx,1);inventoryPlacement.splice(idx,1);renderEquipment('Założono: '+item.name)});
+ target.addEventListener('dragleave',()=>target.classList.remove('drop-target'));
+ target.addEventListener('drop',event=>{
+  event.preventDefault();event.stopPropagation();target.classList.remove('drop-target');
+  const nativeIndex=Number(event.dataTransfer?.getData('text/plain'));
+  const index=dragIndex!==null?dragIndex:nativeIndex;
+  if(!Number.isInteger(index)||index<0||index>=inventory.length)return;
+  dragCompleted=true;dragIndex=null;dragActive=false;dragSourceElement=null;
+  dbiUpgradePick(index);
  });
- document.querySelectorAll('.eq-set').forEach(b=>b.onclick=()=>{equipmentSet=b.dataset.set;renderEquipment('Zestaw: '+equipmentSet)});
- // Podczas przeciągania NIE przebudowujemy całej karty: usunięcie źródła kończy natywny drag.
- const tabs=document.querySelector('.inv-tabs');
+ dbiBindSharedInventory(host,{
+  refresh:message=>{dbiUpgradeTab=inventoryTab;dbiUpgradeMessage=message||'';renderUpgradePanel()},
+  onClick:index=>{const item=itemById(inventory[index]);if(item)dbiUpgradeMessage='Dwuklik lub przeciągnięcie wybiera przedmiot do ulepszenia.';const el=document.querySelector('#dbiUpgradeStatus');if(el)el.textContent=dbiUpgradeMessage},
+  onDoubleClick:index=>{dbiUpgradePick(index)},
+  setMessage:message=>{const el=document.querySelector('#dbiUpgradeStatus');if(el)el.textContent=message}
+ });
+}
+
+// Kowalstwo: etap interfejsu. Wszystkie przedmioty pochodzą z tego samego inwentarza co Ekwipunek.
+let dbiSmithSelectedRef=null;
+function renderBlacksmith(message='Wybierz przedmiot w inwentarzu, aby obejrzeć go w polu ulepszania jakości.'){
+ hideItemPopups();
+ document.querySelector('#breadcrumb').textContent='WZMOCNIENIA / KOWALSTWO';
+ const heading=document.querySelector('#contentTitle');if(heading)heading.textContent='Kowalstwo';
+ const desc=document.querySelector('#contentDescription');if(desc)desc.textContent='Tworzenie przedmiotów i ulepszanie jakości — przygotowanie warsztatu.';
+ if(!document.querySelector('#dbi-smith-style')){
+  const style=document.createElement('style');style.id='dbi-smith-style';style.textContent=`
+  .dbi-smith{--smith-gold:#e6a941;--smith-line:#bc822c;--smith-ink:#dce8f1;color:var(--smith-ink);padding:10px 12px 24px;min-height:820px;background:linear-gradient(145deg,#071b2b,#091524 75%);border:1px solid #42617a;border-radius:12px}
+  .dbi-smith *{box-sizing:border-box}
+  .dbi-smith-header{display:flex;align-items:center;gap:15px;border-bottom:1px solid #294b61;margin:0 0 12px;padding:4px 8px 12px}
+  .dbi-smith-header .dbi-smith-anvil{font-size:34px;color:#ffc66a;filter:drop-shadow(0 2px 3px #000)}
+  .dbi-smith-header h2{font-size:29px;text-align:left;color:#ffcb72;text-shadow:0 2px 2px #000;margin:0}
+  .dbi-smith-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,30%);gap:16px;align-items:start}
+  .dbi-smith-work{min-width:0;display:grid;gap:15px}
+  .dbi-smith-panel{border:2px solid var(--smith-line);border-radius:10px;background:linear-gradient(135deg,#082d43,#061728 85%);box-shadow:inset 0 0 14px #0007,0 0 0 1px #162a3b;padding:15px}
+  .dbi-smith-panel h3{margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid #3a5a6c;color:#ffd078;font-size:19px;text-shadow:0 2px 2px #000}
+  .dbi-smith-milestones{display:flex;justify-content:space-between;align-items:center;position:relative;gap:8px;flex:1;margin:0}
+  .dbi-smith-milestones:before{content:'';position:absolute;left:3%;right:3%;top:50%;border-top:2px solid #c58c35}
+  .dbi-smith-milestones span{position:relative;background:#061b2c;border:2px solid #d49a42;border-radius:5px;color:#ffcf7b;padding:5px 8px;font-weight:700;font-size:13px;min-width:34px;text-align:center}
+  .dbi-smith-level-line{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+  .dbi-smith-level{white-space:nowrap;background:#172419;border:1px solid #e2aa3d;border-radius:5px;padding:10px 12px;color:#ffdc89;font-weight:700}
+  .dbi-smith-progress-line{display:flex;align-items:center;gap:12px;font-size:13px}
+  .dbi-smith-progress{position:relative;flex:1;height:23px;border:1px solid #6d9ab2;border-radius:8px;background:#041524;overflow:hidden;text-align:center}
+  .dbi-smith-progress>span{display:block;width:0;height:100%;background:linear-gradient(90deg,#a56c17,#ffcb62)}
+  .dbi-smith-progress>small{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;text-shadow:0 1px 3px #000}
+  .dbi-smith-create{display:grid;grid-template-columns:minmax(150px,1fr) minmax(200px,1.1fr) minmax(155px,.8fr);gap:16px;align-items:start}
+  .dbi-smith-selects{display:grid;gap:14px}.dbi-smith-selects select{width:100%;min-height:42px;background:#071b2d;color:#e5d7ba;border:1px solid #a17c43;border-radius:5px;padding:8px}
+  .dbi-smith-materials{display:flex;gap:12px;justify-content:center;margin:0 0 16px}
+  .dbi-smith-slot{width:62px;height:62px;border:1px solid #e1a94b;border-radius:6px;background:#061b2b;display:flex;align-items:center;justify-content:center;flex:none}
+  .dbi-smith-slot img{max-width:100%;max-height:100%;object-fit:contain}
+  .dbi-smith-muted{font-size:12px;color:#c4d3df;line-height:1.75}
+  .dbi-smith button.dbi-smith-disabled{background:linear-gradient(#c18b36,#79501e);color:#f9e2b8;border:1px solid #f0b958;border-radius:5px;opacity:.6;cursor:not-allowed;padding:10px 14px;font-weight:700}
+  .dbi-smith-preview{min-height:145px;border:1px solid #8199aa;border-radius:6px;background:#061727;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;padding:10px}
+  .dbi-smith-preview-buttons{display:flex;gap:8px;margin-top:10px}.dbi-smith-preview-buttons button{flex:1;min-width:0}
+  .dbi-smith-quality{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+  .dbi-smith-quality-target{width:155px;min-height:168px;border:1px solid #e1a94b;border-radius:6px;background:#061b2b;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;cursor:pointer}
+  .dbi-smith-quality-target .dbi-item-image{max-width:100%;max-height:120px;object-fit:contain}
+  .dbi-smith-quality-work{flex:1;min-width:195px}.dbi-smith-quality-work .dbi-smith-materials{justify-content:flex-start}
+  .dbi-smith-status{font-size:12px;color:#b9c9d5;min-height:22px;margin:14px 0 0}
+  .dbi-smith-inventory{position:relative;min-width:0;padding:13px 10px}
+  .dbi-smith-inventory h3{margin-bottom:12px}
+  .dbi-smith-inventory .inv-tabs{grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;margin-bottom:9px}
+  .dbi-smith-inventory .inv-tab{min-width:0;padding:9px 0;border-radius:4px}
+  .dbi-smith-inventory .inv-scroll{max-height:none!important;height:auto!important;overflow:visible!important;min-height:0;width:100%;min-width:0}
+  .dbi-smith-inventory .inv-grid{--dbi-gap:4px;--dbi-cell:calc((100cqw - 5 * var(--dbi-gap))/6);width:100%;max-width:100%;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(10,var(--dbi-cell));grid-auto-rows:var(--dbi-cell);gap:var(--dbi-gap)}
+  .dbi-smith-inventory .inv-cell{min-width:0;min-height:0}
+  .dbi-smith-inventory .inv-actions{margin-top:12px;gap:5px}
+  .dbi-smith-inventory .inv-actions button{border:1px solid #b88737;background:linear-gradient(#102f42,#071a2a);color:#f1d39b}
+  @media(max-width:1180px){.dbi-smith-main{grid-template-columns:1fr}.dbi-smith-inventory{width:min(100%,570px);justify-self:center}.dbi-smith-create{grid-template-columns:1fr 1fr}.dbi-smith-preview-area{grid-column:1/-1}}
+  @media(max-width:620px){.dbi-smith-create{grid-template-columns:1fr}.dbi-smith-preview-area{grid-column:auto}.dbi-smith{padding:8px}.dbi-smith-header h2{font-size:23px}.dbi-smith-level-line{flex-wrap:wrap}.dbi-smith-milestones span{min-width:27px;padding:4px}}
+  `;document.head.appendChild(style);
+ }
+ const selected=dbiSmithSelectedRef&&inventory.includes(dbiSmithSelectedRef)?itemById(dbiSmithSelectedRef):null;
+ document.querySelector('#pageBody').innerHTML=`<section class="dbi-smith">
+  <header class="dbi-smith-header"><span class="dbi-smith-anvil" aria-hidden="true">⚒️</span><h2>Kowalstwo</h2></header>
+  <div class="dbi-smith-main"><div class="dbi-smith-work">
+  <section class="dbi-smith-panel" aria-label="Poziom Kowalstwa"><div class="dbi-smith-level-line"><span class="dbi-smith-level">⚒️ Poziom Kowalstwa: 1</span><div class="dbi-smith-milestones">${[5,10,15,20,25,30].map(n=>`<span>${n}</span>`).join('')}</div></div><div class="dbi-smith-progress-line"><strong>Pasek postępu:</strong><div class="dbi-smith-progress" title="Postęp Kowalstwa — mechanika do dodania"><span></span><small>0 / 100 (0%)</small></div></div></section>
+  <section class="dbi-smith-panel"><h3>⚒️ Tworzenie przedmiotów</h3><div class="dbi-smith-create">
+   <div class="dbi-smith-selects"><select disabled aria-label="Rodzaj przedmiotu"><option>Rodzaj przedmiotu</option></select><select disabled aria-label="Poziom przedmiotu"><option>Poziom przedmiotu</option></select><select disabled aria-label="Dla kogo"><option>Dla kogo</option></select></div>
+   <div><div class="dbi-smith-materials">${[1,2,3].map(()=>'<div class="dbi-smith-slot" title="Materiał — do ustalenia"></div>').join('')}</div><p class="dbi-smith-muted">Szansa na pomyślne stworzenie przedmiotu: —<br>Szansa na większą ilość bonusów: —<br>🪙 Koszt złota na jedną próbę: —</p><button type="button" class="dbi-smith-disabled" disabled style="width:100%;margin-top:12px">Stwórz</button></div>
+   <div class="dbi-smith-preview-area"><div class="dbi-smith-preview">Podgląd stworzonego przedmiotu</div><div class="dbi-smith-preview-buttons"><button class="dbi-smith-disabled" disabled>Akceptuj</button><button class="dbi-smith-disabled" disabled>Usuń</button></div></div>
+  </div></section>
+  <section class="dbi-smith-panel"><h3>⚒️ Ulepszanie jakości przedmiotów</h3><div class="dbi-smith-quality"><div class="dbi-smith-quality-target" id="dbiSmithTarget" title="Kliknij przedmiot w inwentarzu, aby go tutaj wyświetlić">${selected?dbiItemArt(selected):'<span class="dbi-smith-muted">Miejsce na przedmiot do podniesienia jego jakości</span>'}</div><div class="dbi-smith-quality-work"><div class="dbi-smith-materials">${['Ulepszacz','Ulepszacz','Moduł Upgrade'].map(n=>`<div><div class="dbi-smith-slot"></div><div class="dbi-smith-muted" style="text-align:center">${n}</div></div>`).join('')}</div><p class="dbi-smith-muted">Szansa na powodzenie: —<br>🪙 Koszt złota na jedną próbę: —</p><button type="button" class="dbi-smith-disabled" disabled style="width:min(100%,240px)">Podnieś jakość</button></div></div><p class="dbi-smith-status" id="dbiSmithStatus" role="status">${esc(message)}</p></section>
+  </div><aside class="dbi-smith-inventory dbi-smith-panel"><h3>🧰 INWENTARZ</h3><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((n,i)=>`<button type="button" class="inv-tab ${inventoryTab===i?'active':''}" data-tab="${i}">${n}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${renderInventoryGrid()}</div></div><div class="inv-actions"><button type="button" data-smith-action="Sortuj">Sortuj</button><button type="button" data-smith-action="Zaznacz">Zaznacz</button><button type="button" data-smith-action="Zablokuj">Zablokuj</button></div></aside></div>
+  </section>`;
+ const host=document.querySelector('.dbi-smith-inventory');
+ dbiBindSharedInventory(host,{
+  refresh:msg=>renderBlacksmith(msg||'Inwentarz został odświeżony.'),
+  onClick:index=>{dbiSmithSelectedRef=inventory[index];renderBlacksmith('Wybrano przedmiot do podglądu. Ulepszanie jakości będzie dostępne po dodaniu mechaniki.')},
+  onDoubleClick:index=>{dbiSmithSelectedRef=inventory[index];renderBlacksmith('Wybrano przedmiot do podglądu.')},
+  setMessage:msg=>{const el=document.querySelector('#dbiSmithStatus');if(el)el.textContent=msg}
+ });
+ document.querySelector('#dbiSmithTarget')?.addEventListener('click',()=>{dbiSmithSelectedRef=null;renderBlacksmith('Usunięto przedmiot z podglądu. Pozostaje w inwentarzu.')});
+ host.querySelectorAll('[data-smith-action]').forEach(btn=>btn.addEventListener('click',()=>{const el=document.querySelector('#dbiSmithStatus');if(el)el.textContent='Funkcja '+btn.dataset.smithAction+' pozostaje dostępna w głównym Ekwipunku.'}));
+}
+
+function dbiBindSharedInventory(host,{refresh,onClick,onDoubleClick,onContextMenu=itemActions,onDragStart=()=>{},onDragEnd=()=>{},setMessage=()=>{}}){
+ const tabs=host.querySelector('.inv-tabs');
  function clearTabHover(){clearTimeout(tabHoverTimer);tabHoverTimer=null;tabs.querySelectorAll('.inv-tab').forEach(b=>b.classList.remove('tab-loading'))}
  function switchTabDuringDrag(next){
   if(dragIndex===null||inventoryTab===next)return;
@@ -932,32 +1556,33 @@ function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założ
   grid.insertAdjacentHTML('afterbegin',renderInventoryGrid());
   bindInventoryItems();
   preview.hidden=true;proposedCell=null;
-  document.querySelector('#eqSelection').textContent='Karta '+(next+1)+' — wybierz wolne miejsce i upuść przedmiot.';
+  setMessage('Karta '+(next+1)+' — wybierz wolne miejsce i upuść przedmiot.');
  }
  tabs.querySelectorAll('.inv-tab').forEach(b=>{
   const target=Number(b.dataset.tab);
-  b.addEventListener('click',()=>{if(dragIndex!==null)return;inventoryTab=target;renderEquipment()});
+  b.addEventListener('click',()=>{if(dragIndex!==null)return;inventoryTab=target;refresh()});
   b.addEventListener('dragenter',e=>{if(dragIndex===null||inventoryTab===target)return;e.preventDefault();clearTabHover();b.classList.add('tab-loading');tabHoverTimer=setTimeout(()=>{clearTabHover();switchTabDuringDrag(target)},650)});
   b.addEventListener('dragover',e=>{if(dragIndex===null)return;e.preventDefault();e.dataTransfer.dropEffect='move'});
   b.addEventListener('dragleave',e=>{if(!b.contains(e.relatedTarget))clearTabHover()});
   b.addEventListener('drop',e=>{if(dragIndex!==null){e.preventDefault();clearTabHover()}});
  });
- const grid=document.querySelector('.inv-grid');
+ const grid=host.querySelector('.inv-grid');
  function bindInventoryItems(){
   grid.querySelectorAll('.inv-cell[data-index]:not([data-bound])').forEach(b=>{
    b.dataset.bound='1';const index=Number(b.dataset.index);
-   b.addEventListener('click',()=>{if(dragActive)return;const id=inventory[index],item=itemById(id);if(!item)return; if(!DBI_SLOTS.some(slot=>slot[1]===item.slot))return renderEquipment('Ten przedmiot jest nagrodą z zadania i nie można go założyć.'); if(level<(Number(item.requiredLevel)||1))return renderEquipment('Wymagany poziom: '+item.requiredLevel); if(current[item.slot])return renderEquipment('Ten slot jest zajęty. Zdejmij poprzedni przedmiot.');current[item.slot]=id;inventory.splice(index,1);inventoryPlacement.splice(index,1);renderEquipment('Założono: '+item.name)});
+   b.addEventListener('click',()=>{if(!dragActive)onClick(index)});
    b.addEventListener('mouseenter',e=>showTooltip(e,index));
    b.addEventListener('mousemove',e=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,e.clientX,e.clientY)});
    b.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));
-   b.addEventListener('contextmenu',e=>itemActions(e,index));
-   b.addEventListener('dragstart',e=>{dragIndex=index;dragActive=true;dragCompleted=false;dragSourceElement=b;const r=b.getBoundingClientRect();dragOffset={x:e.clientX-r.left,y:e.clientY-r.top};hideItemPopups();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(index))});
+   b.addEventListener('dblclick',e=>{e.preventDefault();if(!dragActive)onDoubleClick(index)});
+   b.addEventListener('contextmenu',e=>{e.preventDefault();onContextMenu(e,index)});
+   b.addEventListener('dragstart',e=>{dragIndex=index;dragActive=true;dragCompleted=false;dragSourceElement=b;const r=b.getBoundingClientRect();dragOffset={x:e.clientX-r.left,y:e.clientY-r.top};hideItemPopups();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(index));onDragStart(index)});
    b.addEventListener('dragend',()=>{
-    const wasActive=dragActive,switched=dragSourceElement?.dataset.parked==='1';
+    onDragEnd();const wasActive=dragActive,switched=dragSourceElement?.dataset.parked==='1';
     clearTabHover();dragIndex=null;dragActive=false;dragSourceElement=null;
     document.querySelectorAll('.drop-target').forEach(x=>x.classList.remove('drop-target'));
     if(preview.isConnected){preview.hidden=true;preview.classList.remove('invalid')}
-    if(switched&&wasActive&&!dragCompleted)renderEquipment('Przeciąganie anulowane — przedmiot pozostał na swoim miejscu.');
+    if(switched&&wasActive&&!dragCompleted)refresh('Przeciąganie anulowane — przedmiot pozostał na swoim miejscu.');
    });
   });
  }
@@ -971,7 +1596,8 @@ function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założ
   const gap=parseFloat(style.columnGap)||4;
   const width=(r.width-gap*5)/6;
   const rowGap=parseFloat(style.rowGap)||4;
-  return {r,gap,width,rowGap,stepX:width+gap,stepY:width+rowGap};
+  const rowHeight=(r.height-rowGap*9)/10;
+  return {r,gap,width,rowGap,rowHeight,stepX:width+gap,stepY:rowHeight+rowGap};
  }
  function destination(e){
   const g=geometry();
@@ -1000,7 +1626,7 @@ function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założ
   preview.style.left=(col*g.stepX)+'px';
   preview.style.top=(row*g.stepY)+'px';
   preview.style.width=g.width+'px';
-  preview.style.height=(g.width*(tall?2:1)+g.rowGap*(tall?1:0))+'px';
+  preview.style.height=(g.rowHeight*(tall?2:1)+g.rowGap*(tall?1:0))+'px';
   preview.setAttribute('aria-label',valid?'Wolne miejsce':'Miejsce zajęte');
  }
  grid.addEventListener('dragover',e=>{
@@ -1016,10 +1642,46 @@ function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założ
   e.preventDefault();e.stopPropagation();updatePreview(e);
   const cell=proposedCell,idx=dragIndex;
   dragCompleted=true;clearTabHover();dragIndex=null;dragActive=false;preview.hidden=true;proposedCell=null;
-  if(cell!==null&&moveItem(idx,inventoryTab,cell))renderEquipment('Przesunięto przedmiot na kartę '+(inventoryTab+1)+'.');
-  else document.querySelector('#eqSelection').textContent='Nie można umieścić przedmiotu tutaj. Wymagane są wolne kratki.';
+  if(cell!==null&&moveItem(idx,inventoryTab,cell))refresh('Przesunięto przedmiot na kartę '+(inventoryTab+1)+'.');
+  else setMessage('Nie można umieścić przedmiotu tutaj. Wymagane są wolne kratki.');
  });
- document.querySelectorAll('.inv-actions button').forEach(b=>b.onclick=()=>{document.querySelector('#eqSelection').textContent=b.dataset.action+' — opcja do późniejszego wdrożenia.'});
+ host.querySelectorAll('.inv-actions button').forEach(b=>b.onclick=()=>{setMessage(b.dataset.action+' — opcja do późniejszego wdrożenia.');});
+}
+function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założyć.'){
+ hideItemPopups();
+ dbiSaveInventory();dbiSaveEquipped();
+ document.querySelector('#breadcrumb').textContent='POSTAĆ / EKWIPUNEK';
+ const current=equipped[equipmentSet], worn=Object.values(current).map(itemById).filter(Boolean),stats=sums(worn);
+ document.querySelector('#pageBody').innerHTML=`<div class="equipment-layout">
+ <section class="eq-panel eq-left"><h2>EKWIPUNEK</h2><p class="eq-caption">${worn.length} / ${DBI_SLOTS.length} slotów wyposażonych · ${equipmentSet}</p>
+ <div class="eq-doll"><div class="eq-body-outline" aria-hidden="true">✦</div><div class="eq-slots">${DBI_SLOTS.map(([label,id,col,row,height])=>{
+ const item=itemById(current[id]);return `<button class="eq-slot ${height===2?'eq-tall':''} ${item?'occupied':''} ${selectedSlot===id?'active':''}" data-slot="${id}" style="--col:${col};--row:${row};--span:${height}" title="${item?'':esc(label)}"><span class="slot-art">${dbiItemArt(item)}</span><span class="slot-name">${item?'':esc(label)}</span></button>`}).join('')}</div></div>
+ <div class="eq-sets"><button class="eq-set ${equipmentSet==='Główny'?'active':''}" data-set="Główny">Zestaw główny</button><button class="eq-set ${equipmentSet==='PvP'?'active':''}" data-set="PvP">Zestaw PvP</button></div><p class="eq-selection" id="eqSelection" role="status">${esc(message)}</p></section>
+ <section class="eq-panel eq-middle"><h2>STATYSTYKI EKWIPUNKU</h2><p class="eq-caption">Suma bonusów założonych przedmiotów</p>${[['OBRAŻENIA I OBRONA',[['Obrażenia',stats.attack],['Wartość ataku',stats.attackMin+'–'+stats.attackMax],['Szybkość ataku',stats.attackSpeedPct+'%'],['Obrona',stats.defense],['Maksymalne HP',stats.hp],['Szybkość ruchu',stats.moveSpeedPct+'%']]],['ENERGIA',[['Ki',stats.ki]]],['WYPOSAŻENIE',[['Założone przedmioty',worn.length]]],['ATRYBUTY POSTACI',[['Siła','—'],['Inteligencja','—'],['Szybkość','—'],['Wytrzymałość','—']]]].map(([group,rows])=>`<div class="eq-stat-group"><h3>${group}</h3>${rows.map(([name,val])=>`<div class="eq-stat"><span>${name}</span><strong>${val}</strong></div>`).join('')}</div>`).join('')}</section>
+ <section class="eq-panel eq-right"><h2>INWENTARZ</h2><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((x,i)=>`<button class="inv-tab ${inventoryTab===i?'active':''}" data-tab="${i}">${x}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${renderInventoryGrid()}</div></div><div class="inv-actions"><button data-action="Sortuj">Sortuj</button><button data-action="Zaznacz">Zaznacz</button><button data-action="Zablokuj">Zablokuj</button></div></section></div>`;
+ // Ten sam dymek co w inwentarzu również na założonych przedmiotach.
+ document.querySelectorAll('.eq-slot.occupied').forEach(slot=>{
+  const item=itemById(current[slot.dataset.slot]);
+  if(!item)return;
+  slot.addEventListener('mouseenter',e=>showTooltipItem(e,item));
+  slot.addEventListener('mousemove',e=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,e.clientX,e.clientY)});
+  slot.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));
+ });
+ document.querySelectorAll('.eq-slot').forEach(b=>b.onclick=()=>{const id=b.dataset.slot;selectedSlot=id;if(current[id]){const item=itemById(current[id]);inventory.push(current[id]);inventoryPlacement.push(null);delete current[id];renderEquipment('Zdjęto: '+(item?.name||id))}else renderEquipment('Pusty slot: '+DBI_SLOTS.find(x=>x[1]===id)[0]);});
+ // Drop na slot postaci: przedmiot zostaje założony, nie trzeba go klikać.
+ document.querySelectorAll('.eq-slot').forEach(slot=>{
+  slot.addEventListener('dragover',e=>{if(dragIndex===null)return;const item=itemById(inventory[dragIndex]);if(item?.slot!==slot.dataset.slot||current[slot.dataset.slot])return;e.preventDefault();e.dataTransfer.dropEffect='move';slot.classList.add('drop-target')});
+  slot.addEventListener('dragleave',()=>slot.classList.remove('drop-target'));
+  slot.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();slot.classList.remove('drop-target');const idx=dragIndex;dragIndex=null;dragActive=false;if(idx===null)return;const item=itemById(inventory[idx]);if(!item||item.slot!==slot.dataset.slot){document.querySelector('#eqSelection').textContent='Ten przedmiot nie pasuje do wybranego slotu.';return}if(level<(Number(item.requiredLevel)||1)){document.querySelector('#eqSelection').textContent='Wymagany poziom: '+item.requiredLevel;return}if(current[item.slot]){document.querySelector('#eqSelection').textContent='Slot jest zajęty.';return}current[item.slot]=inventory[idx];inventory.splice(idx,1);inventoryPlacement.splice(idx,1);renderEquipment('Założono: '+item.name)});
+ });
+ document.querySelectorAll('.eq-set').forEach(b=>b.onclick=()=>{equipmentSet=b.dataset.set;renderEquipment('Zestaw: '+equipmentSet)});
+ // Podczas przeciągania NIE przebudowujemy całej karty: usunięcie źródła kończy natywny drag.
+ dbiBindSharedInventory(document.querySelector('.eq-right'),{
+  refresh:message=>renderEquipment(message),
+  onClick:index=>{const id=inventory[index],item=itemById(id);if(!item)return;if(dbiIsUsableItem(item))return;if(!DBI_SLOTS.some(slot=>slot[1]===item.slot))return renderEquipment('Ten przedmiot jest nagrodą z zadania i nie można go założyć.');if(level<(Number(item.requiredLevel)||1))return renderEquipment('Wymagany poziom: '+item.requiredLevel);if(current[item.slot])return renderEquipment('Ten slot jest zajęty. Zdejmij poprzedni przedmiot.');current[item.slot]=id;inventory.splice(index,1);inventoryPlacement.splice(index,1);renderEquipment('Założono: '+item.name)},
+  onDoubleClick:index=>dbiOpenUsableItem(index),
+  setMessage:message=>{const el=document.querySelector('#eqSelection');if(el)el.textContent=message}
+ });
 }
 function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w tej przeglądarce.'){
  dbiRegisterBuiltInItems(DBI_ROYAL_500_CATALOG);
@@ -1042,8 +1704,8 @@ function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w te
  <button type="submit">Zapisz statystyki</button><p id="gmStatInfo" role="status"></p></form></section>
  <section class="eq-panel"><h2>GM · HP I KI</h2><p class="eq-caption">Ustaw maksymalne HP i KI aktywnej postaci. Wartości zostaną użyte podczas kolejnych walk.</p>
  <form id="gmVitalsForm" class="dbi-gm-form">
- <label>Maksymalne HP<input type="number" name="hp" min="0.01" max="999999999999" step="any" required value="${gmChar.stats?.gmMaxHp??Math.max(.01,10+gmStatVal(['endurance','wytrzymalosc'])*.01)}"></label>
- <label>Maksymalne KI<input type="number" name="ki" min="0" max="999999999999" step="any" required value="${gmChar.stats?.gmMaxKi??Math.max(0,5+gmStatVal(['intelligence','inteligencja'])*.01)}"></label>
+ <label>Maksymalne HP<input type="number" name="hp" min="0.01" max="999999999999" step="any" required value="${gmChar.stats?.gmMaxHp??Math.max(.01,50+gmStatVal(['endurance','wytrzymalosc'])*.01)}"></label>
+ <label>Maksymalne KI<input type="number" name="ki" min="0" max="999999999999" step="any" required value="${gmChar.stats?.gmMaxKi??Math.max(0,100+gmStatVal(['intelligence','inteligencja'])*.01)}"></label>
  <button type="submit">Zapisz HP i KI</button><p id="gmVitalsInfo" role="status"></p></form></section>`;
  // Teleport GM: wybór z rejestru map; zapis pozycji dla aktywnej postaci.
  const gmLocations=window.DBIWorld?.locations||[];
@@ -1077,6 +1739,8 @@ function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w te
   if(i<0){info.textContent='Nie znaleziono postaci.';return}
   saved[i].stats={...(saved[i].stats||{}),gmMaxHp:hp,gmMaxKi:ki};
   localStorage.setItem(key,JSON.stringify(saved));
+  // Aktualizuj również dane postaci w pamięci: walki odczytują je bez ponownego logowania.
+  dbiCharacters[i].stats=saved[i].stats;
   gmChar.stats=saved[i].stats;
   info.textContent='Zapisano maksymalne HP i KI.';
  };
@@ -1138,6 +1802,13 @@ function dbiActiveMissions(){
  // Pozostałe questy zapisuje silnik mapy pod osobnymi kluczami.
  // Odczytujemy ich stan bez zmieniania logiki NPC ani zapisu postaci.
  const readState=(prefix)=>dbiQuestStored(prefix+id);
+ // Pierwszy etap zadania istnieje u NPC także przed pierwszym zapisem localStorage.
+ // Lokalizacja postaci pozwala rozpoznać odblokowane etapy fabuły bez tworzenia
+ // fikcyjnych wpisów ani modyfikowania zapisu questa.
+ const worldState=dbiQuestStored('dboidle_world_v1_'+id);
+ const location=String(worldState?.location||'laguna');
+ const mapOrder=['laguna','island','forest','mountain','stadium'];
+ const reached=(map)=>mapOrder.includes(location)&&mapOrder.indexOf(location)>=mapOrder.indexOf(map);
  const stage=(prefix)=>Math.max(0,Math.floor(Number(readState(prefix)?.stage)||0));
  const progress=(n,max)=>Math.max(0,Math.min(max,Math.floor(Number(n)||0)));
  const add=(key,name,location,count,total,description,ready)=>result.push({id:key,name,location,count:progress(count,total),total,description,ready});
@@ -1151,7 +1822,7 @@ function dbiActiveMissions(){
  if(localStorage.getItem('dboidle_quest_master_camp_v1_'+id)==='accepted')
   add('master-camp','Wyprawa na obóz treningowy','Wyspa Genialnego Żółwia · Wielki Mistrz',level,5,'Osiągnij poziom 5.','Wróć do Wielkiego Mistrza, aby wyruszyć.');
  const forestRoshi=readState('dboidle_forest_roshi_v1_');
- if(forestRoshi){
+ if(forestRoshi||location==='forest'){
   const st=stage('dboidle_forest_roshi_v1_');
   if(st===0)add('forest-stone','Kamień Żółwia','Dziki Las · Genialny Żółw',itemCount('quest-turtle-stone'),1,'Zdobądź i oddaj Kamień Żółwia.','Oddaj kamień Genialnemu Żółwiowi.');
   if(st===1){
@@ -1164,11 +1835,15 @@ function dbiActiveMissions(){
  const bulma=readState('dboidle_forest_bulma_v1_');
  if(bulma){
   const st=stage('dboidle_forest_bulma_v1_');
-  if(st===1)add('bulma-balls','Smocze kule dla Bulmy','Dziki Las · Bulma',itemCount('quest-small-dragon-ball'),7,'Zbierz 7 Małych Smoczych Kul.','Oddaj kule Bulmie.');
+  if(st===1)add('bulma-balls','Smocze kule dla Bulmy','Dziki Las · Bulma',itemCount('small-dragon-balls'),7,'Zbierz 7 Małych Smoczych Kul.','Oddaj kule Bulmie.');
   if(st===2)add('bulma-reward','Nagroda od Bulmy','Dziki Las · Bulma',1,1,'Porozmawiaj z Bulmą, aby otrzymać kapsułę.','Odbierz specjalną kapsułę.');
  }
+ // Wędrowiec ma osobny zapis zadania i musi być widoczny również poza mapą.
+ const wanderer=readState('dboidle_mountain_wanderer_v1_');
+ if(wanderer?.state==='accepted')add('mountain-wanderer','Nauczka dla zamachowców','Góra Króla Lasu · Wędrowiec',wanderer.kills,50,'Pokonaj 50 Zamachowców Góry (każdy wariant).','Wróć do Wędrowca i odbierz +50 do wszystkich statystyk.');
+ if(wanderer?.state==='bean-available'||wanderer?.state==='bean-accepted')add('mountain-wanderer-bean','Fasolka dla żony Wędrowca','Góra Króla Lasu · Wędrowiec',Math.min(1,itemCount('zen-bean-red')),1,'Oddaj Czerwoną Fasolkę Zen ×1.','Wróć do Wędrowca, aby otrzymać +50 do obrony.');
  const mountain=readState('dboidle_mountain_roshi_v1_');
- if(mountain){
+ if(mountain||location==='mountain'){
   const st=stage('dboidle_mountain_roshi_v1_');
   if(st===0)add('mountain-fire','Płonąca Góra Króla','Góra Króla Lasu · Genialny Żółw',level,20,'Osiągnij poziom 20.','Porozmawiaj z Genialnym Żółwiem.');
   if(st===1)add('mountain-ki','Kamehameha mistrza','Góra Króla Lasu · Genialny Żółw',1,1,'Obejrzyj technikę mistrza i odbierz +50 KI.','Wróć do Genialnego Żółwia.');
@@ -1176,7 +1851,7 @@ function dbiActiveMissions(){
   if(st===3)add('mountain-stadium','Światowy turniej sztuk walk','Góra Króla Lasu · Genialny Żółw',level,25,'Osiągnij poziom 25 i wyrusz na Stadion 1.','Porozmawiaj z Genialnym Żółwiem, aby wyruszyć.');
  }
  const tournament=readState('dboidle_stadium_tournament_v1_');
- if(tournament){
+ if(tournament||location==='stadium'){
   const st=Math.max(0,Math.floor(Number(tournament.stage)||0));
   const wins=tournament.wins||{};
   if(st===0)add('stadium-outfit','Kimono szkoły żółwia','Stadion 1 · Genialny Żółw',0,1,'Odbierz strój treningowy szkoły żółwia.','Porozmawiaj z Genialnym Żółwiem.');
@@ -1184,6 +1859,35 @@ function dbiActiveMissions(){
   if(st===4)add('stadium-farewell','Pożegnanie mistrza','Stadion 1 · Genialny Żółw',1,1,'Porozmawiaj z mistrzem po finale.','Wróć na środek stadionu.');
   if(st===5)add('stadium-journey','Samotna podróż','Stadion 1 · Wrota',itemCount('quest-glory-belt'),1,'Posiadaj Pas Chwały i wyrusz w podróż.','Podejdź do wrót stadionu.');
  }
+ // Dołącz zadania zarejestrowane przez silnik świata (m.in. Las Centralny).
+ // Rejestr korzysta z tych samych zapisów NPC i bieżącego ekwipunku.
+ try{
+  const worldMissions=window.DBIQuestRegistry?.getMissions?.(id,window.DBIWorldInventory);
+  if(Array.isArray(worldMissions)){
+   const existing=new Set(result.map(m=>m.id));
+   for(const mission of worldMissions){if(mission&&typeof mission.id==='string'&&!existing.has(mission.id)){result.push(mission);existing.add(mission.id)}}
+  }
+ }catch(error){console.error('Błąd odczytu misji świata:',error)}
+ // Awaryjny odczyt zapisanych questów Lasu Centralnego: dziennik działa również
+ // gdy rejestr silnika mapy nie został jeszcze zainicjalizowany.
+ // Nie duplikujemy misji już dostarczonych przez rejestr.
+ const addCentral=(questId,name,npc,state,count,total,description,ready)=>{
+  if(!state||result.some(m=>m.id===questId))return;
+  result.push({id:questId,name,location:'Las Centralny · '+npc,count:progress(count,total),total,description,ready});
+ };
+ const wood=readState('dboidle_central_woodcutter_v1_');
+ const ws=Number(wood?.stage)||0;
+ if(ws>=1&&ws<=3)addCentral('central-forest-woodcutter','Pierwsza podróż','Drwal',wood,ws===1?(wood.won?1:0):1,1,ws===1?'Pokonaj Żołnierza Czerwonej Wstęgi.':'Porozmawiaj z Drwalem.','Kontynuuj zadanie u Drwala.');
+ const fish=readState('dboidle_central_fisherman_v1_');
+ const fs=Number(fish?.stage)||0;
+ if(fs>=1&&fs<=3){
+  const count=fs===1?fish.kills:fs===2?fish.bossKills:itemCount('stara-pamiatka-rodzinna');
+  const total=fs===1?100:1;
+  const description=fs===1?'Pokonaj 100 Leśnych Wojowników.':fs===2?'Pokonaj Leśnego Wojownika (Boss).':'Oddaj Starą Pamiątkę Rodzinną.';
+  addCentral('central-forest-fisherman','Zagubiona pamiątka rodzinna','Rybak',fish,count,total,description,'Wróć do Rybaka.');
+ }
+ const father=readState('dboidle_central_lost_father_v1_');
+ if(Number(father?.stage)===1)addCentral('central-forest-lost-father','Zaginiony Ojciec','Zagubiona Kobieta',father,itemCount('pierscien-ojca'),1,'Oddaj Pierścień Ojca.','Wróć do Zagubionej Kobiety z pierścieniem.');
  return result;
 }
 function dbiMissionsMarkup(missions){
@@ -1207,7 +1911,8 @@ function renderMissions(){
  let previous='';
  const refresh=()=>{
   if(!list.isConnected){clearInterval(dbiMissionsTimer);dbiMissionsTimer=null;return}
-  const missions=dbiActiveMissions();
+  let missions;
+  try{missions=dbiActiveMissions()}catch(error){console.error('Błąd odczytu aktywnych misji:',error);return}
   const snapshot=JSON.stringify(missions);
   if(snapshot===previous)return;
   previous=snapshot;
@@ -1218,26 +1923,28 @@ function renderMissions(){
  dbiMissionsTimer=setInterval(refresh,600);
 }
 // Quest: przedmiot nagrody jest unikatowym wpisem w katalogu, bez automatycznego przyznawania.
-const DBI_QUEST_GIFT={id:'quest-starter-gift',name:'Upominek Startowy',slot:'quest',icon:'🎁',image:'assets/items/upominek-startowy.png',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Srebrna skrzynia otrzymana od Opiekuna Laguny. Zawartość ustalimy później.'};
+const DBI_QUEST_GIFT={id:'quest-starter-gift',name:'Upominek Startowy',slot:'quest',icon:'🎁',image:'assets/items/upominek-startowy.png',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Srebrna skrzynia otrzymana od Opiekuna Laguny. Zawiera podstawowy zestaw wyposażenia dla początkującego wojownika.'};
 if(!catalog.some(item=>item.id===DBI_QUEST_GIFT.id)){catalog.push(DBI_QUEST_GIFT);dbiSaveCatalog(catalog)}
 // Jednorazowa nagroda za fabularny pojedynek z Krillinem.
-const DBI_KRILLIN_REWARD={id:'quest-white-headband',name:'Biała Opaska',slot:'opaska',icon:'🎗️',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Biała opaska podarowana przez Krillina. Statystyki do ustalenia.'};
-if(!catalog.some(item=>item.id===DBI_KRILLIN_REWARD.id)){catalog.push(DBI_KRILLIN_REWARD);dbiSaveCatalog(catalog)}
+const DBI_KRILLIN_REWARD={id:'quest-white-headband',name:'Biała Opaska',slot:'opaska',icon:'🎗️',image:'assets/items/biala-opaska.png',quality:'Pospolity',requiredLevel:1,attack:0,defense:2,ki:0,description:'Biała opaska podarowana przez Krillina. Obrona +2.'};
+const dbiKrillinExisting=catalog.find(item=>item.id===DBI_KRILLIN_REWARD.id);
+if(dbiKrillinExisting)Object.assign(dbiKrillinExisting,DBI_KRILLIN_REWARD);else catalog.push(DBI_KRILLIN_REWARD);
+dbiSaveCatalog(catalog);
 // Przedmioty fabularne z Dzikiego Lasu; niezdefiniowane statystyki pozostają zerowe.
 const DBI_FOREST_QUEST_ITEMS=[
  {id:'quest-turtle-stone',name:'Kamień Żółwia',slot:'quest',icon:'🪨',image:'assets/items/kamien-zolwia.png',description:'Kamień oznaczony symbolem szkoły Genialnego Żółwia. Przedmiot zadania.'},
- {id:'quest-small-dragon-ball',name:'Mała Smocza Kula',slot:'quest',icon:'🟠'},
  {id:'quest-red-magic-staff',name:'Czerwony Magiczny Kij',slot:'bron',icon:'🔴'},
  {id:'quest-old-necklace',name:'Stary Naszyjnik',slot:'naszyjnik',icon:'📿'},
- {id:'quest-capsule-special',name:'Specjalna kapsuła Capsule',slot:'quest',icon:'💊'}
 ];
 for(const q of DBI_FOREST_QUEST_ITEMS){if(!catalog.some(item=>item.id===q.id)){catalog.push({...q,quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Przedmiot fabularny.'});dbiSaveCatalog(catalog)}}
+// Stary, zdublowany przedmiot Bulmy nie jest już dostępny w katalogu ani GM.
+catalog=catalog.filter(item=>item.id!=='quest-small-dragon-ball'&&item.id!=='quest-capsule-special');dbiSaveCatalog(catalog);
 // Aktualizacja definicji w istniejących zapisach, bez resetowania ekwipunku.
 const dbiTurtleCatalogItem=catalog.find(x=>x.id==='quest-turtle-stone');
 if(dbiTurtleCatalogItem){dbiTurtleCatalogItem.image='assets/items/kamien-zolwia.png';dbiTurtleCatalogItem.description='Kamień oznaczony symbolem szkoły Genialnego Żółwia. Przedmiot zadania.';dbiSaveCatalog(catalog)}
 // Nagrody turnieju: zarejestruj tylko, jeśli nie istnieją w katalogu.
 for(const item of [
- {id:'quest-turtle-school-outfit',name:'Strój treningowy szkoły żółwia',slot:'stroj',icon:'🥋',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Kimono szkoły Genialnego Żółwia. Nagroda za trening.'},
+ 
  {id:'quest-glory-belt',name:'Pas Chwały',slot:'pas',icon:'🏆',quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description:'Nagroda za zwycięstwo w światowym turnieju sztuk walk.'}
 ]){if(!catalog.some(x=>x.id===item.id)){catalog.push(item);dbiSaveCatalog(catalog)}}
 // Most dla panelu ŚWIAT — korzysta z istniejącego katalogu i ekwipunku.
@@ -1269,10 +1976,53 @@ function dbiGrantMasterStats(rewardId){
   for(const stat of keys){
    const current=dbiStatNumber(c.stats,[stat]);
    const fallback=dbiStatNumber(c,[stat]);
-   c.stats[stat]=(current??fallback??0)+1;
+   c.stats[stat]=(current??fallback??0)+20;
   }
   flags[rewardId]=true;c.questRewards=flags;
   localStorage.setItem(key,JSON.stringify(list));dbiCharacters[index]=c;
+  return true;
+ }catch{return false}
+}
+// Jednorazowa nagroda Wędrowca: +50 do pięciu statystyk.
+function dbiGrantWandererStats(){
+ if(!dbiActive?.id||dbiCharacterIndex<0)return false;
+ const key='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
+ try{
+  const list=JSON.parse(localStorage.getItem(key)||'[]');
+  const index=Array.isArray(list)?list.findIndex(c=>c.id===dbiActive.id):-1;
+  if(index<0)return false;
+  const c=list[index],flags={...(c.questRewards||{})};
+  if(flags['mountain-wanderer-stats-v1'])return true;
+  c.stats={...(c.stats||{})};
+  for(const stat of ['strength','speed','endurance','intelligence','ki']){
+   const current=dbiStatNumber(c.stats,[stat]);
+   const fallback=dbiStatNumber(c,[stat]);
+   c.stats[stat]=(current??fallback??0)+50;
+  }
+  flags['mountain-wanderer-stats-v1']=true;c.questRewards=flags;
+  localStorage.setItem(key,JSON.stringify(list));dbiCharacters[index]=c;
+  return true;
+ }catch{return false}
+}
+// Drugi etap Wędrowca: oddanie jednej czerwonej fasolki i trwałe +50 obrony.
+function dbiGrantWandererDefense(){
+ if(!dbiActive?.id||dbiCharacterIndex<0)return false;
+ const flag='mountain-wanderer-defense-v1';
+ const key='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
+ try{
+  const list=JSON.parse(localStorage.getItem(key)||'[]');
+  const index=Array.isArray(list)?list.findIndex(c=>c.id===dbiActive.id):-1;
+  if(index<0)return false;
+  const c=list[index];
+  if(c.questRewards?.[flag])return true;
+  const beanIndex=inventory.findIndex(ref=>dbiDecodeItemRef(ref).id==='zen-bean-red');
+  if(beanIndex<0)return false;
+  const updated={...c,stats:{...(c.stats||{}),questDefenseBonus:(Number(c.stats?.questDefenseBonus)||0)+50},questRewards:{...(c.questRewards||{}),[flag]:true}};
+  list[index]=updated;
+  localStorage.setItem(key,JSON.stringify(list));
+  dbiCharacters[index]=updated;
+  inventory.splice(beanIndex,1);inventoryPlacement.splice(beanIndex,1);
+  dbiSaveInventory();
   return true;
  }catch{return false}
 }
@@ -1293,7 +2043,49 @@ function dbiGrantMountainKi(){
   return true;
  }catch{return false}
 }
+// Nagroda za 10 kukieł: przedmiot + 10 do pięciu atrybutów, jednorazowo.
+function dbiGrantTrainingDummyQuestReward(){
+ if(!dbiActive?.id||dbiCharacterIndex<0||!itemById('quest-starter-gift'))return false;
+ const key='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
+ try{
+  const saved=JSON.parse(localStorage.getItem(key)||'[]');
+  if(!Array.isArray(saved))return false;
+  const index=saved.findIndex(c=>c.id===dbiActive.id);
+  if(index<0)return false;
+  const character=saved[index];
+  const flags={...(character.questRewards||{})};
+  const rewardId='lagoon-training-dummies-10-v1';
+  if(flags[rewardId])return true;
+  const stats={...(character.stats||{})};
+  for(const attr of ['strength','speed','endurance','intelligence','ki']){
+   const old=dbiStatNumber(stats,[attr])??dbiStatNumber(character,[attr])??0;
+   stats[attr]=old+10;
+  }
+  const updated={...character,stats,questRewards:{...flags,[rewardId]:true}};
+  // Najpierw zapisz statystyki; w razie błędu nie przyznawaj przedmiotu.
+  saved[index]=updated;
+  localStorage.setItem(key,JSON.stringify(saved));
+  dbiCharacters[index]=updated;
+  inventory.push('quest-starter-gift');inventoryPlacement.push(null);
+  dbiSaveInventory();
+  return true;
+ }catch{return false}
+}
+// Publiczny interfejs dla panelu fasolek podczas farmienia.
+function dbiZenCounts(){
+ return Object.fromEntries(['red','blue','green','purple'].map(kind=>[kind,inventory.filter(ref=>dbiDecodeItemRef(ref).id==='zen-bean-'+kind).length]));
+}
+function dbiAutoUseRedZen(){
+ const index=inventory.findIndex(ref=>dbiDecodeItemRef(ref).id==='zen-bean-red');
+ if(index<0)return false;
+ inventory.splice(index,1);inventoryPlacement.splice(index,1);
+ dbiSaveInventory();return true;
+}
 window.DBIWorldInventory={
+  smithOreId:()=>catalog.find(item=>item.name?.trim().toLocaleLowerCase('pl')==='ruda kowalstwa')?.id||'ruda-kowalstwa',
+  zenCounts:dbiZenCounts,
+  autoUseRedZen:dbiAutoUseRedZen,
+  grantTrainingDummyQuestReward:dbiGrantTrainingDummyQuestReward,
   countQuestItem:(itemId)=>inventory.filter(ref=>dbiDecodeItemRef(ref).id===itemId).length,
   consumeQuestItem:(itemId,count=1)=>{
    const indexes=[];for(let i=0;i<inventory.length;i++)if(dbiDecodeItemRef(inventory[i]).id===itemId)indexes.push(i);
@@ -1303,6 +2095,10 @@ window.DBIWorldInventory={
   },
   grantMasterStats:dbiGrantMasterStats,
   grantMountainKi:dbiGrantMountainKi,
+  hasWandererStatsReward:()=>!!dbiCharacters[dbiCharacterIndex]?.questRewards?.['mountain-wanderer-stats-v1'],
+  hasWandererDefenseReward:()=>!!dbiCharacters[dbiCharacterIndex]?.questRewards?.['mountain-wanderer-defense-v1'],
+  grantWandererStats:dbiGrantWandererStats,
+  grantWandererDefense:dbiGrantWandererDefense,
   hasWhiteBelt:()=>!!dbiFindQuestWhiteBelt(),
   exchangeWhiteBelt:()=>{
    if(!itemById('starter-white-belt'))return false;
@@ -1316,7 +2112,27 @@ window.DBIWorldInventory={
    return true;
   },
   choices:()=>catalog.filter(x=>x&&x.id&&x.name).slice(0,24).map(x=>({id:x.id,name:x.name,icon:x.icon||'✦'})),
-  grant:(ids)=>{let added=0;ids.forEach(id=>{if(itemById(id)){inventory.push(id);inventoryPlacement.push(null);added++}});dbiSaveInventory();return added},
+  grant:(ids)=>{
+   if(!Array.isArray(ids))return 0;
+   const missing=ids.filter(id=>!itemById(id));
+   if(missing.length){console.error('Nieznane przedmioty dropu:',missing);return 0}
+   if(!ids.length)return 0;
+   const before=inventory.length;
+   inventory.push(...ids);
+   inventoryPlacement.push(...ids.map(()=>null));
+   try{
+    const serialized=JSON.stringify(inventory);
+    localStorage.setItem(DBI_INV_KEY,serialized);
+    if(localStorage.getItem(DBI_INV_KEY)!==serialized)throw Error('Nie udało się potwierdzić zapisu ekwipunku');
+    dbiSaveInventoryPositions();
+    return ids.length;
+   }catch(error){
+    inventory.splice(before);
+    inventoryPlacement.splice(before);
+    console.error('Błąd zapisu łupów:',error);
+    return 0;
+   }
+  },
   grantExp:dbiGainExp,
   grantMobKills:dbiGrantMobKills,
   character:()=>{
@@ -1337,12 +2153,12 @@ window.DBIWorldInventory={
     const intelligence=stat('intelligence','inteligencja','int');
     const techniqueKi=stat('kiStat','kiPower','ki','KI');
     return {id:dbiActive?.id,level,strength,speed,endurance,intelligence,techniqueKi,
-      attack:Math.max(0,strength*.5+bonus('attack')+bonus('attackMin')),
-      defense:Math.max(0,endurance*.1+bonus('defense')),
-      maxHp:Math.max(.01,Number(character.stats?.gmMaxHp??(10+endurance*.01+bonus('hp','maxHp','health')))),
-      maxKi:Math.max(0,Number(character.stats?.gmMaxKi??(5+intelligence*.01+bonus('ki','maxKi','mana')))),
-      moveSpeedPct:gear.moveSpeedPct,
-      attackSpeedPct:gear.attackSpeedPct};
+      attack:dbiAttackRange(character,worn).min,
+      defense:Math.max(0,endurance*.1+bonus('defense')+(Number(character.stats?.questDefenseBonus)||0)),
+      maxHp:Math.max(.01,Number(character.stats?.gmMaxHp??(50+endurance*.01+bonus('hp','maxHp','health')))),
+      maxKi:Math.max(0,Number(character.stats?.gmMaxKi??(100+intelligence*.01+bonus('ki','maxKi','mana')))),
+      moveSpeedPct:gear.moveSpeedPct+(dbiZenActive('purple')?50:0),
+      attackSpeedPct:gear.attackSpeedPct+(dbiZenActive('green')?100:0)};
   }
 };
 
@@ -1384,6 +2200,30 @@ function dbiDailyClaim(index){
  dbiRefreshHeaderWallet();
  renderDailyActivities();
 }
+// Torebka fasolek: bez limitu zakupów, 1 Smocza Moneta za sztukę.
+const DBI_SENZU_BAG_ITEMS=[['zen-bean-red',600],['zen-bean-blue',100],['zen-bean-purple',50],['zen-bean-green',50]];
+function dbiBuySenzuBag(event){
+ const button=event?.currentTarget;
+ if(button?.dataset.buying==='1')return;
+ const wallet=dbiWalletRead();if(Number(wallet.coins||0)<1)return;
+ if(!itemById('senzu-bean-bag'))return;
+ const currentDistinct=new Set(inventory.map(ref=>dbiDecodeItemRef(ref).id));
+ if(currentDistinct.size>=400&&!currentDistinct.has('senzu-bean-bag')){alert('Brak miejsca w ekwipunku.');return}
+ if(button){button.dataset.buying='1';button.disabled=true;button.classList.add('dbi-senzu-purchase-success');button.textContent='Kupiono ✓';}
+ // Krótki efekt potwierdzenia przed odświeżeniem kafelka sklepu.
+ window.setTimeout(()=>{
+  inventory.push('senzu-bean-bag');inventoryPlacement.push(null);
+  dbiSaveInventory();wallet.coins=Number(wallet.coins)-1;
+  localStorage.setItem(DBI_WALLET_KEY,JSON.stringify(wallet));
+  dbiRefreshHeaderWallet();
+  if(document.querySelector('[data-buy-senzu]')===button)renderDailyActivities();
+ },360);
+}
+function dbiSenzuBagOffer(wallet){
+ const canBuy=Number(wallet.coins||0)>=1;
+ const rows=DBI_SENZU_BAG_ITEMS.map(([id,count])=>{const item=itemById(id);return `<div class="dbi-senzu-bag-row"><img src="${item?.image||''}" alt=""><span>${item?.name||id} ×${count}</span></div>`}).join('');
+ return `<div class="dbi-daily-shop-item dbi-senzu-bag-offer"><img class="dbi-senzu-bag-main" src="assets/items/torebka-fasolek-senzu.png" alt="Torebka Fasolek Senzu"><strong>Torebka Fasolek Senzu</strong><div class="dbi-senzu-bag-description">Przedmiot użytkowy. Otwórz torebkę w ekwipunku, aby otrzymać fasolki.</div><div class="dbi-senzu-bag-meta"><span>Koszt: <b>1 Smocza Moneta</b></span><span>Limit: <b>Bez limitu</b></span></div><div class="dbi-senzu-bag-contents"><b>Torebka zawiera:</b>${rows}</div><button type="button" data-buy-senzu ${canBuy?'':'disabled'}>Zapłać</button></div>`;
+}
 let dbiDailyTimer=null;
 function renderDailyActivities(){
  if(dbiDailyTimer!==null){clearInterval(dbiDailyTimer);dbiDailyTimer=null}
@@ -1399,8 +2239,9 @@ function renderDailyActivities(){
  <div class="dbi-daily-reward"><span>Nagroda: 🪙 1 Smocza Moneta + <img src="assets/items/smoczy-znak.png" alt="Smoczy znak"> losowy znak</span></div></section>`;
  }).join('')}</div>
  <section class="dbi-daily-shop"><h2>Sklep Smoczych Monet</h2><p>Saldo: <strong>${wallet.coins||0} 🪙</strong> Smoczych Monet · Zdobyte znaki: ${(wallet.signs||[]).map(x=>`<span class="dbi-daily-glyph">${x}</span>`).join(' ')||'brak'}</p>
- <div class="dbi-daily-shop-grid">${Array.from({length:6},()=>'<div class="dbi-daily-shop-item"><span>Oferta w przygotowaniu</span><small>Koszt: —</small><button disabled>Zapłać</button></div>').join('')}</div></section></div>`;
+ <div class="dbi-daily-shop-grid">${dbiSenzuBagOffer(wallet)+Array.from({length:5},()=>'<div class="dbi-daily-shop-item"><span>Oferta w przygotowaniu</span><small>Koszt: —</small><button disabled>Zapłać</button></div>').join('')}</div></section></div>`;
  document.querySelectorAll('[data-claim]').forEach(button=>button.onclick=()=>dbiDailyClaim(Number(button.dataset.claim)));
+ document.querySelector('[data-buy-senzu]')?.addEventListener('click',dbiBuySenzuBag);
  // Odczyt na żywo z localStorage: walki mogą trwać poza tym ekranem.
  const snapshot=JSON.stringify(data);
  dbiDailyTimer=setInterval(()=>{

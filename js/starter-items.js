@@ -12,11 +12,4 @@ dbiLoadCatalog=function(){
  return current;
 };
 for(const item of DBI_STARTER_SET){if(!DBI_DEFAULT_ITEMS.some(x=>x.id===item.id))DBI_DEFAULT_ITEMS.push({...item});}
-window.addEventListener('DOMContentLoaded',()=>{
- if(typeof inventory==='undefined'||typeof DBI_INV_KEY==='undefined')return;
- const key=DBI_INV_KEY+'_starter_granted_v214';
- if(localStorage.getItem(key))return;
- for(const item of DBI_STARTER_SET){if(!inventory.includes(item.id)){inventory.push(item.id);inventoryPlacement.push(null);}}
- dbiSaveInventory();localStorage.setItem(key,'1');
- if(document.querySelector('.equipment-layout'))renderEquipment('Dodano zestaw startowy.');
-});
+// Przedmioty pozostają w katalogu, ale nie są automatycznie przyznawane postaci.

@@ -4,7 +4,7 @@ const DBI_DEFAULT_ITEMS=[
 {id:'bron-001',name:'Miecz treningowy',slot:'bron',icon:'⚔️',attack:5,defense:0,ki:0,description:'Broń do ćwiczeń.'},
 {id:'naszyjnik-001',name:'Naszyjnik Ki',slot:'naszyjnik',icon:'💠',attack:0,defense:0,ki:3,description:'Wzmacnia Ki.'},
 {id:'zbroja-001',name:'Pancerz Saiyanina',slot:'zbroja',icon:'🛡️',attack:0,defense:8,ki:0,description:'Pancerz ochronny.'},
-{id:'stroj-001',name:'Strój treningowy',slot:'stroj',icon:'🥋',attack:1,defense:3,ki:0,description:'Strój do treningu.'},
+{id:'stroj-001',name:'Strój treningowy szkoły żółwia',slot:'stroj',icon:'🥋',image:'assets/items/stroj-treningowy-szkoly-zolwia.png',attack:1,defense:3,ki:0,description:'Strój treningowy szkoły Genialnego Żółwia.'},
 {id:'rekawice-001',name:'Rękawice treningowe',slot:'rekawice',icon:'🥊',attack:2,defense:0,ki:0,description:''},
 {id:'buty-001',name:'Buty wojownika',slot:'buty',icon:'👢',attack:0,defense:2,ki:0,description:''},
 {id:'skuter-001',name:'Skuter mocy',slot:'skuter',icon:'📟',attack:0,defense:0,ki:1,description:''},
