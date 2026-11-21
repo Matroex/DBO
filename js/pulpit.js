@@ -11,15 +11,41 @@
   const escapeHtml = v => String(v).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
-  const number = v => Math.max(0,Math.floor(Number(v)||0)).toLocaleString('pl-PL');
+  const number = v => Math.trunc(Number(v)||0).toLocaleString('pl-PL');
+  const keyFor = id => 'dboidle_dashboard_v1_' + String(id);
+  function read(id) {
+    if (!id) return {};
+    let data = {};
+    try { data = JSON.parse(localStorage.getItem(keyFor(id))||'{}')||{}; } catch {}
+    if (!Object.prototype.hasOwnProperty.call(data,'fame')) {
+      data.fame = 500;
+      try { localStorage.setItem(keyFor(id),JSON.stringify(data)); } catch {}
+    }
+    return data;
+  }
+  // Zapis liczników przypisanych do postaci; punkty sławy mogą być ujemne.
+  function add(id, field, amount=1) {
+    if (!id || !['battlePoints','bosses','pvpWins','fame'].includes(field)) return;
+    const value=Number(amount);
+    if (!Number.isFinite(value)) return;
+    const data=read(id);
+    data[field]=Math.trunc(Number(data[field])||0)+Math.trunc(value);
+    try { localStorage.setItem(keyFor(id),JSON.stringify(data)); } catch {}
+  }
+  // Do przyszłego systemu Pole Bitwy: DBIPulpit.setFame(id, punkty).
+  function setFame(id, value) {
+    if (!id || !Number.isFinite(Number(value))) return;
+    const data=read(id);
+    data.fame=Math.trunc(Number(value));
+    try { localStorage.setItem(keyFor(id),JSON.stringify(data)); } catch {}
+  }
+
 
   function render(characterId, character) {
     const host = document.querySelector('#pageBody');
     if (!host || !characterId) return;
     document.querySelector('#breadcrumb').textContent = 'POSTAĆ / PULPIT';
-    const key = 'dboidle_dashboard_v1_' + String(characterId);
-    let stored = {};
-    try { stored = JSON.parse(localStorage.getItem(key)||'{}')||{}; } catch {}
+    const stored = read(characterId);
     // Wartości nieobsługiwanych jeszcze mechanik pozostają zerowe.
     const rows = labels.map(([field,label]) => {
       const value = field === 'title'
@@ -93,5 +119,5 @@
       }
     });
   }
-  window.DBIPulpit = {render};
+  window.DBIPulpit = {render,read,add,setFame};
 })();

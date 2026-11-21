@@ -105,6 +105,8 @@ function gmTeleport(characterId,locationId){
  const key='dboidle_world_v1_'+String(characterId);
  let state={};try{state=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch{}
  state={...state,location:destination.id,x:destination.spawn.x,y:destination.spawn.y,dir:'down'};
+ if(destination.id==='mountain')state.gmMountainArrival=true;
+ else delete state.gmMountainArrival;
  try{localStorage.setItem(key,JSON.stringify(state));return {ok:true,message:'Przeniesiono do: '+destination.name+'.'}}
  catch{return {ok:false,message:'Nie udało się zapisać pozycji postaci.'}}
 }
@@ -195,7 +197,10 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  container.innerHTML=`<div class="world-grid"><section class="world-shell"><div class="world-toolbar"><strong>🌿 BŁĘKITNA LAGUNA</strong><span id="worldCoords">Pozycja: —</span></div><div class="world-frame"><canvas id="worldCanvas" tabindex="0" aria-label="Mapa gry, WASD i strzałki"></canvas><div class="world-prompt" id="worldPrompt" hidden>Naciśnij E, aby porozmawiać z Opiekunem Laguny</div></div><div class="world-help">WASD / strzałki — ruch. Wejdź na namiot, aby wybrać potwory. Podejdź do Opiekuna Laguny i naciśnij E, aby rozpocząć misję.</div></section><aside id="worldSide" class="world-side"><h2>🌍 Błękitna Laguna</h2><p>Znajdź namiot treningowy na mapie. Po wejściu na niego zobaczysz listę 15 przeciwników. Walkę można ukryć i otworzyć ponownie.</p></aside></div><div id="worldOverlay" class="world-overlay" hidden><section id="worldBattle" class="world-battle world-modal"></section></div>`;
  const canvas=container.querySelector('canvas'),ctx=canvas.getContext('2d'),frame=container.querySelector('.world-frame'),prompt=container.querySelector('#worldPrompt'),coords=container.querySelector('#worldCoords');
  const keys=new Set();let raf=0,last=0,lastSave=0,camX=player.x,camY=player.y,closed=false;
- const save=()=>{try{localStorage.setItem(key,JSON.stringify(player))}catch{}};
+ const save=()=>{
+  const state=player.location==='mountain'&&saved?.gmMountainArrival===true?{...player,gmMountainArrival:true}:player;
+  try{localStorage.setItem(key,JSON.stringify(state))}catch{}
+ };
  function resize(){const r=frame.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;}
  const observer=new ResizeObserver(resize);observer.observe(frame);resize();
  const near=()=>player.location==='laguna'&&Math.hypot(player.x-NPC.x,player.y-NPC.y)<70;
@@ -406,7 +411,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  try{const old=JSON.parse(localStorage.getItem(mountainRoshiKey)||'{}');if(Number.isInteger(old.stage))mountainRoshi.stage=Math.max(0,Math.min(8,old.stage))}catch{}
  const saveMountainRoshi=()=>localStorage.setItem(mountainRoshiKey,JSON.stringify(mountainRoshi));
  // Postacie, które ukończyły już ostatni quest w poprzedniej wersji, przenieś na Stadion 1.
- if(mountainRoshi.stage>=4&&player.location==='mountain'){const dest=EXTRA_MAPS.stadium.spawn;player.location='stadium';player.x=dest.x;player.y=dest.y;player.dir='down';camX=player.x;camY=player.y;save();}
+ if(mountainRoshi.stage>=4&&player.location==='mountain'&&saved?.gmMountainArrival!==true){const dest=EXTRA_MAPS.stadium.spawn;player.location='stadium';player.x=dest.x;player.y=dest.y;player.dir='down';camX=player.x;camY=player.y;save();}
  function mountainRoshiMarkup(){
   const close='<button class="world-action secondary" id="mountainClose">Zamknij</button>';
   const title='<h2>📜 Genialny Żółw — Góra Króla Lasu</h2>';
@@ -813,6 +818,20 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  }
 
  const side=container.querySelector('#worldSide'),battleEl=container.querySelector('#worldBattle'),overlay=container.querySelector('#worldOverlay');
+ // Wersja gry w prawym dolnym rogu panelu świata; bez ingerencji w mechaniki.
+ const versionLabel=document.createElement('div');
+ versionLabel.className='dbi-world-version';
+ versionLabel.textContent='Aktualna wersja gry: Beta 1.1';
+ container.querySelector('.world-grid').appendChild(versionLabel);
+ fetch('version.json',{cache:'no-store'}).then(response=>{
+  if(!response.ok)throw new Error('Brak pliku wersji');
+  return response.json();
+ }).then(data=>{
+  if(typeof data.version==='string'&&/^Beta [0-9]+(?:\.[0-9]+)*$/.test(data.version)){
+   versionLabel.textContent='Aktualna wersja gry: '+data.version;
+  }
+ }).catch(()=>{});
+
  // Blokuj wyłącznie działania zmieniające stan gry; mapa i podglądy pozostają aktywne.
  side.addEventListener('click',event=>{
   if(!worldTrainingActive())return;
@@ -840,12 +859,60 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  const mobHp=lvl=>lvl>=100?lvl*5+5000:lvl*5;
  const interval=speed=>Math.max(1500,3000-Math.max(0,Number(speed)||0)*.01);
  const bossInterval=speed=>Math.max(1500,2000-Math.max(0,Number(speed)||0)*.01);
- const dealt=(attack,defense)=>attack>0?Math.max(0,attack)*Math.max(.1,1-Math.max(0,defense)/(2*attack)):0;
  const num=v=>Math.round((Number(v)||0)*100000)/100000;
  const hero=()=>window.DBIWorldInventory?.character?.()||{};
+ // Procenty ze Znaków pobierane na bieżąco z wyposażonego Symbolu.
+ const signBonus=key=>Math.max(0,Number(window.DBIEquippedSignCombatBonus?.(key))||0);
+ const spiritBonus=key=>Math.max(0,Number(window.DBISpiritual?.currentBonuses?.()?.[key])||0);
+ const gearBonus=(...keys)=>Number(window.DBIWorldInventory?.bonus?.(...keys))||0;
+ const dropChance=baseChance=>Math.min(1,Math.max(0,baseChance+(gearBonus('dropChancePct')+spiritBonus('drop'))/100));
+ const dropRoll=baseChance=>Math.random()<dropChance(baseChance);
+ const smithOreChance=()=>.01+(Number(window.DBIWorldInventory?.smithDropBonus?.())||0)/100;
+ const skills=()=>window.DBIWorldInventory?.skillBonuses?.()||{};
+ const monsterGold=(base,mob=false)=>num(base*(1+(gearBonus('goldBonusPct','battleGoldBonusPct')+20*spiritBonus('gold')+(mob?skills().mobGold||0:0))/100));
+
  const mobDef=level=>mobStats(level).endurance*.1;
  const mobAttack=level=>mobStats(level).strength*.5;
- const heroInterval=()=>interval(hero().speed);
+ const heroInterval=at=>{
+  const ch=hero(),green=at<Number(window.DBIZen?.expiry?.('green'))&&at>=Number(window.DBIZen?.expiry?.('green'))-600000;
+  return Math.max(100,interval(ch.speed)/(1+Math.max(0,(Number(ch.attackSpeedPct)||0)+(green?100:0))/100));
+ };
+ const bossVictoryKey='dboidle_forest_boss_victory_v1_'+String(id||'test');
+ const bossWait=()=>Math.max(0,(Number(localStorage.getItem(bossVictoryKey))||0)+Math.max(0,30-spiritBonus('boss'))*60000-Date.now());
+ const bossDailyKey='dboidle_forest_boss_wins_daily_v1_'+String(id||'test');
+ const bossDailyLimit=3;
+ function bossDay(now){
+  const date=new Date(now);
+  return [date.getFullYear(),date.getMonth()+1,date.getDate()].join('-');
+ }
+ function bossWinsToday(now=Date.now()){
+  const day=bossDay(now);
+  let saved;
+  try{saved=JSON.parse(localStorage.getItem(bossDailyKey)||'null')}catch{}
+  const lastWin=Number(localStorage.getItem(bossVictoryKey))||0;
+  const legacyWin=!saved&&lastWin>0&&bossDay(lastWin)===day?1:0;
+  const used=saved?.day===day?Math.max(0,Math.min(bossDailyLimit,Math.floor(Number(saved.used)||0))):legacyWin;
+  return {day,used};
+ }
+ const canFightBoss=()=>bossWait()===0&&bossWinsToday().used<bossDailyLimit;
+ let bossClockSecond=-1;
+ function updateBossCountdown(force=false){
+  const button=side.querySelector('#forestBossFight');
+  if(!button)return;
+  const second=Math.floor(Date.now()/1000);
+  if(!force&&second===bossClockSecond)return;
+  bossClockSecond=second;
+  const left=Math.ceil(bossWait()/1000);
+  const minutes=String(Math.floor(left/60)).padStart(2,'0');
+  const seconds=String(left%60).padStart(2,'0');
+  const remaining=bossDailyLimit-bossWinsToday().used;
+  const counter=side.querySelector('#forestBossAttempts');
+  const counterLabel=`Pozostałe zwycięstwa dzisiaj: ${remaining}/${bossDailyLimit} · reset o 00:00`;
+  if(counter&&counter.textContent!==counterLabel)counter.textContent=counterLabel;
+  const label=!remaining?'Dzienny limit zwycięstw wykorzystany':left?`Boss odrodzi się za ${minutes}:${seconds}`:'⚔️ Walcz';
+  if(button.textContent!==label)button.textContent=label;
+  button.disabled=left>0||remaining===0;
+ }
  const mobInterval=level=>interval(mobStats(level).speed);
  const regenAmount=()=>{const multiplier=1+Math.floor(Math.max(1,Number(hero().level)||1)/100);return {hp:multiplier,ki:multiplier*.5}};
  
@@ -864,7 +931,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
     battle.maxHp=ch.maxHp??50;battle.hp=battle.maxHp;
     battle.maxKi=ch.maxKi??100;battle.ki=battle.maxKi;
     battle.enemies.forEach(e=>{e.max=mobHp(e.level);e.hp=e.max;e.nextAttack=Date.now()+mobInterval(e.level);e.rewarded=false;});
-    battle.nextHeroAttack=Date.now()+heroInterval();battle.nextRegen=Date.now()+REGEN_MS;
+    battle.nextHeroAttack=Date.now()+heroInterval(Date.now());battle.nextRegen=Date.now()+REGEN_MS;
     battle.updated=Date.now();battle.combatVersion=2;
     battle.log=Array.isArray(battle.log)?battle.log:[];
    }
@@ -881,13 +948,14 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   lastSide=mode;
   if(mode==='forestBoss'){
    const boss={name:'Leśny Wojownik (Boss)',level:120};
-   side.innerHTML='<div class="dbi-quest-panel"><header class="dbi-quest-title">Leśny Wojownik (Boss) — Poziom 120</header><section class="dbi-quest-story"><p>Najpotężniejszy wojownik z wszystkich Leśnych Wojowników!</p><p>Walka z nim jest ryzykowna, ale nagroda jest równie potężna.</p></section><div class="world-quest-progress done"><div class="world-mobs"><div class="world-mob selected"><span class="world-mob-select" aria-selected="true">Leśny Wojownik (Boss)</span><span class="world-mob-level">Poziom 120</span><span class="world-mob-stats-wrap"><button type="button" class="world-mob-stats-trigger" id="forestBossStats" aria-label="Statystyki bossa">🔍</button></span><button type="button" class="world-mob-info" id="forestBossLoot" title="Możliwy drop" aria-label="Możliwy drop bossa">ⓘ</button></div></div></div><div class="dbi-quest-buttons"><button class="world-action" id="forestBossFight">⚔️ Walcz</button><button class="world-action secondary" id="forestBossClose">Zamknij</button></div></div>';
+   side.innerHTML='<div class="dbi-quest-panel"><header class="dbi-quest-title">Leśny Wojownik (Boss) — Poziom 120</header><section class="dbi-quest-story"><p>Najpotężniejszy wojownik z wszystkich Leśnych Wojowników!</p><p>Walka z nim jest ryzykowna, ale nagroda jest równie potężna.</p></section><div class="world-quest-progress done"><div class="world-mobs"><div class="world-mob selected"><span class="world-mob-select" aria-selected="true">Leśny Wojownik (Boss)</span><span class="world-mob-level">Poziom 120</span><span class="world-mob-stats-wrap"><button type="button" class="world-mob-stats-trigger" id="forestBossStats" aria-label="Statystyki bossa">🔍</button></span><button type="button" class="world-mob-info" id="forestBossLoot" title="Możliwy drop" aria-label="Możliwy drop bossa">ⓘ</button></div></div></div><p id="forestBossAttempts"></p><div class="dbi-quest-buttons"><button class="world-action" id="forestBossFight">⚔️ Walcz</button><button class="world-action secondary" id="forestBossClose">Zamknij</button></div></div>';
    const trigger=side.querySelector('#forestBossStats');let tip=null;
    const hide=()=>{if(tip){tip.remove();tip=null}};
    const show=()=>{hide();tip=document.createElement('div');tip.className='world-mob-stats-tip';tip.textContent=mobStatsTooltip(boss).split(' | ').join('\n');tip.style.cssText='display:block;white-space:pre-line;position:fixed;z-index:2147483647;padding:10px 14px;max-width:250px;pointer-events:none';document.body.appendChild(tip);const r=trigger.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(window.innerWidth-260,r.left-210))+'px';tip.style.top=Math.max(8,Math.min(window.innerHeight-tip.offsetHeight-8,r.top))+'px'};
    trigger.addEventListener('mouseenter',show);trigger.addEventListener('mouseleave',hide);trigger.addEventListener('focus',show);trigger.addEventListener('blur',hide);trigger.addEventListener('click',()=>tip?hide():show());
    side.querySelector('#forestBossLoot').onclick=()=>{const shade=document.createElement('div');shade.className='world-drop-backdrop';shade.innerHTML='<section class="world-drop-dialog" role="dialog" aria-modal="true"><div class="world-drop-heading"><h3>ⓘ Leśny Wojownik (Boss) · poziom 120</h3><button class="world-action secondary" data-close>✕</button></div><p>Możliwe przedmioty:</p><div class="world-drop-items"><div class="world-drop-item"><img src="assets/items/skrzynia-lesnego-wojownika.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Skrzynia Leśnego Wojownika — 100%</small></div></div></section>';container.appendChild(shade);shade.querySelector('[data-close]').onclick=()=>shade.remove();shade.addEventListener('pointerdown',e=>{if(e.target===shade)shade.remove()})};
-   side.querySelector('#forestBossFight').onclick=()=>{hide();beginBossBattle()};
+   side.querySelector('#forestBossFight').onclick=()=>{hide();if(canFightBoss())openPvePreparation(true)};
+   updateBossCountdown(true);
    side.querySelector('#forestBossClose').onclick=()=>{hide();bossOpen=false;lastSide='';updateSide(true)};
   }
   else if(mode==='quest'){
@@ -1047,7 +1115,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    });
    side.querySelector('.world-mobs').scrollTop=previousScroll;
    side.querySelectorAll('[data-info]').forEach(button=>button.onclick=()=>showDropInfo(Number(button.dataset.info)));
-   side.querySelector('#worldFight').onclick=beginBattle;
+   side.querySelector('#worldFight').onclick=()=>openPvePreparation(false);
   }else side.innerHTML='<h2>🌍 Błękitna Laguna</h2><p>Wejdź postacią na namiot oznaczony „EXPowisko”, aby zobaczyć 15 potworów. Podejdź do Opiekuna Laguny i naciśnij E, aby porozmawiać.</p>';
  }
  function showDropInfo(i){
@@ -1057,7 +1125,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    '<div class="world-drop-item"><img src="assets/items/fasolka-zen-red.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Czerwona Fasolka Zen — 1%</small></div>'+
    '<div class="world-drop-item"><img src="assets/items/fasolka-zen-blue.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Niebieska Fasolka Zen — 1%</small></div>'+
    '<div class="world-drop-item"><img src="assets/items/pyl-smoczych-kul.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Pył smoczych kul — 1%</small></div>'+
-   (player.location==='centralForest'&&mob.name==='Leśny Wojownik'?'<div class="world-drop-item"><img src="assets/items/ruda-kowalstwa.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Ruda Kowalstwa — 1%</small></div><div class="world-drop-item"><img src="assets/items/kamien-zolwia.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Kamień Żółwia — 1%</small></div><div class="world-drop-item"><img src="assets/items/male-smocze-kule.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Małe Smocze Kule — 1%</small></div>':'')+
+   (player.location==='centralForest'&&mob.name==='Leśny Wojownik'?'<div class="world-drop-item"><img src="assets/items/ruda-kowalstwa.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Ruda Kowalstwa — '+(dropChance(smithOreChance())*100).toLocaleString('pl-PL',{maximumFractionDigits:2})+'%</small></div><div class="world-drop-item"><img src="assets/items/kamien-zolwia.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Kamień Żółwia — 1%</small></div><div class="world-drop-item"><img src="assets/items/male-smocze-kule.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Małe Smocze Kule — 1%</small></div>':'')+
    (['forest','mountain'].includes(player.location)?'<div class="world-drop-item"><img src="assets/items/kamien-zolwia.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Kamień Żółwia — 1%</small></div><div class="world-drop-item"><img src="assets/items/male-smocze-kule.png" alt="" style="width:42px;height:42px;object-fit:contain"><small>Małe Smocze Kule — 1%</small></div>':'')+
    '</div></section>';
   container.appendChild(shade);
@@ -1086,12 +1154,57 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    }
   });
  }
- function beginBossBattle(){
+ const pveSettingsKey='dboidle_pve_settings_v1_'+String(id||'test');
+ function pveSettings(){let s={};try{s=JSON.parse(localStorage.getItem(pveSettingsKey)||'{}')||{}}catch{}return {red:s.red!==false,blue:s.blue!==false,green:s.green===true,greenMinutes:[10,20,30,40,50,60].includes(Number(s.greenMinutes))?Number(s.greenMinutes):10,redAt:Math.max(1,Math.min(100,Number(s.redAt)||50)),blueAt:Math.max(1,Math.min(100,Number(s.blueAt)||40)),techniques:Array.isArray(s.techniques)?s.techniques:null}}
+ function openPvePreparation(isBoss){
   if(worldTrainingActive()){worldTrainingNotice();return}
   if(battle?.status==='running')return;
+  const previous=pveSettings(),available=window.DBIWorldTechniques?.()||[];
+  const backdrop=document.createElement('div');backdrop.className='world-prep-backdrop';
+  const knownEnabled=t=>!Array.isArray(previous.techniques)||previous.techniques.includes(t.id);
+  backdrop.innerHTML=`<section class="world-prep-dialog" role="dialog" aria-modal="true" aria-label="Przygotowanie do walki"><header><h2>⚔️ Przygotowanie do walki</h2><button type="button" data-prep-close aria-label="Zamknij">✕</button></header><h3>Techniki</h3><p>Kliknij ikonę, aby wyłączyć lub włączyć technikę. Fala Uderzeniowa: odnowienie 20 sekund, koszt 100 KI.</p><div class="world-prep-techs">${available.length?available.map(t=>`<button type="button" class="world-prep-tech-icon ${knownEnabled(t)?'':'is-disabled'}" data-prep-tech="${escapeText(t.id)}" aria-pressed="${knownEnabled(t)}" title="${escapeText(t.name)}"><img src="${escapeText(t.image)}" alt="${escapeText(t.name)}"></button>`).join(''):'<p>Nie masz jeszcze odblokowanych technik.</p>'}</div><h3>Przedmioty użytkowe</h3>
+  ${[['red','Czerwona Fasolka Zen','HP',previous.redAt,previous.red],['blue','Niebieska Fasolka Zen','KI',previous.blueAt,previous.blue]].map(([color,name,stat,value,enabled])=>`<div class="world-prep-bean"><button type="button" class="world-prep-bean-icon ${enabled?'':'is-disabled'}" data-prep-toggle="${color}" aria-pressed="${enabled}" title="Kliknij, aby włączyć lub wyłączyć: ${name}"><img src="assets/items/fasolka-zen-${color}.png" alt="${name}"></button><span>${name} — użyj przy ${stat} ≤</span><div class="world-prep-slider"><input type="range" data-prep-${color}at min="1" max="100" step="1" value="${value}" aria-label="Próg ${stat} w procentach"><output data-prep-value="${color}">${value}%</output></div></div>`).join('')}
+  <div class="world-prep-bean"><button type="button" class="world-prep-bean-icon ${previous.green?'':'is-disabled'}" data-prep-toggle="green" aria-pressed="${previous.green}" title="Kliknij, aby włączyć lub wyłączyć zieloną fasolkę"><img src="assets/items/fasolka-zen-green.png" alt="Zielona Fasolka Zen"></button><span>Zielona Fasolka Zen — używaj co <strong id="worldGreenMinutes">${previous.greenMinutes} min</strong><small style="display:block">+100% szybkości ataku na 10 minut</small></span><div class="world-prep-slider"><input type="range" data-prep-greenminutes min="10" max="60" step="10" value="${previous.greenMinutes}" aria-label="Odstęp używania zielonej fasolki"><output data-prep-value="green">${previous.greenMinutes} min</output></div></div>
+  <footer><button type="button" class="world-action secondary" data-prep-close>Anuluj</button><button type="button" class="world-action" data-prep-start>⚔️ Walcz</button></footer></section>`;
+  container.appendChild(backdrop);
+  const close=()=>backdrop.remove();backdrop.querySelectorAll('[data-prep-close]').forEach(b=>b.onclick=close);backdrop.addEventListener('pointerdown',e=>{if(e.target===backdrop)close()});
+  backdrop.querySelectorAll('[data-prep-tech],[data-prep-toggle]').forEach(button=>button.addEventListener('click',()=>{
+   const active=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(active));button.classList.toggle('is-disabled',!active);
+  }));
+  const updateSliderFill=input=>{
+   const min=Number(input.min)||0,max=Number(input.max)||100,value=Number(input.value)||0;
+   const percent=Math.max(0,Math.min(100,(value-min)/(max-min||1)*100));
+   input.style.setProperty('--world-slider-progress',percent+'%');
+  };
+  backdrop.querySelectorAll('.world-prep-slider input').forEach(input=>{
+   updateSliderFill(input);
+   input.addEventListener('input',()=>{
+   const type=input.dataset.prepGreenminutes!==undefined?'green':input.dataset.prepRedat!==undefined?'red':'blue';
+   const label=String(input.value)+(type==='green'?' min':'%');backdrop.querySelector(`[data-prep-value="${type}"]`).textContent=label;
+   if(type==='green')backdrop.querySelector('#worldGreenMinutes').textContent=label;
+   updateSliderFill(input);
+   });
+  });
+  backdrop.querySelector('[data-prep-start]').onclick=()=>{
+   const val=sel=>Math.max(1,Math.min(100,Math.trunc(Number(backdrop.querySelector(sel).value)||1)));
+   const enabled=color=>backdrop.querySelector(`[data-prep-toggle="${color}"]`).getAttribute('aria-pressed')==='true';
+   const s={red:enabled('red'),blue:enabled('blue'),green:enabled('green'),greenMinutes:Number(backdrop.querySelector('[data-prep-greenminutes]').value),redAt:val('[data-prep-redat]'),blueAt:val('[data-prep-blueat]'),techniques:[...backdrop.querySelectorAll('[data-prep-tech][aria-pressed="true"]')].map(x=>x.dataset.prepTech)};
+   localStorage.setItem(pveSettingsKey,JSON.stringify(s));close();if(isBoss)beginBossBattle();else beginBattle();
+  };
+ }
+ function beginBossBattle(){
+  if(worldTrainingActive()){worldTrainingNotice();return}
+  if(battle?.status==='running'||!canFightBoss())return;
   const now=Date.now(),ch=hero(),level=120,name='Leśny Wojownik (Boss)';
-  battle={location:'centralForest',boss:true,combatVersion:2,status:'running',started:now,updated:now,round:0,kills:0,gold:0,exp:0,totalDamage:0,loot:[],log:[],enemies:[{id:0,level,name,hp:forestBossStats.hp,max:forestBossStats.hp,nextAttack:now+bossInterval(forestBossStats.speed)}],hp:ch.maxHp??50,maxHp:ch.maxHp??50,ki:ch.maxKi??100,maxKi:ch.maxKi??100,nextHeroAttack:now+500,nextRegen:now+REGEN_MS,nextZenUse:now+1000,heroHits:0,heroDamageTaken:0};
-  bossOpen=false;sellSelection.clear();keys.clear();uiBattle=null;persistBattle();updateSide(true);showBattle();
+  const nextBattle={location:'centralForest',boss:true,combatVersion:2,status:'running',started:now,updated:now,round:0,kills:0,gold:0,exp:0,totalDamage:0,loot:[],log:[],enemies:[{id:0,level,name,hp:forestBossStats.hp,max:forestBossStats.hp,nextAttack:now+bossInterval(forestBossStats.speed)}],hp:ch.maxHp??50,maxHp:ch.maxHp??50,ki:ch.maxKi??100,maxKi:ch.maxKi??100,nextHeroAttack:now+500,nextRegen:now+REGEN_MS,nextZenUse:now+1000,heroHits:0,heroDamageTaken:0,pveOptions:pveSettings(),nextWaveAt:now,nextGreenAt:now};
+  try{localStorage.setItem(battleKey,JSON.stringify(nextBattle))}
+  catch{
+   const counter=side.querySelector('#forestBossAttempts');
+   if(counter)counter.textContent='Nie udało się zapisać walki.';
+   return;
+  }
+  battle=nextBattle;
+  bossOpen=false;sellSelection.clear();keys.clear();uiBattle=null;updateSide(true);showBattle();
  }
  function beginBattle(){
   if(worldTrainingActive()){worldTrainingNotice();return;}
@@ -1102,20 +1215,70 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   battle={location:player.location,combatVersion:2,status:'running',started:now,updated:now,round:0,kills:0,gold:0,exp:0,totalDamage:0,loot:[],log:[],
    enemies:[...selected].map(i=>({id:i,level:mobList[i].level,name:mobList[i].name,hp:mobHp(mobList[i].level),max:mobHp(mobList[i].level),nextAttack:now+mobInterval(mobList[i].level)})),
    hp:ch.maxHp??50,maxHp:ch.maxHp??50,ki:ch.maxKi??100,maxKi:ch.maxKi??100,
-   nextHeroAttack:now+500,nextRegen:now+REGEN_MS,nextZenUse:now+1000,heroHits:0,heroDamageTaken:0};
+   nextHeroAttack:now+500,nextRegen:now+REGEN_MS,nextZenUse:now+1000,heroHits:0,heroDamageTaken:0,pveOptions:pveSettings(),nextWaveAt:now,nextGreenAt:now};
   selected.clear();sellSelection.clear();keys.clear();uiBattle=null;persistBattle();updateSide(true);showBattle();
  }
  function appendLog(line){battle.log.unshift('['+new Date().toLocaleTimeString('pl-PL')+'] '+line);battle.log.length=Math.min(80,battle.log.length)}
+ function rewardDefeat(target,next,until){
+  if(target.hp>0||target.rewarded)return;
+  if(battle.boss){
+   const wins=bossWinsToday(next);
+   if(wins.used>=bossDailyLimit){finishBattle('Dzienny limit zwycięstw wykorzystany.');return}
+   try{localStorage.setItem(bossDailyKey,JSON.stringify({...wins,used:wins.used+1}))}
+   catch{finishBattle('Nie udało się zapisać zwycięstwa.');return}
+  }
+       target.rewarded=true;battle.kills++;if(!battle.storySoldier){window.DBIPulpit?.add?.(id,battle.boss?'bosses':'battlePoints',battle.boss?1:1+spiritBonus('battlePoints'));}if(battle.storySoldier){woodcutter.won=true;saveWoodcutter();finishBattle('Pokonano Żołnierza Czerwonej Wstęgi!');return;}if(battle.boss&&target.name==='Leśny Wojownik (Boss)'&&fisherman.stage===2){fisherman.bossKills=1;saveFisherman();}if(battle.location==='centralForest'&&['Leśny Wojownik','Leśny Wojownik (Silny)','Leśny Wojownik (Super)'].includes(target.name)&&fisherman.stage===1){fisherman.kills=Math.min(100,fisherman.kills+1);saveFisherman();}if(battle.location==='mountain'&&['Zamachowiec Góry','Zamachowiec Góry (Silny)','Zamachowiec Góry (Super)'].includes(target.name)&&wandererQuest.state==='accepted'){wandererQuest.kills=Math.min(50,wandererQuest.kills+1);saveWanderer();}if(battle.location==='island')addIslandQuestKills(1);else if(battle.location==='laguna')addQuestKills(1);else if(battle.location==='forest'&&['Dzikie zwierzę','Dzikie zwierzę (Silny)','Dzikie zwierzę (Super)'].includes(target.name)&&roshi.stage===2){roshi.kills=Math.min(30,roshi.kills+1);saveForest();}window.DBIDaily?.record('kills',1);
+       if(battle.boss){
+        battle.gold+=monsterGold(1000);
+        battle.exp=(battle.exp||0)+(window.DBIWorldInventory?.grantExp?.(10000,true)||0);
+        battle.expCredited=true;
+        const bossLoot={id:'skrzynia-lesnego-wojownika',name:'Skrzynia Leśnego Wojownika',icon:'📦',sell:0,sellable:false};
+        battle.loot.push(bossLoot);
+        // Podwójny łup kopiuje otrzymane przedmioty, nie złoto ani EXP.
+        if(Math.random()<Math.min(1,(gearBonus('doubleBossRewardsChance')+(skills().doubleBossDrop||0))/100))battle.loot.push({...bossLoot});
+        localStorage.setItem(bossVictoryKey,String(next));
+        finishBattle('Pokonano Leśnego Wojownika (Boss)!');return;
+       }
+       battle.gold+=monsterGold(target.level*5,true);
+       // Drop questowy: tylko aktywny etap, maks. jeden pierścień w nieodebranym łupie.
+       if(battle.location==='centralForest'&&target.name==='Leśny Wojownik (Silny)'&&father.stage===1&&
+          !(window.DBIWorldInventory?.countQuestItem?.('pierscien-ojca')>0)&&
+          !battle.loot.some(item=>item.id==='pierscien-ojca')&&dropRoll(0.10)){
+        battle.loot.push({id:'pierscien-ojca',name:'Pierścień Ojca',icon:'💍',image:'assets/items/pierscien-ojca.png',sell:0,sellable:false});
+       }
+       const earned=window.DBIWorldInventory?.grantMobKills?.(1,target.level,target.name)||0;
+       const lootStart=battle.loot.length;
+       // Niezależne losowanie po każdym zabiciu moba.
+        if(dropRoll(0.01))battle.loot.push({id:'zen-bean-red',name:'Czerwona Fasolka Zen',icon:'🔴',sell:0,sellable:false});
+        if(dropRoll(0.01))battle.loot.push({id:'zen-bean-blue',name:'Niebieska Fasolka Zen',icon:'🔵',sell:0,sellable:false});
+        if(dropRoll(0.01))battle.loot.push({id:'dragon-ball-dust',name:'Pył smoczych kul',icon:'✨',sell:0,sellable:false});
+        if(battle.location==='centralForest'&&target.name==='Leśny Wojownik'){
+         if(dropRoll(smithOreChance()))battle.loot.push({id:window.DBIWorldInventory?.smithOreId?.()||'ruda-kowalstwa',name:'Ruda Kowalstwa',image:'assets/items/ruda-kowalstwa.png',icon:'🪨',sell:0,sellable:false});
+         if(dropRoll(0.01))battle.loot.push({id:'quest-turtle-stone',name:'Kamień Żółwia',icon:'🪨',sell:0,sellable:false});
+         if(dropRoll(0.01))battle.loot.push({id:'small-dragon-balls',name:'Małe Smocze Kule',icon:'🟠',sell:0,sellable:false});
+        }
+        if(['forest','mountain'].includes(battle.location)){
+         if(dropRoll(0.01))battle.loot.push({id:'quest-turtle-stone',name:'Kamień Żółwia',icon:'🪨',sell:0,sellable:false});
+         if(dropRoll(0.01))battle.loot.push({id:'small-dragon-balls',name:'Małe Smocze Kule',icon:'🟠',sell:0,sellable:false});
+        }
+        const doubleChance=gearBonus('doubleMobDropChance');
+        if(battle.loot.length>lootStart&&doubleChance>0&&Math.random()*100<Math.min(100,doubleChance)){
+         battle.loot.push(...battle.loot.slice(lootStart).map(item=>({...item})));
+        }
+        battle.exp=(battle.exp||0)+earned;battle.expCredited=true;
+       if(until-next<10000)appendLog('Pokonano '+target.name+', +'+earned+' EXP.');
+ }
  function tickBattle(){
   if(!battle||battle.status!=='running')return;
    if(!Array.isArray(battle.loot))battle.loot=[];
   const now=Date.now(),until=Math.min(now,battle.started+MAX_MS);
   if(!Number.isFinite(battle.nextZenUse))battle.nextZenUse=now+1000;
+  if(!Number.isFinite(battle.nextGreenAt))battle.nextGreenAt=now;
   let iterations=0;
   // Zdarzenia są rozliczane chronologicznie: atak postaci, niezależne ataki mobów, regeneracja.
   // Limit chroni przeglądarkę po długiej nieobecności, bez pomijania zdarzeń.
   while(battle.status==='running'&&iterations++<150000){
-   const next=Math.min(battle.nextHeroAttack,battle.nextRegen,battle.nextZenUse,...battle.enemies.filter(e=>e.hp>0).map(e=>e.nextAttack));
+   const next=Math.min(battle.nextHeroAttack,battle.nextRegen,battle.nextZenUse,...battle.enemies.filter(e=>e.hp>0).map(e=>Math.min(e.nextAttack,e.nextBleedAt??Infinity)));
    if(next>until)break;
    if(battle.nextRegen<=next){
     const regen=regenAmount();
@@ -1123,61 +1286,89 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
     battle.ki=num(Math.min(battle.maxKi,battle.ki+regen.ki));
     battle.nextRegen+=REGEN_MS;
    }
+   for(const enemy of battle.enemies){
+    if(enemy.hp<=0||enemy.nextBleedAt==null||enemy.nextBleedAt>next)continue;
+    const damage=Math.min(enemy.hp,enemy.bleedDamage);
+    enemy.hp=num(Math.max(0,enemy.hp-damage));
+    battle.totalDamage=num((battle.totalDamage||0)+damage);
+    enemy.bleedTicks--;
+    enemy.nextBleedAt=enemy.bleedTicks>0?enemy.nextBleedAt+1000:null;
+    if(until-next<10000)appendLog(enemy.name+' krwawi za '+num(damage)+' obrażeń.');
+    rewardDefeat(enemy,next,until);
+    if(battle.status!=='running')break;
+   }
+   if(battle.status!=='running')break;
    if(battle.nextHeroAttack<=next){
     const living=battle.enemies.filter(e=>e.hp>0);
     if(!living.length&&(battle.boss||battle.storySoldier)){finishBattle('Przeciwnik został pokonany.');break}
     if(!living.length){
      // Cała grupa odradza się jednocześnie, nigdy pojedynczo.
-     for(const e of battle.enemies){e.hp=e.max;e.rewarded=false;e.nextAttack=next+mobInterval(e.level);}
+     for(const e of battle.enemies){e.hp=e.max;e.rewarded=false;e.stunnedUntil=0;e.nextBleedAt=null;e.bleedTicks=0;e.nextAttack=next+mobInterval(e.level);}
      battle.respawnGeneration=(battle.respawnGeneration||0)+1;
      if(until-next<10000)appendLog('Cała grupa odrodziła się z pełnym HP.');
     }else{
      battle.round++;
-     // Jedno uderzenie postaci trafia WSZYSTKIE żywe potwory równocześnie.
+     // Technika zastępuje normalny atak i trafia wszystkie żywe cele.
+     const waveEnabled=(!Array.isArray(battle.pveOptions?.techniques)||battle.pveOptions.techniques.includes('fala_uderzeniowa'));
+     const waveReady=waveEnabled&&next>=Number(battle.nextWaveAt||0)&&battle.ki>=100;
+     if(waveReady){battle.ki=num(Math.max(0,battle.ki-100));battle.nextWaveAt=next+20000;if(until-next<10000)appendLog('Wojownik używa Fali Uderzeniowej (odnowienie 20 s).')}
+     const attacker=hero();
+     const attackPower=waveReady?(window.DBITechniqueCombat?.power?.(50,'pvm')??(50+(Number(attacker.techniqueAttackPvm)||0)+(Number(attacker.techniqueKi)||0)*.01)):Number(attacker.mobAttack??attacker.attack)||0;
      for(const target of living){
-      const damage=dealt(Number(hero().mobAttack??hero().attack)||0,battle.boss?forestBossStats.defense:battle.storySoldier?soldierStats.defense:mobDef(target.level));
+      const defense=battle.boss?forestBossStats.defense:battle.storySoldier?soldierStats.defense:mobDef(target.level);
+      const intelligence=battle.boss?forestBossStats.intelligence:battle.storySoldier?soldierStats.intelligence:mobStats(target.level).intelligence;
+      const techniqueReduction=waveReady?(window.DBITechniqueCombat?.reduction?.(intelligence,attacker.techniqueKi)??Math.min(.5,Math.max(0,(intelligence-(Number(attacker.techniqueKi)||0))*.00001))):0;
+      const opponent=battle.boss?forestBossStats:battle.storySoldier?soldierStats:mobStats(target.level);
+      const hit=window.DBICombatHit(attackPower,defense,attacker,waveReady,techniqueReduction,opponent);
+      if(hit.dodged){
+       if(until-next<10000)appendLog(target.name+' unika ataku.');
+       continue;
+      }
+      const damage=hit.damage*(battle.boss?1+signBonus('bossDamageBonusPct')/100:1);
       const actual=Math.min(target.hp,damage);
       target.hp=num(Math.max(0,target.hp-actual));
       battle.totalDamage=num((battle.totalDamage||0)+actual);
-      if(until-next<10000)appendLog('Wojownik atakuje '+target.name+' za '+num(damage)+' obrażeń.');
-      if(target.hp<=0&&!target.rewarded){
-       target.rewarded=true;battle.kills++;if(battle.storySoldier){woodcutter.won=true;saveWoodcutter();finishBattle('Pokonano Żołnierza Czerwonej Wstęgi!');break;}if(battle.boss&&target.name==='Leśny Wojownik (Boss)'&&fisherman.stage===2){fisherman.bossKills=1;saveFisherman();}if(battle.location==='centralForest'&&['Leśny Wojownik','Leśny Wojownik (Silny)','Leśny Wojownik (Super)'].includes(target.name)&&fisherman.stage===1){fisherman.kills=Math.min(100,fisherman.kills+1);saveFisherman();}if(battle.location==='mountain'&&['Zamachowiec Góry','Zamachowiec Góry (Silny)','Zamachowiec Góry (Super)'].includes(target.name)&&wandererQuest.state==='accepted'){wandererQuest.kills=Math.min(50,wandererQuest.kills+1);saveWanderer();}if(battle.location==='island')addIslandQuestKills(1);else if(battle.location==='laguna')addQuestKills(1);else if(battle.location==='forest'&&['Dzikie zwierzę','Dzikie zwierzę (Silny)','Dzikie zwierzę (Super)'].includes(target.name)&&roshi.stage===2){roshi.kills=Math.min(30,roshi.kills+1);saveForest();}window.DBIDaily?.record('kills',1);
-       if(battle.boss){battle.gold+=1000;battle.exp=(battle.exp||0)+10000;battle.loot.push({id:'skrzynia-lesnego-wojownika',name:'Skrzynia Leśnego Wojownika',icon:'📦',sell:0,sellable:false});finishBattle('Pokonano Leśnego Wojownika (Boss)!');break;}
-       battle.gold+=target.level*5;
-       // Drop questowy: tylko aktywny etap, maks. jeden pierścień w nieodebranym łupie.
-       if(battle.location==='centralForest'&&target.name==='Leśny Wojownik (Silny)'&&father.stage===1&&
-          !(window.DBIWorldInventory?.countQuestItem?.('pierscien-ojca')>0)&&
-          !battle.loot.some(item=>item.id==='pierscien-ojca')&&Math.random()<0.10){
-        battle.loot.push({id:'pierscien-ojca',name:'Pierścień Ojca',icon:'💍',image:'assets/items/pierscien-ojca.png',sell:0,sellable:false});
+      if(until-next<10000)appendLog('Wojownik '+(waveReady?'uderza Falą Uderzeniową ':'atakuje ')+target.name+(hit.critical?' (krytyk)':'')+' za '+num(damage)+' obrażeń.');
+      if(!battle.storySoldier&&target.hp>0){
+       if(window.DBICombatRoll(window.DBICombatStunChance(attacker.stunChance,opponent.stunResistance))){
+        target.stunnedUntil=next+3000;
+        if(until-next<10000)appendLog(target.name+' zostaje ogłuszony na 3 sekundy.');
        }
-       const earned=window.DBIWorldInventory?.grantMobKills?.(1,target.level,target.name)||0;
-       // Niezależne losowanie po każdym zabiciu moba.
-        if(Math.random()<0.01)battle.loot.push({id:'zen-bean-red',name:'Czerwona Fasolka Zen',icon:'🔴',sell:0,sellable:false});
-        if(Math.random()<0.01)battle.loot.push({id:'zen-bean-blue',name:'Niebieska Fasolka Zen',icon:'🔵',sell:0,sellable:false});
-        if(Math.random()<0.01)battle.loot.push({id:'dragon-ball-dust',name:'Pył smoczych kul',icon:'✨',sell:0,sellable:false});
-        if(battle.location==='centralForest'&&target.name==='Leśny Wojownik'){
-         if(Math.random()<0.01)battle.loot.push({id:window.DBIWorldInventory?.smithOreId?.()||'ruda-kowalstwa',name:'Ruda Kowalstwa',image:'assets/items/ruda-kowalstwa.png',icon:'🪨',sell:0,sellable:false});
-         if(Math.random()<0.01)battle.loot.push({id:'quest-turtle-stone',name:'Kamień Żółwia',icon:'🪨',sell:0,sellable:false});
-         if(Math.random()<0.01)battle.loot.push({id:'small-dragon-balls',name:'Małe Smocze Kule',icon:'🟠',sell:0,sellable:false});
-        }
-        if(['forest','mountain'].includes(battle.location)){
-         if(Math.random()<0.01)battle.loot.push({id:'quest-turtle-stone',name:'Kamień Żółwia',icon:'🪨',sell:0,sellable:false});
-         if(Math.random()<0.01)battle.loot.push({id:'small-dragon-balls',name:'Małe Smocze Kule',icon:'🟠',sell:0,sellable:false});
-        }
-        battle.exp=(battle.exp||0)+earned;battle.expCredited=true;
-       if(until-next<10000)appendLog('Pokonano '+target.name+', +'+earned+' EXP.');
+       if(target.nextBleedAt==null&&window.DBICombatRoll(attacker.bleedChance)){
+        target.bleedTicks=10;
+        target.bleedDamage=target.hp*.01;
+        target.nextBleedAt=next+1000;
+        if(until-next<10000)appendLog(target.name+' krwawi przez 10 sekund.');
+       }
       }
+      rewardDefeat(target,next,until);
+      if(battle.status!=='running')break;
      }
     }
-    battle.nextHeroAttack+=heroInterval();
+    battle.nextHeroAttack+=heroInterval(next);
    }
    // Każdy żywy mob atakuje osobno, z własnym zegarem.
    for(const e of battle.enemies){
     if(e.hp<=0||e.nextAttack>next||battle.status!=='running')continue;
-    const damage=dealt(battle.boss?forestBossStats.attack:battle.storySoldier?soldierStats.attack:mobAttack(e.level),Number(hero().defense)||0);
+    e.nextAttack+=battle.boss?bossInterval(forestBossStats.speed):battle.storySoldier?interval(soldierStats.speed):mobInterval(e.level);
+    if(e.stunnedUntil>next){
+     if(until-next<10000)appendLog(e.name+' pomija atak przez ogłuszenie.');
+     continue;
+    }
+    const defender=hero();
+    const attack=battle.boss?forestBossStats.attack:battle.storySoldier?soldierStats.attack:mobAttack(e.level);
+    const attacker=battle.boss?forestBossStats:battle.storySoldier?soldierStats:mobStats(e.level);
+    const incoming=window.DBICombatHit(attack,Number(defender.defense)||0,attacker,false,0,defender);
+    if(incoming.dodged){
+     if(until-next<10000)appendLog('Wojownik unika ataku: '+e.name+'.');
+     continue;
+    }
+    const damage=incoming.damage
+     *Math.max(0,1-(Number(window.DBIEquippedMonsterDamageReduction?.())||0)/100)
+     // Redukcja Znaku Bossa jest ostatnim krokiem przed odjęciem HP.
+     *(battle.boss?Math.max(0,1-signBonus('bossDamageReductionPct')/100):1);
     battle.hp=num(Math.max(0,battle.hp-damage));
     if(damage>0){battle.heroHits=(battle.heroHits||0)+1;battle.heroDamageTaken=num((battle.heroDamageTaken||0)+damage);}
-    e.nextAttack+=battle.boss?bossInterval(forestBossStats.speed):battle.storySoldier?interval(soldierStats.speed):mobInterval(e.level);
     if(until-next<10000)appendLog(e.name+' atakuje za '+num(damage)+' obrażeń.');
     if(battle.hp<=0){
      battle.hp=0;
@@ -1188,9 +1379,21 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    }
    // Leczenie po atakach mobów; jeden test na sekundę.
    if(battle.status==='running'&&battle.nextZenUse<=next){
-    if(battle.hp>0&&battle.hp<0.8*battle.maxHp&&window.DBIWorldInventory?.autoUseRedZen?.()===true){
+    if(battle.pveOptions?.green===true&&next>=battle.nextGreenAt){
+     // Użycie zielonej fasolki wywołuje ten sam bonus co ręczne użycie w ekwipunku.
+     if(window.DBIWorldInventory?.autoUseGreenZen?.()===true){
+      battle.nextGreenAt=next+(Number(battle.pveOptions.greenMinutes)||10)*60000;
+      if(until-next<10000)appendLog('Automatycznie użyto Zielonej Fasolki Zen (+100% szybkości ataku na 10 min).');
+     }else battle.nextGreenAt=next+10000;
+    }
+
+    if(battle.hp>0&&battle.pveOptions?.red!==false&&battle.hp<=((battle.pveOptions?.redAt??80)/100)*battle.maxHp&&window.DBIWorldInventory?.autoUseRedZen?.()===true){
      battle.hp=num(Math.min(battle.maxHp,battle.hp+0.1*battle.maxHp));
      if(until-next<10000)appendLog('Automatycznie użyto Czerwonej Fasolki Zen (+10% maks. HP).');
+    }
+    if(battle.pveOptions?.blue!==false&&battle.maxKi>0&&battle.ki<=((battle.pveOptions?.blueAt??40)/100)*battle.maxKi&&window.DBIWorldInventory?.consumeQuestItem?.('zen-bean-blue',1)===true){
+     battle.ki=battle.maxKi;
+     if(until-next<10000)appendLog('Automatycznie użyto Niebieskiej Fasolki Zen (pełne KI).');
     }
     battle.nextZenUse+=1000;
    }
@@ -1242,7 +1445,8 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
     <div class="world-hero-grid"><div><div class="world-vital-label"><span>Twoje HP</span><span>${num(battle.hp)}/${num(battle.maxHp)}</span></div><div class="world-health hero"><span class="world-hp-trail" style="width:${100*battle.hp/battle.maxHp}%"></span><span class="world-hp-fill" style="width:${100*battle.hp/battle.maxHp}%"></span><div class="world-damage-layer"></div></div><div class="world-status-slots" aria-label="Statusy postaci">${statusSlots("hero")}</div></div><div><div class="world-vital-label"><span>Twoje KI</span><span>${num(battle.ki)}/${num(battle.maxKi)}</span></div><div class="world-health ki"><span style="width:${100*battle.ki/battle.maxKi}%"></span></div></div></div>
     <div class="world-enemies" style="--enemy-count:${battle.enemies.length}">${battle.enemies.map((e,i)=>`<div class="world-enemy" data-enemy="${i}"><strong>${escapeText(e.name)}</strong><small>Poziom ${e.level} · <span data-hp-text>${e.hp}/${e.max}</span> HP</small><div class="world-health monster"><span class="world-hp-trail" style="width:${e.hp/e.max*100}%"></span><span class="world-hp-fill" style="width:${e.hp/e.max*100}%"></span><div class="world-damage-layer"></div></div><div class="world-status-slots" aria-label="Statusy potwora">${statusSlots("mob",i)}</div></div>`).join('')}</div>
     <div class="world-log-section"><button class="world-log-toggle" id="worldToggleLog" aria-expanded="false">⚔️ Przebieg walki <span>⌄</span></button><div class="world-log collapsed" id="worldLog"></div></div>
-    <div class="world-summary-grid world-live-stats">${[['worldStatKills','POKONANE POTWORY'],['worldStatGold','ZDOBYTE ZŁOTO'],['worldStatLoot','ZDOBYTE PRZEDMIOTY'],['worldStatDamage','ZADANE OBRAŻENIA'],['worldStatDps','ŚREDNIE OBRAŻENIA/S'],['worldStatExp','ZDOBYTE DOŚWIADCZENIE']].map(([key,label])=>`<div><strong id="${key}">0</strong><small>${label}</small></div>`).join('')}</div>
+    <div class="world-technique-strip" id="worldTechniqueStrip" aria-label="Odnowienie technik"></div>
+    <div class="world-summary-grid world-live-stats">${[['worldStatKills','POKONANE POTWORY'],['worldStatGold','ZDOBYTE ZŁOTO'],['worldStatLoot','ZDOBYTE PRZEDMIOTY'],['worldStatDamage','ZADANE OBRAŻENIA'],['worldStatDps','ŚREDNIE OBRAŻENIA/S'],['worldStatExp','ZDOBYTE DOŚWIADCZENIE']].map(([key,label])=>`<div><strong>${key==='worldStatGold'?'<img class="dbi-gold-icon" src="assets/ui/gold.png" alt="" width="16" height="16">':''}<span id="${key}">0</span></strong><small>${label}</small></div>`).join('')}</div>
     <div class="world-loot world-loot-compact"><button type="button" class="world-log-toggle world-loot-toggle" id="worldToggleLoot" aria-expanded="true">🎒 Zdobyte łupy <span>⌃</span></button><div class="world-loot-grid" id="worldLootGrid"></div><span id="worldLootCount" hidden></span></div>
 
     <div class="world-loot world-loot-compact world-active-items"><button type="button" class="world-log-toggle" id="worldToggleActive" aria-expanded="true">🫘 Przedmioty aktywne <span>⌃</span></button><div id="worldActiveItems" class="world-loot-grid"></div></div>
@@ -1258,7 +1462,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    }else{
     const elapsed=Math.max(1,((battle.ended||Date.now())-battle.started)/1000),num=x=>Math.round(x||0).toLocaleString('pl-PL');
     battleEl.innerHTML=`<div class="world-battle-top"><div><div class="world-muted">${extraMap(battle.location)?extraMap(battle.location).name.toUpperCase():battle.location==='island'?'WYSPA GENIALNEGO ŻÓŁWIA · Uczniowie Mistrza':'BŁĘKITNA LAGUNA · EXPowisko'}</div><h2>Walka zakończona!</h2></div><button class="world-action secondary" id="worldHide">Ukryj okno</button></div>
-    <div class="world-summary-grid">${[[num(battle.kills),'POKONANE POTWORY'],[num(battle.gold),'ZŁOTO'],[num(battle.loot.length),'PRZEDMIOTY'],[num(battle.totalDamage),'ZADANE OBRAŻENIA'],[num((battle.totalDamage||0)/elapsed)+'/s','ŚR. DPS'],[num(battle.exp||0),'ZDOBYTE EXP']].map(([v,l])=>`<div><strong>${v}</strong><small>${l}</small></div>`).join('')}</div>
+    <div class="world-summary-grid">${[[num(battle.kills),'POKONANE POTWORY'],[num(battle.gold),'ZŁOTO'],[num(battle.loot.length),'PRZEDMIOTY'],[num(battle.totalDamage),'ZADANE OBRAŻENIA'],[num((battle.totalDamage||0)/elapsed)+'/s','ŚR. DPS'],[num(battle.exp||0),'ZDOBYTE EXP']].map(([v,l])=>`<div><strong>${l==='ZŁOTO'?'<img class="dbi-gold-icon" src="assets/ui/gold.png" alt="" width="16" height="16">':''}${v}</strong><small>${l}</small></div>`).join('')}</div>
     <div class="world-loot"><div class="world-loot-header"><h3>🎒 Zdobyty łup</h3><div class="world-loot-shortcuts"><button class="world-action secondary" id="worldKeepAll">Zostaw wszystko</button><button class="world-action secondary" id="worldSellAll">Sprzedaj wszystko</button></div></div><p class="world-muted">Z mobów mogą wypaść Czerwona i Niebieska Fasolka Zen oraz Pył smoczych kul.</p><div class="world-loot-grid" id="worldLootGrid"></div><p id="worldSaleSummary"></p></div>
     <div class="world-battle-actions"><button class="world-action" id="worldCollect">Odbierz i sprzedaj</button></div><p class="world-result" id="worldResult" role="status"></p>`;
     battleEl.querySelector('#worldKeepAll').onclick=()=>{sellSelection.clear();syncLootSelection()};
@@ -1268,6 +1472,25 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    battleEl.querySelector('#worldHide').onclick=hideBattle;
   }
   if(summary){renderLootSelection();return}
+  const strip=battleEl.querySelector('#worldTechniqueStrip');
+  if(strip){
+   const known=window.DBIWorldTechniques?.()||[];
+   const chosen=known.filter(t=>!Array.isArray(battle.pveOptions?.techniques)||battle.pveOptions.techniques.includes(t.id));
+   const signature=chosen.map(t=>t.id).join('|');
+   if(strip.dataset.signature!==signature){
+    strip.dataset.signature=signature;
+    strip.innerHTML=chosen.length?chosen.map(t=>'<div class="world-technique-entry" data-technique="'+escapeText(t.id)+'" title="'+escapeText(t.name)+'"><div class="world-technique-icon"><img src="'+escapeText(t.image)+'" alt="'+escapeText(t.name)+'"><div class="world-technique-shade"></div><span class="world-technique-time" aria-label="Technika gotowa"></span></div></div>').join(''):'<span class="world-muted">Nie wybrano technik do tej walki.</span>';
+   }
+   strip.querySelectorAll('[data-technique]').forEach(el=>{
+    const isWave=el.dataset.technique==='fala_uderzeniowa';
+    const left=isWave?Math.max(0,Number(battle.nextWaveAt||0)-Date.now()):0;
+    const fraction=isWave?Math.min(1,left/20000):0;
+    el.querySelector('.world-technique-shade').style.height=(fraction*100)+'%';
+    const time=el.querySelector('.world-technique-time');
+    time.textContent=left>0?Math.ceil(left/1000)+'s':'';
+    time.setAttribute('aria-label',left>0?'Odnowienie: '+Math.ceil(left/1000)+' sekund':'Technika gotowa');
+   });
+  }
   const active=battleEl.querySelector('#worldActiveItems');
   if(active){
    const counts=window.DBIWorldInventory?.zenCounts?.()||{};
@@ -1374,12 +1597,36 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   try{localStorage.setItem(goldKey,String((Number(localStorage.getItem(goldKey))||0)+earned));window.DBIRefreshWallet?.()}catch{result.textContent='Błąd zapisu złota. Nie zamykam podsumowania.';return}
   if(!battle.expCredited)bridge?.grantExp?.(battle.exp||0);
   battle=null;uiBattle=null;sellSelection.clear();localStorage.removeItem(battleKey);hideBattle();lastSide='';updateSide(true);
-  side.insertAdjacentHTML('afterbegin','<p class="world-success">Odebrano '+count+' przedmiotów, sprzedano '+sold.length+'. Zysk: '+earned+' złota.</p>');
+  side.insertAdjacentHTML('afterbegin','<p class="world-success">Odebrano '+count+' przedmiotów, sprzedano '+sold.length+'. Zysk: <img class="dbi-gold-icon" src="assets/ui/gold.png" alt="" width="16" height="16">'+earned+' złota.</p>');
  }
- const combatTimer=setInterval(()=>{tickBattle();renderBattle()},120);
+ function useZen(type){
+  tickBattle();
+  if(!restoreZen(battle,type))return false;
+  persistBattle();
+  renderBattle();
+  return true;
+ }
+ const combatTimer=setInterval(()=>{tickBattle();renderBattle();if(bossOpen)updateBossCountdown()},120);
  tickBattle();updateSide(true);
- active={container,cleanup:()=>{closed=true;tickBattle();clearInterval(combatTimer);cancelAnimationFrame(raf);save();observer.disconnect();document.removeEventListener('keydown',input);document.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);}};
+ active={container,useZen,cleanup:()=>{closed=true;tickBattle();clearInterval(combatTimer);cancelAnimationFrame(raf);save();observer.disconnect();document.removeEventListener('keydown',input);document.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);}};
  raf=requestAnimationFrame(frameLoop);canvas.focus({preventScroll:true});}
+ function restoreZen(battle,type){
+  if(battle?.status!=='running'||battle.hp<=0)return false;
+  if(type==='red'&&battle.hp<battle.maxHp)battle.hp=Math.round(Math.min(battle.maxHp,battle.hp+battle.maxHp*.1)*100000)/100000;
+  else if(type==='blue'&&battle.ki<battle.maxKi)battle.ki=battle.maxKi;
+  else return false;
+  return true;
+ }
+ function useSavedZen(type,id){
+  if(active)return active.useZen(type);
+  const key='dboidle_battle_v1_'+String(id||'test');
+  try{
+   const saved=JSON.parse(localStorage.getItem(key)||'null');
+   if(!restoreZen(saved,type))return false;
+   localStorage.setItem(key,JSON.stringify(saved));
+   return true;
+  }catch{return false}
+ }
  function stop(){if(active){active.cleanup();active=null}}
- window.DBIWorld={start,stop,locations:DBI_WORLD_LOCATIONS,gmTeleport};window.addEventListener('pagehide',stop);
+ window.DBIWorld={start,stop,useZen:useSavedZen,locations:DBI_WORLD_LOCATIONS,gmTeleport};window.addEventListener('pagehide',stop);
 })();
