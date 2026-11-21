@@ -844,3 +844,254 @@
   white-space:nowrap; text-align:left; text-shadow:0 1px 2px #000;
   pointer-events:none;
 }
+
+/* Numer wersji gry — prawy dolny róg panelu świata. */
+.game.world-view .dbi-world-version{grid-column:2;justify-self:end;text-align:right;font-size:11px;color:#a7bac8;line-height:1.4;margin-top:-4px;white-space:nowrap}
+@media(max-width:850px){.game.world-view .dbi-world-version{grid-column:1}}
+
+/* DBO: większe grafiki wszystkich przedmiotów jednokratkowych (1x1).
+   Nie dotyczy przedmiotów dwukratkowych, tooltipów ani ekwipunku postaci. */
+.eq-right .inv-grid>.inv-cell.has-item:not(.inv-tall)>span{
+  width:100%;
+  height:94%;
+  max-height:94%;
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.eq-right .inv-grid>.inv-cell.has-item:not(.inv-tall)>span>.dbi-item-image{
+  width:100%;
+  height:100%;
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+}
+
+/* v2.21 — wszystkie przedmioty 1×1 wypełniają kafelek tak jak Znaki +8/+9.
+   Poprzednie ograniczenie wysokości span (63%) pozostawiało zwykłe ikony małe. */
+.eq-right .inv-grid>.inv-cell.has-item:not(.inv-tall){
+  position:relative;
+  padding:0 !important;
+  overflow:hidden;
+}
+.eq-right .inv-grid>.inv-cell.has-item:not(.inv-tall)>span:first-child{
+  position:absolute !important;
+  inset:0 !important;
+  box-sizing:border-box;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden;
+}
+.eq-right .inv-grid>.inv-cell.has-item:not(.inv-tall)>span:first-child>.dbi-item-image{
+  display:block;
+  width:100% !important;
+  height:100% !important;
+  max-width:none !important;
+  max-height:none !important;
+  object-fit:contain;
+  object-position:center;
+}
+.eq-right .inv-grid>.inv-cell.has-item:not(.inv-tall) .dbi-enhance-glow{
+  width:100% !important;
+  height:100% !important;
+}
+
+/* CHI i Esencja: wieksza grafika tylko w zalozonych slotach ekwipunku.
+   Nie dotyka siatki inwentarza, tooltipow ani slotow innych przedmiotow. */
+.eq-slot.occupied[data-slot="chi"] .slot-art,
+.eq-slot.occupied[data-slot="esencja"] .slot-art{
+  width:100%!important;
+  height:100%!important;
+  max-height:none!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+.eq-slot.occupied[data-slot="chi"] .slot-art .dbi-item-image,
+.eq-slot.occupied[data-slot="esencja"] .slot-art .dbi-item-image{
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  object-position:center!important;
+}
+
+/* Turniej: widok przygotowawczy zgodny z motywem DBO Idle. */
+.dbi-tournament{min-height:540px;border:1px solid #8e7547;border-radius:9px;background:linear-gradient(155deg,#17252d,#101c27);padding:24px;color:#e5e9ed}
+.dbi-tournament-header{border-bottom:1px solid #385062;padding-bottom:20px;margin-bottom:24px}
+.dbi-tournament-header h2{margin:10px 0 12px;color:#f1cb83;font-size:26px}
+.dbi-tournament-header p{line-height:1.65;color:#c4cfd6;max-width:940px;margin:0 0 16px}
+.dbi-tournament-hours{display:flex;flex-wrap:wrap;gap:10px 24px;font-size:13px;color:#aabdc9}
+.dbi-tournament-hours strong{color:#f3d28f}
+.dbi-tournament-table-wrap{overflow-x:auto;border:1px solid #41586a;border-radius:7px}
+.dbi-tournament-table{width:100%;border-collapse:collapse;min-width:650px;text-align:left}
+.dbi-tournament-table th{padding:16px;background:#233643;color:#eac783;font-size:13px}
+.dbi-tournament-table td{padding:18px 16px;border-top:1px solid #40515b;font-size:14px}
+.dbi-tournament-table td:nth-child(2){color:#f1d28e}
+.dbi-tournament-status{color:#b9c5cd}
+.dbi-tournament-table button{width:100%;max-width:235px;padding:10px 12px;background:#6c5834;color:#f7e4c0;border:1px solid #9c8050;border-radius:5px;font-weight:700;opacity:.6;cursor:not-allowed}
+.dbi-tournament-note{margin-top:24px;padding:14px 16px;background:#112735;border-left:3px solid #b58a49;border-radius:4px;font-size:13px;color:#b7c9d4;line-height:1.55}
+@media(max-width:650px){.dbi-tournament{padding:14px;min-height:440px}.dbi-tournament-header h2{font-size:22px}}
+
+/* Okno konfiguracji walk PvE */
+.world-prep-backdrop{position:fixed;inset:0;background:rgba(2,8,18,.84);z-index:9999;display:grid;place-items:center;padding:16px}
+.world-prep-dialog{width:min(680px,95vw);max-height:90vh;overflow:auto;background:#101e30;color:#e9eef8;border:2px solid #b58b47;border-radius:12px;box-shadow:0 20px 70px #000;padding:22px}
+.world-prep-dialog header,.world-prep-dialog footer{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.world-prep-dialog header button{background:#612525;color:white;border:1px solid #c67b6a;border-radius:5px;padding:7px 11px;cursor:pointer}
+.world-prep-dialog h2{margin:0;color:#f1d39c}.world-prep-dialog h3{color:#e9c78b;border-bottom:1px solid #52627b;padding-bottom:8px}
+.world-prep-dialog p{color:#bcc9d8}.world-prep-tech,.world-prep-bean{display:flex;align-items:center;gap:12px;background:#172b42;border:1px solid #39526b;border-radius:8px;padding:10px;margin:8px 0}
+.world-prep-tech img,.world-prep-bean img{width:46px;height:46px;object-fit:contain}.world-prep-bean span{flex:1}.world-prep-bean input[type=number]{width:65px;background:#0b1828;color:white;border:1px solid #8e7547;border-radius:4px;padding:8px}
+.world-prep-dialog footer{justify-content:flex-end;margin-top:20px}
+
+/* Zielona fasolka i pasek odnowienia technik PvE */
+.world-prep-bean input[type=range]{width:135px;accent-color:#cba15a;cursor:pointer}
+.world-technique-strip{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;min-height:68px;padding:9px 12px;margin:8px 0 10px;border:1px solid #947340;background:#171c20}
+.world-technique-entry{display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;background:#11171c;border:1px solid #4d5961;border-radius:5px;color:#e7cf9d;font-size:12px}
+.world-technique-entry small{color:#b7c2c9;min-width:48px}
+.world-technique-icon{position:relative;width:48px;height:48px;overflow:hidden;border:1px solid #b58b47;border-radius:4px}
+.world-technique-icon img{display:block;width:100%;height:100%;object-fit:cover}
+.world-technique-shade{position:absolute;left:0;right:0;top:0;height:0%;background:rgba(35,37,40,.87);filter:grayscale(1);pointer-events:none;transition:height .3s linear}
+@media(max-width:620px){.world-prep-bean{flex-wrap:wrap}.world-prep-bean input[type=range]{width:100%}}
+
+/* Przygotowanie PvE: ikonowe przełączniki i suwaki w kolorystyce gry */
+.world-prep-techs{display:flex;flex-wrap:wrap;gap:9px;align-items:flex-start}
+.world-prep-tech-icon,.world-prep-bean-icon{position:relative;display:inline-grid;place-items:center;flex:none;cursor:pointer;background:#10243a;border:1px solid #c29a4c;border-radius:7px;padding:3px;transition:filter .15s,opacity .15s,box-shadow .15s}
+.world-prep-tech-icon{width:60px;height:60px}
+.world-prep-bean-icon{width:54px;height:54px}
+.world-prep-tech-icon img,.world-prep-bean-icon img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.world-prep-tech-icon:not(.is-disabled),.world-prep-bean-icon:not(.is-disabled){box-shadow:0 0 8px #b88b4466}
+.world-prep-tech-icon.is-disabled img,.world-prep-bean-icon.is-disabled img{filter:grayscale(1) brightness(.45)}
+.world-prep-tech-icon.is-disabled,.world-prep-bean-icon.is-disabled{border-color:#59616d;box-shadow:none}
+.world-prep-bean{display:flex;align-items:center;gap:12px}
+.world-prep-bean span{min-width:0;flex:1}
+.world-prep-slider{width:min(230px,40%);display:flex;align-items:center;gap:10px;flex:none}
+.world-prep-slider input[type=range]{width:100%;min-width:70px;appearance:none;-webkit-appearance:none;height:8px;border:1px solid #a98443;border-radius:5px;background:linear-gradient(90deg,#936a27 0%,#d9b46a var(--world-slider-progress, 50%),#28394c var(--world-slider-progress, 50%),#28394c 100%);cursor:pointer}
+.world-prep-slider input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:19px;height:19px;border:2px solid #f6d98b;border-radius:50%;background:radial-gradient(circle at 30% 25%,#ffe39b,#ae7523);box-shadow:0 1px 5px #000}
+.world-prep-slider input[type=range]::-moz-range-thumb{width:17px;height:17px;border:2px solid #f6d98b;border-radius:50%;background:#bd8731}
+.world-prep-slider output{min-width:48px;color:#f0cd89;text-align:right;font-weight:700;font-size:13px}
+.world-technique-strip{display:flex;justify-content:flex-start;align-items:center;gap:9px;flex-wrap:wrap}
+.world-technique-entry{flex:none}
+@media(max-width:620px){.world-prep-slider{width:100%}.world-prep-bean span{flex-basis:calc(100% - 75px)}}
+
+/* PvE: licznik odnowienia bezpośrednio na ikonie, bez bocznego tekstu. */
+.world-technique-entry{padding:3px;gap:0}
+.world-technique-entry .world-technique-icon{width:48px;height:48px}
+.world-technique-entry .world-technique-time{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;font-size:13px;font-weight:800;line-height:1;color:#fff;text-shadow:0 1px 3px #000,0 0 5px #000;min-width:0}
+.world-technique-entry .world-technique-time:empty{display:none}
+
+/* Przywrócenie stylów panelu Układ Walki (21 ruchów). */
+.dbi-combat-panel{color:#e4e9ef;max-width:1200px;margin:auto}.dbi-combat-head{text-align:center;border-bottom:1px solid #657585;margin-bottom:18px;padding-bottom:10px}.dbi-combat-head h2{margin:0 0 6px;color:#edcb86}.dbi-combat-head p{margin:0;color:#b8c8d4;font-size:13px}.dbi-combat-layout{display:grid;grid-template-columns:minmax(165px,1fr) minmax(300px,2.5fr) minmax(165px,1fr);gap:16px;align-items:stretch}.dbi-combat-side{border:1px solid #7a6c50;border-radius:5px;background:#111e2a;min-height:590px}.dbi-combat-side h3{font-size:14px;text-align:center;margin:0;padding:12px;background:#243442;color:#efcb85;border-bottom:1px solid #7a6c50}.dbi-combat-sources{padding:10px;display:grid;align-content:start;gap:9px}.dbi-combat-source{display:flex;align-items:center;gap:9px;padding:8px;border:1px solid #54677a;border-radius:5px;background:#1c3040;cursor:grab;min-height:66px;font-size:12px}.dbi-combat-source:hover,.dbi-combat-source.chosen{border-color:#edc76d;box-shadow:0 0 0 1px #edc76d}.dbi-combat-source img{width:50px;height:50px;object-fit:cover;border-radius:4px}.dbi-combat-empty{color:#98a9b9;font-size:13px;text-align:center;padding:15px 6px}.dbi-combat-center{min-width:0}.dbi-combat-tabs{display:flex;gap:10px;margin-bottom:15px}.dbi-combat-tabs button{flex:1;padding:11px;border:1px solid #66778a;background:#182a3a;color:#c4d2df;cursor:pointer;border-radius:4px}.dbi-combat-tabs button.selected{background:#71562e;border-color:#e0b763;color:#fff4d7;font-weight:700}.dbi-combat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.dbi-combat-slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:74px;padding:8px 3px 4px;border:1px solid #62778b;background:#182b3a;color:#e3eaf1;border-radius:5px;cursor:pointer;overflow:hidden}.dbi-combat-slot:hover,.dbi-combat-slot.drop-target{border-color:#eac277;background:#304258}.dbi-combat-slot.filled{border-color:#c5a15c;background:#263747}.dbi-combat-order{position:absolute;top:4px;left:6px;color:#8fa6b7;font-size:10px}.dbi-combat-normal{font-size:12px;font-weight:600}.dbi-combat-slot img{width:38px;height:38px;object-fit:cover;border-radius:3px}.dbi-combat-slot-label{font-size:10px;text-align:center;line-height:1.2;margin-top:3px;max-width:100%;overflow-wrap:anywhere}.dbi-combat-feedback{font-size:12px;color:#b4c6d4;min-height:38px;margin-top:12px}.dbi-combat-foot{font-size:12px;color:#a9b9c7;margin:20px 0 0}.dbi-combat-source:focus-visible,.dbi-combat-slot:focus-visible{outline:2px solid #f3c66b;outline-offset:2px}@media(max-width:760px){.dbi-combat-layout{grid-template-columns:1fr 1fr}.dbi-combat-center{grid-column:1/-1;grid-row:2}.dbi-combat-side{min-height:160px}.dbi-combat-grid{gap:8px}.dbi-combat-slot{min-height:65px}} 
+
+/* Układ Walki: czerwone pola niedostępne podczas przeciągania/wyboru techniki. */
+.dbi-combat-slot.dbi-combat-blocked,.dbi-combat-slot.dbi-combat-blocked:hover{background:#63252c!important;border-color:#ed5964!important;box-shadow:inset 0 0 0 1px #ed5964,0 0 10px rgba(237,65,80,.32)!important;cursor:not-allowed}
+.dbi-combat-slot.dbi-combat-blocked::after{content:"";position:absolute;inset:0;background:rgba(198,30,43,.17);pointer-events:none}
+
+/* Umiejętności: środek ikony pokrywa się z końcem linii SVG. */
+.dbi-skill-panel {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+}
+.dbi-skill-head { margin-bottom: 16px; }
+.dbi-skill-head h2 { margin: 0 0 8px; color: var(--gold); }
+.dbi-skill-head p, .dbi-skill-foot { color: var(--muted); }
+.dbi-skill-points { font-size: 14px; }
+.dbi-skill-points strong { color: var(--gold); }
+.dbi-skill-scroll {
+  overflow-x: auto;
+  border: 1px solid #36536c;
+  border-radius: 8px;
+  background: #0b1928;
+}
+.dbi-skill-canvas {
+  position: relative;
+  min-width: 320px;
+  height: 1080px;
+  max-width: 920px;
+  margin-inline: auto;
+}
+.dbi-skill-paths {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.dbi-skill-line {
+  stroke: #4c657b;
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+.dbi-skill-line.lit { stroke: var(--gold); }
+.dbi-skill-node {
+  --icon-size: 68px;
+  position: absolute;
+  inset: var(--sy) auto auto var(--sx);
+  transform: translate(-50%, calc(var(--icon-size) / -2));
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  width: clamp(76px, 21%, 156px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: center;
+}
+.dbi-skill-node:disabled { cursor: default; }
+.dbi-skill-node:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.dbi-skill-art {
+  position: relative;
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  border: 1px solid #6b8296;
+  border-radius: 6px;
+  background: #101f30;
+}
+.dbi-skill-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 5px;
+}
+.dbi-skill-node.locked img { filter: grayscale(1) brightness(.65); }
+.dbi-skill-node.learned .dbi-skill-art,
+.dbi-skill-node.spendable:hover .dbi-skill-art { border-color: var(--gold); }
+.dbi-skill-level {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: #07111f;
+  color: var(--gold);
+  font-size: 11px;
+}
+.dbi-skill-label {
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: #0b1928;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.dbi-skill-label small { display: block; color: var(--gold); }
+.dbi-skill-foot { margin: 12px 0 0; font-size: 12px; }
+@media (max-width: 520px) {
+  .dbi-skill-node { --icon-size: 54px; }
+  .dbi-skill-label { font-size: 11px; }
+}
