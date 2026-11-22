@@ -1202,6 +1202,14 @@ for(const item of catalog){
  const image=DBI_UPGRADE_MATERIAL_IMAGES[item.id];
  if(image)item.image=image;
 }
+// Pierwsza Podróż: nagroda od Generała Niebieskiego wymaga tego materiału.
+// Na nowych kontach może go brakować w katalogu, przez co nagroda zwraca false.
+// Dodajemy tylko brakującą definicję, bez modyfikowania istniejących przedmiotów.
+if(!catalog.some(item=>item.id==='smith-upgrade-2')){
+ catalog.push({id:'smith-upgrade-2',name:'Części zamienne',slot:'materiał',icon:'⚙️',
+  image:'assets/items/smith-upgrade-2.png',quality:'Pospolity',requiredLevel:1,
+  attack:0,defense:0,ki:0,description:'Materiał kowalski.'});
+}
 const DBI_QUALITY_MODULES=[
  {id:'smith-quality-common',name:'Moduł Zwykły',image:'assets/items/smith-quality-common.png'},
  {id:'smith-quality-rare',name:'Moduł Rzadki',image:'assets/items/smith-quality-rare.png'},
