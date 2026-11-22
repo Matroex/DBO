@@ -1,5 +1,5 @@
 window.DBIGmAccess=(()=>{
- const gmAccounts=new Set(['matroex']);
+ const gmAccounts=new Set(['matroex','gostpl']);
  function allowed(account){
   return typeof account==='string'&&gmAccounts.has(account.trim().toLowerCase());
  }
