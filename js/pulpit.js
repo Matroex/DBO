@@ -54,6 +54,7 @@
       return `<div class="dbi-dash-row"><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`;
     }).join('');
     host.innerHTML = `<section class="dbi-dash" aria-label="Prywatny pulpit postaci">
+      <header class="dbi-dash-banner"><div class="dbi-dash-banner-title"><h2>Pulpit</h2></div><p>Przeglądaj osiągnięcia i statystyki swojego wojownika.</p></header>
       <div class="dbi-dash-figure">
         <div class="dbi-dash-caption">MODEL POSTACI</div>
         <div class="dbi-dash-stage">

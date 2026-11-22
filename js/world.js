@@ -147,6 +147,7 @@ const highTowerProps=[
 function drawHighTowerProps(ctx){
  for(const {image,x,y} of highTowerProps){
   if(!image.complete||!image.naturalWidth)continue;
+  mapSeal(ctx,x,y,Math.min(image.naturalWidth*.4,48),"#a7c7d7");
   ctx.drawImage(image,Math.round(x-image.naturalWidth/2),y-image.naturalHeight);
  }
 }
@@ -157,10 +158,30 @@ const extraNpcQuestKey=(loc,index,id)=>'dboidle_quest_extra_'+loc+'_'+index+'_v1
 function extraNpcQuestDone(loc,index,id){
  try{return JSON.parse(localStorage.getItem(extraNpcQuestKey(loc,index,id))||'null')?.state==='completed'}catch{return false}
 }
+// Podstawa znacznika jest zakotwiczona w pozycji obiektu w świecie.
+function mapSeal(ctx,x,y,radius,color){
+ ctx.save();ctx.beginPath();ctx.ellipse(x,y,radius,radius*.32,0,0,Math.PI*2);
+ ctx.fillStyle='#0c192c88';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.stroke();
+ ctx.restore();
+}
+function mapBadge(ctx,label,x,y){
+ ctx.save();
+ ctx.font='600 11px Georgia, serif';
+ const half=Math.ceil(ctx.measureText(label).width/2)+7;
+ ctx.beginPath();
+ ctx.roundRect(x-half,y-12,half*2,17,4);
+ ctx.fillStyle='#0a1729ed';ctx.fill();
+ ctx.strokeStyle='#c9a56d';ctx.lineWidth=1;ctx.stroke();
+ ctx.fillStyle='#fff0ce';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+ ctx.fillText(label,x,y);ctx.restore();
+}
 function drawQuestMark(ctx,x,y,time){
- const bob=Math.sin(time/260)*2;
- ctx.save();ctx.font='900 21px Arial,sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#35200b';ctx.fillStyle='#ffdb3c';
- ctx.strokeText('!',x,y-49+bob);ctx.fillText('!',x,y-49+bob);ctx.restore();
+ const cy=y-56+Math.sin(time/260)*2;
+ ctx.save();ctx.translate(x,cy);ctx.rotate(Math.PI/4);
+ ctx.fillStyle='#63391e';ctx.strokeStyle='#ffc45d';ctx.lineWidth=1.5;
+ ctx.fillRect(-6,-6,12,12);ctx.strokeRect(-6,-6,12,12);
+ ctx.rotate(-Math.PI/4);ctx.font='bold 13px Georgia';ctx.textAlign='center';
+ ctx.fillStyle='#fff2c7';ctx.fillText('!',0,4);ctx.restore();
 }
 const extraMap=loc=>EXTRA_MAPS[loc]||null;
 const mapPortals=map=>map?.portals||(map?.portal?[map.portal]:[]);
@@ -320,6 +341,13 @@ function character(ctx,x,y,dir,walking,time,npc=false){
  ctx.fillStyle=npc?'#c6e5e5':'#e0b45e';ctx.fillRect(-9,-22,18,6);ctx.fillRect(-7,-25,6,5);ctx.fillRect(2,-27,7,7);
  if(dir==='left'||dir==='right'){ctx.fillStyle='#222';ctx.fillRect(dir==='left'?-6:4,-14,2,2)}else if(dir==='down'){ctx.fillStyle='#222';ctx.fillRect(-4,-14,2,2);ctx.fillRect(3,-14,2,2)}
  ctx.restore();}
+function mobPortrait(name){
+ const key=String(name==='Dowódca piętra'?'Dowódca piętra 1':name).toLowerCase().replace(/ł/g,'l').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+ return 'assets/ui/moby/'+key+'.webp';
+}
+function questPortrait(name){
+ return '<img src="'+mobPortrait(name)+'" width="38" height="38" alt="" style="object-fit:cover;border-radius:4px;vertical-align:middle">';
+}
 function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_drop_v1_'+String(id||'test');
  const turtleInventoryKey='dboidle_inventory_v1_'+String(id||'test');
  let turtleAlreadyDropped=false;
@@ -329,17 +357,21 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  const key='dboidle_world_v1_'+String(id||'test');let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null')}catch{}
  const player={x:SPAWN.x,y:SPAWN.y,dir:'down',location:'laguna'};
  if(saved&&(saved.location==='island'||extraMap(saved.location))){player.location=saved.location;const spawn=DBI_WORLD_LOCATIONS.find(l=>l.id===saved.location)?.spawn||ISLAND_SPAWN;player.x=Number.isFinite(saved.x)?saved.x:spawn.x;player.y=Number.isFinite(saved.y)?saved.y:spawn.y;player.dir=['up','down','left','right'].includes(saved.dir)?saved.dir:'down';}else if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)&&!blocked(saved.x,saved.y)){player.x=clamp(saved.x,20,WORLD-20);player.y=clamp(saved.y,20,WORLD-20);player.dir=['up','down','left','right'].includes(saved.dir)?saved.dir:'down';}
- container.innerHTML=`<div class="world-grid"><section class="world-shell"><div class="world-toolbar"><strong>🌿 BŁĘKITNA LAGUNA</strong><span id="worldCoords">Pozycja: —</span></div><div class="world-frame"><canvas id="worldCanvas" tabindex="0" aria-label="Mapa gry, WASD i strzałki"></canvas><div class="world-prompt" id="worldPrompt" hidden>Naciśnij E, aby porozmawiać z Opiekunem Laguny</div></div><div class="world-help">WASD / strzałki — ruch. Wejdź na namiot, aby wybrać potwory. Podejdź do Opiekuna Laguny i naciśnij E, aby rozpocząć misję.</div></section><aside id="worldSide" class="world-side"><h2>🌍 Błękitna Laguna</h2><p>Znajdź namiot treningowy na mapie. Po wejściu na niego zobaczysz listę 15 przeciwników. Walkę można ukryć i otworzyć ponownie.</p></aside></div><div id="worldOverlay" class="world-overlay" hidden><section id="worldBattle" class="world-battle world-modal"></section></div>`;
+ container.innerHTML=`<div class="world-grid"><section class="world-shell"><div class="world-toolbar"><strong>🌿 BŁĘKITNA LAGUNA</strong></div><div class="world-frame"><canvas id="worldCanvas" tabindex="0" aria-label="Mapa gry, WASD i strzałki"></canvas><div class="world-prompt" id="worldPrompt" hidden>Naciśnij E, aby porozmawiać z Opiekunem Laguny</div></div><span id="worldCoords" class="map-coordinates">Pozycja: —</span><div class="world-help">WASD / strzałki — ruch. Wejdź na namiot, aby wybrać potwory. Podejdź do Opiekuna Laguny i naciśnij E, aby rozpocząć misję.</div></section><aside id="worldSide" class="world-side"><h2>🌍 Błękitna Laguna</h2><p>Znajdź namiot treningowy na mapie. Po wejściu na niego zobaczysz listę 15 przeciwników. Walkę można ukryć i otworzyć ponownie.</p></aside></div><div id="worldOverlay" class="world-overlay" hidden><section id="worldBattle" class="world-battle world-modal"></section></div>`;
  const canvas=container.querySelector('canvas'),ctx=canvas.getContext('2d'),frame=container.querySelector('.world-frame'),prompt=container.querySelector('#worldPrompt'),coords=container.querySelector('#worldCoords');
+ let bannerLocation=null;
  const keys=new Set();let raf=0,last=0,lastSave=0,camX=player.x,camY=player.y,closed=false;
  const save=()=>{
   const state=player.location==='mountain'&&saved?.gmMountainArrival===true?{...player,gmMountainArrival:true}:player;
   try{localStorage.setItem(key,JSON.stringify(state))}catch{}
  };
+ function setMapText(node,text){if(node.textContent!==text)node.textContent=text}
  function resize(){
   const dpr=Math.min(devicePixelRatio||1,2);
-  canvas.width=Math.max(1,Math.round(canvas.clientWidth*dpr));
-  canvas.height=Math.max(1,Math.round(canvas.clientHeight*dpr));
+  const w=Math.max(1,Math.round(canvas.clientWidth*dpr));
+  if(canvas.width!==w)canvas.width=w;
+  const h=Math.max(1,Math.round(canvas.clientHeight*dpr));
+  if(canvas.height!==h)canvas.height=h;
  }
  const observer=new ResizeObserver(resize);observer.observe(canvas);resize();
  const near=()=>player.location==='laguna'&&Math.hypot(player.x-NPC.x,player.y-NPC.y)<70;
@@ -452,7 +484,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   const done=stage===17||stage===18?!blocked:cleared;
   const action=enemy&&!cleared?'Walcz':climb?climb[cleared?2:1]:label;
   const rewardText=climb?.[3]||reward;
-  const inspect=enemy?`<div class="world-mob dbi-journey-opponent"><strong>${enemy.name}</strong><span class="stadium-stats-inspect" tabindex="0" aria-label="Statystyki: ${enemy.name}">🔍<span class="stadium-stats-tip" role="tooltip"><strong>${enemy.name}</strong>${[['Rasa','race'],['Poziom','level'],['Siła','strength'],['Szybkość','speed'],['Wytrzymałość','endurance'],['Inteligencja','intelligence'],['KI','ki'],['Atak','attack'],['Obrona','defense'],['HP','hp']].map(([label,key])=>`<span>${label}: ${enemy[key]}</span>`).join('')}</span></span></div>`:'';
+  const inspect=enemy?`<div class="world-mob dbi-journey-opponent">${questPortrait(enemy.name)}<strong>${enemy.name}</strong><span class="stadium-stats-inspect" tabindex="0" aria-label="Statystyki: ${enemy.name}">🔍<span class="stadium-stats-tip" role="tooltip"><strong>${enemy.name}</strong>${[['Rasa','race'],['Poziom','level'],['Siła','strength'],['Szybkość','speed'],['Wytrzymałość','endurance'],['Inteligencja','intelligence'],['KI','ki'],['Atak','attack'],['Obrona','defense'],['HP','hp']].map(([label,key])=>`<span>${label}: ${enemy[key]}</span>`).join('')}</span></span></div>`:'';
   return {enemy,climb,grant,blocked,html:`<div class="dbi-quest-panel">${enemy?questOpponentInspectStyle+journeyOpponentStyle:''}<header class="dbi-quest-title">Pierwsza Podróż <small>Fabularna</small></header><section class="dbi-quest-story">${dialogue}</section>${inspect}${goal?`<div class="dbi-quest-goal ${done?'done':'pending'}">Wymagania: ${goal} (${done?1:0}/1)</div>`:''}${rewardText?`<div class="dbi-quest-rewards"><strong>Nagroda</strong><div class="dbi-quest-reward-item">${rewardText}</div></div>`:''}<p data-journey-error hidden role="status"></p><div class="dbi-quest-buttons"><button class="world-action" data-journey-next ${blocked?'disabled':''}>${action}</button><button class="world-action secondary" data-journey-close>Zamknij</button></div></div>`};
  }
  function dbiPlayerName(){return document.querySelector('#name')?.textContent||'Wojownik'}
@@ -560,8 +592,8 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   if(journey&&stage===3){goal='<img class="world-quest-chest" width="26" src="'+northBall.image+'" alt=""> Oddaj Smoczą kulę';count=Number(inventoryHas(northBall.id));blocked=!count}
   if(journey&&stage===7)goal='Pokonaj Władcę Lasu';
   if(journey&&stage===13){goal='Pokonaj Władcę Lasu';count=Number(inventoryHas('quest-chief-daughter'));blocked=!count}
-  if(journey&&stage===15){goal='Osiągnij poziom';total=50;count=Math.min(total,characterLevel());blocked=count<total}
-  const inspect=enemy?`<div class="world-mob dbi-journey-opponent"><strong>${enemy.name}</strong><span class="stadium-stats-inspect" tabindex="0" aria-label="Statystyki: ${enemy.name}">🔍<span class="stadium-stats-tip" role="tooltip">${[['Rasa','race'],['Poziom','level'],['Siła','strength'],['Szybkość','speed'],['Wytrzymałość','endurance'],['Inteligencja','intelligence'],['KI','ki'],['Atak','attack'],['Obrona','defense'],['HP','hp']].map(([label,key])=>`<span>${label}: ${enemy[key]}</span>`).join('')}</span></span></div>`:'';
+  if(journey&&stage===15){goal='Osiągnij poziom';total=50;count=characterLevel();blocked=count<total}
+  const inspect=enemy?`<div class="world-mob dbi-journey-opponent">${questPortrait(enemy.name)}<strong>${enemy.name}</strong><span class="stadium-stats-inspect" tabindex="0" aria-label="Statystyki: ${enemy.name}">🔍<span class="stadium-stats-tip" role="tooltip">${[['Rasa','race'],['Poziom','level'],['Siła','strength'],['Szybkość','speed'],['Wytrzymałość','endurance'],['Inteligencja','intelligence'],['KI','ki'],['Atak','attack'],['Obrona','defense'],['HP','hp']].map(([label,key])=>`<span>${label}: ${enemy[key]}</span>`).join('')}</span></span></div>`:'';
   side.innerHTML=`<div class="dbi-quest-panel">${enemy?questOpponentInspectStyle+journeyOpponentStyle:''}<header class="dbi-quest-title">${journey?'Pierwsza Podróż <small>Fabularna</small>':'Pomoc w polowaniu'}</header><section class="dbi-quest-story">${story.startsWith('<p>')?story:'<p>'+story+'</p>'}</section>${inspect}${goal?`<div class="dbi-quest-goal ${count>=total?'done':'pending'}">Wymagania: ${goal} (${count}/${total})</div>`:''}${reward?`<div class="dbi-quest-rewards"><strong>Nagroda</strong><div class="dbi-quest-reward-lines">${reward}</div></div>`:''}<p data-north-error hidden role="status"></p><div class="dbi-quest-buttons"><button type="button" class="world-action" data-north-next ${blocked?'disabled':''}>${enemy&&!won?'Walcz':caption}</button><button type="button" class="world-action secondary" data-north-close>Zamknij</button></div></div>`;
   const refresh=()=>{lastSide='';updateSide(true)};
   const error=()=>{const p=side.querySelector('[data-north-error]');if(p){p.hidden=false;p.textContent='Nie udało się zapisać postępu.'}};
@@ -1288,6 +1320,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   if(map.image.complete&&map.image.naturalWidth)ctx.drawImage(map.image,0,0,map.sizeX*TILE,map.sizeY*TILE);
   else{ctx.fillStyle='#365d39';ctx.fillRect(0,0,map.sizeX*TILE,map.sizeY*TILE);}
   for(const p of mapPortals(map)){
+   mapSeal(ctx,p.x,p.y,25,"#89cfe7");
    const t=time/1000, pulse=0.88+0.09*Math.sin(t*2.1);
    ctx.save();ctx.globalAlpha=pulse;
    if(portalArt.complete&&portalArt.naturalWidth)ctx.drawImage(portalArt,p.x-29,p.y-66,58,72);
@@ -1311,13 +1344,14 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#071725';ctx.fillStyle='#ffe4a3';
   for(const [index,n] of map.npc.entries()){
    if(player.location==='stadium')continue; // Stadion: znaczniki rysowane na końcu, nad postacią.
+   mapSeal(ctx,n.x,n.y,17,"#f0c579");
    const sprite=n.image||(player.location==='centralForest'?centralNpcSprites[n.label]:(player.location==='forest'||player.location==='mountain'||player.location==='stadium')?(n.label==='Genialny Żółw'?roshiSprite:n.label==='Bulma'?bulmaSprite:n.label==='Wędrowiec'?wandererSprite:null):null);
    if(sprite&&sprite.complete&&sprite.naturalWidth){
     if(n.source)ctx.drawImage(sprite,...n.source,n.x-13,n.y-49,26,49);
     else ctx.drawImage(sprite,n.x-17,n.y-49,34,49);
    }
    else character(ctx,n.x,n.y,'down',false,time,true);
-   ctx.strokeText(n.label,n.x,n.y-55);ctx.fillText(n.label,n.x,n.y-55);
+   mapBadge(ctx,n.label,n.x,n.y-55);
    if(player.location==='centralForest'&&index===0&&woodcutter.stage<4)drawQuestMark(ctx,n.x,n.y-12,time);
    if(player.location==='centralForest'&&index===1&&fisherman.stage<4)drawQuestMark(ctx,n.x,n.y-12,time);
    if(player.location==='centralForest'&&index===2&&father.stage<3)drawQuestMark(ctx,n.x,n.y-12,time);
@@ -1325,8 +1359,9 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   }
   if(player.location==='mountainLake'&&northernScenerySprite.complete&&northernScenerySprite.naturalWidth){
    for(const {x,y,width,height,source,label} of northernScenery){
+    mapSeal(ctx,x,y,width*.46,"#9fc9d3");
     ctx.drawImage(northernScenerySprite,...source,x-width/2,y-height,width,height);
-    ctx.strokeText(label,x,y-height-7);ctx.fillText(label,x,y-height-7);
+    mapBadge(ctx,label,x,y-height-7);
     const prop=northernScenery.find(entry=>entry.label===label);
     if(prop===journeySpot()||prop===huntSpot())drawQuestMark(ctx,x,y-height+27,time);
    }
@@ -1334,11 +1369,11 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   if(player.location==='mountainLake'&&ballVisible()&&ballSprite.complete&&ballSprite.naturalWidth){
    ctx.drawImage(ballSprite,ballPosition.x-12,ballPosition.y-24,24,24);
   }
-  if(map.city){const {x,y,label}=map.city;ctx.strokeText(label,x,y);ctx.fillText(label,x,y);}
+  if(map.city){const {x,y,label}=map.city;mapBadge(ctx,label,x,y);}
   if(map.dungeon&&northernDungeonSprite.complete&&northernDungeonSprite.naturalWidth){
    const {x,y,label}=map.dungeon;
    ctx.drawImage(northernDungeonSprite,320,77,558,1165,x-17,y-72,34,72);
-   ctx.strokeText(label,x,y-79);ctx.fillText(label,x,y-79);
+   mapBadge(ctx,label,x,y-79);
   }
   if(map.mobs){
    if(player.location==='highTowerForest'){
@@ -1347,45 +1382,47 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
     if(marker)drawQuestMark(ctx,marker.x,marker.y-(marker.image.naturalHeight||60)+40,time);
     // Posterunek jest osobnym obiektem rysowanym na mapie, nie częścią tła.
     if(redRibbonOutpostSprite.complete&&redRibbonOutpostSprite.naturalWidth)ctx.drawImage(redRibbonOutpostSprite,map.mobs.x-51,map.mobs.y-98,102,100);
-    ctx.strokeText('⚔ Moby',map.mobs.x,map.mobs.y-105);ctx.fillText('⚔ Moby',map.mobs.x,map.mobs.y-105);
+    mapBadge(ctx,'⚔ Moby',map.mobs.x,map.mobs.y-105);
    }else if(player.location==='mountainLake'){
     const {x,y}=map.mobs;
     if(northernCaveSprite.complete&&northernCaveSprite.naturalWidth)ctx.drawImage(northernCaveSprite,170,169,1432,561,x-38,y-30,76,30);
-    ctx.strokeText('⚔ Moby',x,y-36);ctx.fillText('⚔ Moby',x,y-36);
+    mapBadge(ctx,'⚔ Moby',x,y-36);
    }else{
     const markerY=map.mobs.y-(map.city?111:28);
-    ctx.strokeText('⚔ Moby',map.mobs.x,markerY);ctx.fillText('⚔ Moby',map.mobs.x,markerY);
+    mapBadge(ctx,'⚔ Moby',map.mobs.x,markerY);
    }
   }
   // Boss ma fizyczny sprite na mapie. Walka z bossem zostanie dodana po ustaleniu zasad.
   if(map.boss){
    const b=map.boss;
    if(forestBossSprite.complete&&forestBossSprite.naturalWidth)ctx.drawImage(forestBossSprite,b.x-26,b.y-66,52,66);
-   ctx.strokeText(b.label,b.x,b.y-72);ctx.fillText(b.label,b.x,b.y-72);
+   mapBadge(ctx,b.label,b.x,b.y-72);
   }
  }else if(onIsland){
   if(islandArt.complete&&islandArt.naturalWidth)ctx.drawImage(islandArt,0,0,ISLAND_WORLD,ISLAND_WORLD);
   else{ctx.fillStyle='#157da9';ctx.fillRect(0,0,ISLAND_WORLD,ISLAND_WORLD);ctx.fillStyle='#4b9a45';ctx.beginPath();ctx.ellipse(240,240,170,170,0,0,Math.PI*2);ctx.fill();}
    // Statyczny sprite Krillina: jedna poza, bez animacji i obracania.
+   mapSeal(ctx,ISLAND_KRILLIN.x,ISLAND_KRILLIN.y,17,"#f0c579");
    if(krillinSprite.complete&&krillinSprite.naturalWidth){ctx.drawImage(krillinSprite,ISLAND_KRILLIN.x-17,ISLAND_KRILLIN.y-45,34,45)}
    if(!krillinQuestCompleted())drawQuestMark(ctx,ISLAND_KRILLIN.x,ISLAND_KRILLIN.y-22,time);
    ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#071725';ctx.fillStyle='#ffe4a3';
-   ctx.strokeText('Krillin',ISLAND_KRILLIN.x,ISLAND_KRILLIN.y-49);ctx.fillText('Krillin',ISLAND_KRILLIN.x,ISLAND_KRILLIN.y-49);
+   mapBadge(ctx,'Krillin',ISLAND_KRILLIN.x,ISLAND_KRILLIN.y-49);
    // Znaczniki miejsc interakcji na wyspie (nie modyfikują grafiki terenu).
    ctx.font='bold 12px Segoe UI, sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#071725';ctx.fillStyle='#ffe4a3';
    // Jeden animowany wykrzyknik przy domku, dopóki linia zadań mistrza jest aktywna.
    // Po przejściu do Dzikiego Lasu (masterCamp='completed') znacznik znika.
    if(masterCamp!=='completed')drawQuestMark(ctx,ISLAND_HOUSE.x+49,ISLAND_HOUSE.y+7,time);
    const houseQuestLabel='📜 Quest';
-    ctx.strokeText(houseQuestLabel,ISLAND_HOUSE.x,ISLAND_HOUSE.y-25);ctx.fillText(houseQuestLabel,ISLAND_HOUSE.x,ISLAND_HOUSE.y-25);
-   ctx.strokeText('⚔ Moby',ISLAND_TRAINING.x,ISLAND_TRAINING.y-26);ctx.fillText('⚔ Moby',ISLAND_TRAINING.x,ISLAND_TRAINING.y-26);
+    mapBadge(ctx,houseQuestLabel,ISLAND_HOUSE.x,ISLAND_HOUSE.y-25);
+   mapBadge(ctx,'⚔ Moby',ISLAND_TRAINING.x,ISLAND_TRAINING.y-26);
   }else{
   if(lagunaArt.complete&&lagunaArt.naturalWidth)ctx.drawImage(lagunaArt,0,0,WORLD,32*TILE);
   else{const minX=clamp(Math.floor(offsetX/TILE)-1,0,SIZE-1),maxX=clamp(Math.ceil((offsetX+width)/TILE)+1,0,SIZE-1),minY=clamp(Math.floor(offsetY/TILE)-1,0,31),maxY=clamp(Math.ceil((offsetY+height)/TILE)+1,0,31);for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++)drawTile(ctx,x,y,'grass');}
   // NPC i znaczniki są osobnymi elementami, nie są wtopione w tło mapy.
+  mapSeal(ctx,NPC.x,NPC.y,20,"#f0c579");
   if(lagoonNpcSprite.complete&&lagoonNpcSprite.naturalWidth)ctx.drawImage(lagoonNpcSprite,NPC.x-23,NPC.y-59,46,62);
   else character(ctx,NPC.x,NPC.y,'down',false,time,true);
-  ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#101b23';ctx.fillStyle='#ffe1a0';ctx.strokeText('Opiekun Laguny',NPC.x,NPC.y-63);ctx.fillText('Opiekun Laguny',NPC.x,NPC.y-63);
+  ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#101b23';ctx.fillStyle='#ffe1a0';mapBadge(ctx,'Opiekun Laguny',NPC.x,NPC.y-63);
   if(quest.state!=='completed'||quest2.state!=='completed')drawQuestMark(ctx,NPC.x,NPC.y-35,time);
  }
  character(ctx,player.x,player.y,player.dir,moving,time);
@@ -1403,9 +1440,14 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  if(bossOpen&&!nearForestBoss())bossOpen=false;
   prompt.hidden=!(nearNorthBall()||nearNorthQuest()||nearDungeon()||nearPortal()||near()||nearHouse()||nearKrillin()||nearExtraNpc()||nearForestBoss()||nearTowerQuest());
   if(!prompt.hidden)prompt.textContent=nearNorthBall()?'Naciśnij E, aby podnieść Smoczą kulę':nearNorthQuest()?'Naciśnij E, aby porozmawiać':nearDungeon()?'Dungeon · E — wybór wejścia':nearPortal()?'Naciśnij E, aby przejść do: '+(extraMap(nearPortal().to)?.name||'następna lokacja'):nearForestBoss()?'Naciśnij E, aby zmierzyć się z Leśnym Wojownikiem (Boss)':nearKrillin()?'Naciśnij E, aby porozmawiać z Krillinem':nearTowerQuest()?'Naciśnij E, aby kontynuować Pierwszą Podróż':nearExtraNpc()?'Naciśnij E, aby porozmawiać: '+nearExtraNpc().label:nearHouse()?'Naciśnij E, aby porozmawiać z Wielkim Mistrzem':'Naciśnij E, aby porozmawiać z Opiekunem Laguny';
- container.querySelector('.world-toolbar strong').textContent=currentExtra?'🌍 '+currentExtra.name.toUpperCase():onIsland?'🏝️ WYSPA GENIALNEGO ŻÓŁWIA':'🌿 BŁĘKITNA LAGUNA';
- container.querySelector('.world-help').textContent=currentExtra?'WASD / strzałki — ruch. Przy portalu naciśnij E, aby zmienić lokację. NPC: E — rozmowa.':onIsland?'WASD / strzałki — ruch. Krillin: E — rozmowa. Domek mistrza: E — quest. Kukła treningowa — uczniowie LVL 3. Woda jest nieprzechodnia.':'WASD / strzałki — ruch. Wejdź na namiot, aby wybrać potwory. Podejdź do Opiekuna Laguny i naciśnij E, aby rozpocząć misję.';
- updateSide();coords.textContent='Pozycja: '+Math.floor(player.x/TILE)+' / '+Math.floor(player.y/TILE);
+ if(bannerLocation!==player.location){
+  bannerLocation=player.location;
+  const art=currentExtra?.image||(onIsland?islandArt:lagunaArt);
+  container.querySelector('.world-grid').style.setProperty('--region-art','url("'+art.src+'")');
+ }
+ setMapText(container.querySelector('.world-toolbar strong'),currentExtra?currentExtra.name:onIsland?'Wyspa Genialnego Żółwia':'Błękitna Laguna');
+ setMapText(container.querySelector('.world-help'),currentExtra?'WASD / strzałki — ruch. Przy portalu naciśnij E, aby zmienić lokację. NPC: E — rozmowa.':onIsland?'WASD / strzałki — ruch. Krillin: E — rozmowa. Domek mistrza: E — quest. Kukła treningowa — uczniowie LVL 3. Woda jest nieprzechodnia.':'WASD / strzałki — ruch. Wejdź na namiot, aby wybrać potwory. Podejdź do Opiekuna Laguny i naciśnij E, aby rozpocząć misję.');
+ updateSide();setMapText(coords,'Pozycja: '+Math.floor(player.x/TILE)+' / '+Math.floor(player.y/TILE));
 
  if(time-lastSave>1500){save();lastSave=time}raf=requestAnimationFrame(frameLoop);
  }
@@ -1548,9 +1590,30 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  function persistBattle(){try{localStorage.setItem(battleKey,JSON.stringify(battle))}catch{}}
  function inTent(){return player.location==='laguna'&&Math.abs(player.x-TENT.x)<36&&Math.abs(player.y-TENT.y)<35}
  function inTraining(){return nearTraining()||nearExtraMobs()}
+ // Zasilany pełnym snapshotem postaci z bieżącego serwera; x/y to numery pól.
+ let presence=[];
+ let lastPresenceTile='';
+ function setNearbyPlayers(players){
+  if(!Array.isArray(players))return;
+  presence=players.filter(p=>p&&p.id!=null&&typeof p.name==='string'&&typeof p.location==='string'&&Number.isInteger(p.x)&&Number.isInteger(p.y));
+  lastPresenceTile='';
+ }
+ function regionOverview(){
+  const x=Math.floor(player.x/TILE),y=Math.floor(player.y/TILE);
+  const title=DBI_WORLD_LOCATIONS.find(loc=>loc.id===player.location)?.name||'Świat';
+  const occupants=new Map([[String(id),dbiPlayerName()+' (Ty)']]);
+  for(const entry of presence){
+   if(entry.location===player.location&&entry.x===x&&entry.y===y&&String(entry.id)!==String(id))occupants.set(String(entry.id),entry.name);
+  }
+  return '<header class="region-cover"><h2>'+escapeText(title)+'</h2></header><section class="region-register"><h3>Gracze na polu ('+x+', '+y+')</h3><ul>'+Array.from(occupants.values(),name=>'<li><span class="region-icon" aria-hidden="true">♟</span><strong>'+escapeText(name)+'</strong></li>').join('')+'</ul></section>';
+ }
  function updateSide(force=false){
   const mode=battle&&battle.status==='running'?'running':battle&&battle.status==='finished'?'finished':extraMap(player.location)?(bossOpen&&nearForestBoss()?'forestBoss':questOpen&&nearNorthQuest()?'northQuest':questOpen&&nearTowerQuest()?'towerJourney':questOpen&&nearExtraNpc()?'extraNpc':nearDungeon()?'dungeon':inTraining()?'tent':'extra'):player.location==='island'?(questOpen&&nearKrillin()?'krillin':questOpen&&nearHouse()?'islandQuest':inTraining()?'tent':'island'):questOpen?'quest':inTent()?'tent':'none';
-  if(!force&&mode===lastSide){
+  if(mode==='extra'||mode==='island'||mode==='none'){
+   const tileKey=player.location+'/'+Math.floor(player.x/TILE)+'/'+Math.floor(player.y/TILE);
+   if(lastPresenceTile!==tileKey){force=true;lastPresenceTile=tileKey}
+  }
+  if(!force&&mode===lastSide&&side.dataset.region===player.location){
    if(mode==='dungeon'){
     const disabled=!canEnterDungeon();
     for(const button of side.querySelectorAll('[data-dungeon-enter],[data-dungeon-auto]'))button.disabled=disabled;
@@ -1562,11 +1625,13 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   const previousList=side.querySelector('.world-mobs');
   const previousScroll=previousList?previousList.scrollTop:0;
   lastSide=mode;
+  side.dataset.region=player.location;
+  side.dataset.view=mode;
   if(mode==='northQuest'){renderNorthQuest(nearNorthQuest());return}
   if(mode==='towerJourney'){renderTowerJourney();return}
   if(mode==='forestBoss'){
    const boss={name:'Leśny Wojownik (Boss)',level:120};
-   side.innerHTML='<div class="dbi-quest-panel"><header class="dbi-quest-title">Leśny Wojownik (Boss) — Poziom 120</header><section class="dbi-quest-story"><p>Najpotężniejszy wojownik z wszystkich Leśnych Wojowników!</p><p>Walka z nim jest ryzykowna, ale nagroda jest równie potężna.</p></section><div class="world-quest-progress done"><div class="world-mobs"><div class="world-mob selected"><span class="world-mob-select" aria-selected="true">Leśny Wojownik (Boss)</span><span class="world-mob-level">Poziom 120</span><span class="world-mob-stats-wrap"><button type="button" class="world-mob-stats-trigger" id="forestBossStats" aria-label="Statystyki bossa">🔍</button></span><button type="button" class="world-mob-info" id="forestBossLoot" title="Możliwy drop" aria-label="Możliwy drop bossa">ⓘ</button></div></div></div><p id="forestBossAttempts"></p><div class="dbi-quest-buttons"><button class="world-action" id="forestBossFight">⚔️ Walcz</button><button class="world-action secondary" id="forestBossClose">Zamknij</button></div></div>';
+   side.innerHTML='<div class="dbi-quest-panel"><header class="dbi-quest-title">Leśny Wojownik (Boss) — Poziom 120</header><section class="dbi-quest-story"><p>Najpotężniejszy wojownik z wszystkich Leśnych Wojowników!</p><p>Walka z nim jest ryzykowna, ale nagroda jest równie potężna.</p></section><div class="world-quest-progress done"><div class="world-mobs"><div class="world-mob selected"><span class="world-mob-select" aria-selected="true">'+questPortrait(boss.name)+' Leśny Wojownik (Boss)</span><span class="world-mob-level">Poziom 120</span><span class="world-mob-stats-wrap"><button type="button" class="world-mob-stats-trigger" id="forestBossStats" aria-label="Statystyki bossa">🔍</button></span><button type="button" class="world-mob-info" id="forestBossLoot" title="Możliwy drop" aria-label="Możliwy drop bossa">ⓘ</button></div></div></div><p id="forestBossAttempts"></p><div class="dbi-quest-buttons"><button class="world-action" id="forestBossFight">⚔️ Walcz</button><button class="world-action secondary" id="forestBossClose">Zamknij</button></div></div>';
    const trigger=side.querySelector('#forestBossStats');let tip=null;
    const hide=()=>{if(tip){tip.remove();tip=null}};
    const show=()=>{hide();tip=document.createElement('div');tip.className='world-mob-stats-tip';tip.textContent=mobStatsTooltip(boss).split(' | ').join('\n');tip.style.cssText='display:block;white-space:pre-line;position:fixed;z-index:2147483647;padding:10px 14px;max-width:250px;pointer-events:none';document.body.appendChild(tip);const r=trigger.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(window.innerWidth-260,r.left-210))+'px';tip.style.top=Math.max(8,Math.min(window.innerHeight-tip.offsetHeight-8,r.top))+'px'};
@@ -1635,7 +1700,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    else if(player.location==='stadium'&&index>=0){side.innerHTML=formatQuestMarkup(stadiumQuestMarkup(index===1));side.querySelector('#stadiumClaim')?.addEventListener('click',()=>stadiumClaim(index===1));side.querySelector('#stadiumClose')?.addEventListener('click',()=>{questOpen=false;lastSide='';updateSide(true)})}
    else{side.innerHTML='<h2>📜 '+escapeText(npc?.label||'NPC')+'</h2><p>Witaj, wojowniku!</p><button class="world-action secondary" id="extraNpcClose">Zamknij</button>';side.querySelector('#extraNpcClose').onclick=()=>{questOpen=false;lastSide='';updateSide(true)}};
   }
-  if(mode==='dungeon'){
+  else if(mode==='dungeon'){
    const eligible=characterLevel()>=dungeonLevel;
    const disabled=canEnterDungeon()?'':' disabled';
    side.innerHTML=`<div class="dbi-quest-panel"><header class="dbi-quest-title">${dungeonTitle}</header>
@@ -1656,7 +1721,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    return;
   }
   else if(mode==='extra'){
-   const map=extraMap(player.location);side.innerHTML='<h2>🌍 '+escapeText(map.name)+'</h2><p>Nowa lokacja. Zwiedzaj teren, rozmawiaj z NPC i odwiedź miejsca walki.</p>'+(map.mobs?'<p>Podejdź do oznaczenia „Moby”, aby wybrać przeciwników.</p>':player.location==='stadium'?'<p>Trybuny blokują przejście. Dostępna jest wyłącznie centralna strefa areny.</p>':'<p>Możesz swobodnie eksplorować lokację.</p>');
+   side.innerHTML=regionOverview();
   }
   else if(mode==='krillin'){
    side.innerHTML=formatQuestMarkup(krillinQuestMarkup());
@@ -1712,12 +1777,19 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    side.querySelector('#worldIslandQuestClose')?.addEventListener('click',()=>{questOpen=false;lastSide='';updateSide(true)});
   }
   else if(mode==='island'){
-   side.innerHTML='<h2>🏝️ Wyspa Genialnego Żółwia</h2><p>Dotarłeś na wyspę wielkiego mistrza. Poznaj okolicę: dom mistrza, palmy, pomost i plac treningowy.</p><p>Przy domku mistrza naciśnij E, aby przyjąć zadanie. Podejdź do kukły treningowej, aby walczyć z uczniami mistrza (poziom 3).</p>';
+   side.innerHTML=regionOverview();
   }
   else if(mode==='running'){side.innerHTML='<h2>⚔️ Trwa walka</h2><p>Walka trwa również po ukryciu jej okna lub przejściu do innej zakładki. Maksymalny czas: 12 godzin.</p><div class="world-side-actions"><button class="world-action" id="worldShowBattle">Otwórz okno walki</button></div>';side.querySelector('#worldShowBattle').onclick=()=>{showBattle()}}
   else if(mode==='finished'){side.innerHTML='<h2>🎒 Walka zakończona</h2><p>Odbierz zdobyte złoto i doświadczenie. Z mobów mogą wypaść Czerwona i Niebieska Fasolka Zen oraz Pył smoczych kul.</p><button class="world-action" id="worldShowBattle">Otwórz wyniki walki</button>';side.querySelector('button').onclick=()=>{showBattle()}}
   else if(mode==='tent'){
-   side.innerHTML='<h2>'+(extraMap(player.location)?'⚔️ '+extraMap(player.location).name:player.location==='island'?'🥋 Plac treningowy mistrza':'⛺ EXPowisko — trening')+'</h2><p>Wybierz od 1 do 3 przeciwników. Kliknij ⓘ, aby zobaczyć możliwy drop.</p><div id="worldCount">Wybrano: '+selected.size+' / 3</div><div class="world-mobs">'+currentMobs().map(m=>'<div class="world-mob '+(selected.has(m.id)?'selected':'')+'"><button type="button" class="world-mob-select" data-mob="'+m.id+'" aria-pressed="'+selected.has(m.id)+'"><span>'+m.name+'</span></button><span class="world-mob-level">Poziom '+m.level+'</span><span class="world-mob-stats-wrap"><button type="button" class="world-mob-stats-trigger" aria-label="Statystyki '+escapeText(m.name)+'" data-stats="'+escapeText(mobStatsTooltip(m))+'">🔍</button></span><button type="button" class="world-mob-info" data-info="'+m.id+'" title="Możliwy drop" aria-label="Możliwy drop: '+m.name+', poziom '+m.level+'">ⓘ</button></div>').join('')+'</div><div class="world-side-actions"><button class="world-action" id="worldFight" '+(!selected.size?'disabled':'')+'>⚔️ Walcz</button></div>';
+   const location=extraMap(player.location);
+   const cave=player.location==='mountainLake';
+   const title=cave?'Jaskinia':location?.mobs?.label==='Moby'?location.name:location?.mobs?.label||(player.location==='island'?'Plac treningowy mistrza':'Namiot treningowy');
+   const description=cave?'Górska jaskinia, w której trenują potężni wojownicy. Zmierz się z nimi i zdobądź łupy oraz doświadczenie.':'Wybierz od jednego do trzech przeciwników do walki.';
+   side.innerHTML='<h2 class="encounter-heading">'+escapeText(title)+'</h2><p>'+description+'</p><div id="worldCount">Wybrano: '+selected.size+' / 3</div><div class="world-mobs">'+currentMobs().map((m,index)=>{
+    const art='<img src="'+mobPortrait(m.name)+'" alt="">';
+    return '<div class="world-mob '+(selected.has(m.id)?'selected':'')+'"><button type="button" class="world-mob-select" data-mob="'+m.id+'" aria-pressed="'+selected.has(m.id)+'"><span class="encounter-portrait">'+art+'</span><span class="encounter-name">'+escapeText(m.name)+'<small>Poz. '+m.level+'</small></span></button><span class="world-mob-stats-wrap"><button type="button" class="world-mob-stats-trigger" aria-label="Statystyki '+escapeText(m.name)+'" data-stats="'+escapeText(mobStatsTooltip(m))+'">🔍</button></span><button type="button" class="world-mob-info" data-info="'+m.id+'" title="Możliwy drop" aria-label="Możliwy drop: '+m.name+', poziom '+m.level+'">ⓘ</button></div>';
+   }).join('')+'</div><div class="world-side-actions"><button class="world-action" id="worldFight" '+(!selected.size?'disabled':'')+'>⚔　Walcz</button></div>';
    side.querySelectorAll('[data-mob]').forEach(button=>button.onclick=()=>{const i=Number(button.dataset.mob);if(selected.has(i))selected.delete(i);else if(selected.size<3)selected.add(i);updateSide(true)});
    // Dymek poza przewijanym panelem: nie przycina go overflow listy potworów.
    side.querySelectorAll('.world-mob-stats-trigger').forEach(trigger=>{
@@ -1754,7 +1826,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    side.querySelector('.world-mobs').scrollTop=previousScroll;
    side.querySelectorAll('[data-info]').forEach(button=>button.onclick=()=>showDropInfo(Number(button.dataset.info)));
    side.querySelector('#worldFight').onclick=()=>openPvePreparation(false);
-  }else side.innerHTML='<h2>🌍 Błękitna Laguna</h2><p>Wejdź postacią na namiot oznaczony „EXPowisko”, aby zobaczyć 15 potworów. Podejdź do Opiekuna Laguny i naciśnij E, aby porozmawiać.</p>';
+  }else side.innerHTML=regionOverview();
  }
  function showDropInfo(i){
   const mob=currentMobs()[i];if(!mob)return;
@@ -2201,7 +2273,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
 
     <div class="world-character-name"><strong>${escapeText(document.querySelector("#name")?.textContent?.trim() || "Postać")}</strong></div>
     <div class="world-hero-grid"><div><div class="world-vital-label"><span>Twoje HP</span><span>${num(battle.hp)}/${num(battle.maxHp)}</span></div><div class="world-health hero"><span class="world-hp-trail" style="width:${100*battle.hp/battle.maxHp}%"></span><span class="world-hp-fill" style="width:${100*battle.hp/battle.maxHp}%"></span><div class="world-damage-layer"></div></div><div class="world-status-slots" aria-label="Statusy postaci">${statusSlots("hero")}</div></div><div><div class="world-vital-label"><span>Twoje KI</span><span>${num(battle.ki)}/${num(battle.maxKi)}</span></div><div class="world-health ki"><span style="width:${100*battle.ki/battle.maxKi}%"></span></div></div></div>
-    <div class="world-enemies" style="--enemy-count:${battle.enemies.length}">${battle.enemies.map((e,i)=>`<div class="world-enemy" data-enemy="${i}"><strong>${escapeText(e.name)}</strong><small>Poziom ${e.level} · <span data-hp-text>${e.hp}/${e.max}</span> HP</small><div class="world-health monster"><span class="world-hp-trail" style="width:${e.hp/e.max*100}%"></span><span class="world-hp-fill" style="width:${e.hp/e.max*100}%"></span><div class="world-damage-layer"></div></div><div class="world-status-slots" aria-label="Statusy potwora">${statusSlots("mob",i)}</div></div>`).join('')}</div>
+    <div class="world-enemies" style="--enemy-count:${battle.enemies.length}">${battle.enemies.map((e,i)=>`<div class="world-enemy" data-enemy="${i}"><img class="realm-mob-face" src="${mobPortrait(e.name)}" alt=""><strong>${escapeText(e.name)}</strong><small>Poziom ${e.level} · <span data-hp-text>${e.hp}/${e.max}</span> HP</small><div class="world-health monster"><span class="world-hp-trail" style="width:${e.hp/e.max*100}%"></span><span class="world-hp-fill" style="width:${e.hp/e.max*100}%"></span><div class="world-damage-layer"></div></div><div class="world-status-slots" aria-label="Statusy potwora">${statusSlots("mob",i)}</div></div>`).join('')}</div>
     <div class="world-log-section"><button class="world-log-toggle" id="worldToggleLog" aria-expanded="false">⚔️ Przebieg walki <span>⌄</span></button><div class="world-log collapsed" id="worldLog"></div></div>
     <div class="world-technique-strip" id="worldTechniqueStrip" aria-label="Odnowienie technik"></div>
     <div class="world-summary-grid world-live-stats">${[['worldStatKills','POKONANE POTWORY'],['worldStatGold','ZDOBYTE ZŁOTO'],['worldStatLoot','ZDOBYTE PRZEDMIOTY'],['worldStatDamage','ZADANE OBRAŻENIA'],['worldStatDps','ŚREDNIE OBRAŻENIA/S'],['worldStatExp','ZDOBYTE DOŚWIADCZENIE']].map(([key,label])=>`<div><strong>${key==='worldStatGold'?'<img class="dbi-gold-icon" src="assets/ui/gold.png" alt="" width="16" height="16">':''}<span id="${key}">0</span></strong><small>${label}</small></div>`).join('')}</div>
@@ -2358,7 +2430,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  }
  const combatTimer=setInterval(()=>{tickBattle();renderBattle();if(bossOpen)updateBossCountdown()},120);
  tickBattle();updateSide(true);
- active={container,useZen,cleanup:()=>{closed=true;closeDungeon?.();closeTowerClimb?.();tickBattle();clearInterval(combatTimer);cancelAnimationFrame(raf);save();observer.disconnect();document.removeEventListener('keydown',input);document.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);}};
+ active={container,useZen,setNearbyPlayers,cleanup:()=>{closed=true;closeDungeon?.();closeTowerClimb?.();tickBattle();clearInterval(combatTimer);cancelAnimationFrame(raf);save();observer.disconnect();document.removeEventListener('keydown',input);document.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);}};
  raf=requestAnimationFrame(frameLoop);canvas.focus({preventScroll:true});}
  function restoreZen(battle,type){
   if(battle?.status!=='running'||battle.hp<=0)return false;
@@ -2384,5 +2456,5 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   }catch{return false}
  }
  function stop(){if(active){active.cleanup();active=null}}
- window.DBIWorld={start,stop,isMobBattleRunning,useZen:useSavedZen,locations:DBI_WORLD_LOCATIONS,gmTeleport,dungeonLimit,gmSetDungeonLimit};window.addEventListener('pagehide',stop);
+ window.DBIWorld={mobPortrait,start,stop,setNearbyPlayers(players){active?.setNearbyPlayers(players)},isMobBattleRunning,useZen:useSavedZen,locations:DBI_WORLD_LOCATIONS,gmTeleport,dungeonLimit,gmSetDungeonLimit};window.addEventListener('pagehide',stop);
 })();

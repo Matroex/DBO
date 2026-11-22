@@ -1,0 +1,86 @@
+.dbi-training.dojo-screen{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,1fr);gap:10px;padding:0;background:#091320;color:#f4efe5;border:0;text-align:left}
+.dojo-screen .dojo-art{min-height:460px;background:linear-gradient(180deg,#071525e6,transparent 25%),url('../assets/ui/trening-dojo.webp') center center/cover;border-radius:8px;border:1px solid #526780}
+.dojo-screen h2{margin:0 0 15px;color:#fff4da;font:700 clamp(24px,3vw,37px)/1.1 Georgia,serif}
+.dojo-screen .dojo-art h2{padding:24px;font-style:italic}
+.dojo-screen .dojo-planner,.dojo-screen .dojo-footer{background:linear-gradient(125deg,#203450,#0b1727 72%);border:1px solid #586e86;border-radius:8px;padding:16px}
+.dojo-screen button{font:inherit;cursor:pointer;color:#f3f2ec;border:1px solid #566e87;background:linear-gradient(#263b51,#142333);border-radius:6px;padding:8px}
+.dojo-screen button:focus-visible{outline:2px solid #ffe2a1;outline-offset:2px}
+.dojo-screen button:disabled{opacity:.55;cursor:default}
+.dojo-screen .dojo-attributes{display:grid;gap:6px}
+.dojo-screen .dojo-attributes button{display:flex;align-items:center;gap:12px;text-align:left;font:bold 18px Georgia,serif}
+.dojo-screen .dojo-attributes span{width:26px;text-align:center;color:#ffca72}
+.dojo-screen .dojo-attributes small{margin-left:auto;font:12px system-ui;color:#c9d6e2}
+.dojo-screen button[aria-pressed=true]{border-color:#ffb44f;background:linear-gradient(100deg,#75401e,#322a29);box-shadow:inset 0 0 0 1px #da852d,0 0 8px #f28a3144;opacity:1}
+.dojo-screen h3{margin:16px 0 8px;font:700 17px Georgia,serif}
+.dojo-screen .dojo-hours{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.dojo-screen .dojo-hours button{padding:8px 0}
+.dojo-screen .dojo-result,.dojo-screen .dojo-footer{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dojo-screen .dojo-result{margin:14px 0;border-block:1px solid #795b37;padding:10px 0}
+.dojo-screen .dojo-result strong,.dojo-screen .dojo-footer strong{color:#ffca79}
+.dojo-screen .dbi-training-action{width:100%;margin:0;padding:12px;background:linear-gradient(#d98225,#943a09);border:1px solid #ffbd5e;color:white;font:700 20px Georgia,serif}
+.dojo-screen .dojo-footer{grid-column:1/-1}
+.dojo-screen progress{margin-left:auto;width:min(34%,350px);accent-color:#ff9c36}
+@media(max-width:760px){.dbi-training.dojo-screen{grid-template-columns:minmax(0,1fr)}.dojo-screen .dojo-art{min-height:210px;background-position:center 42%}.dojo-screen .dojo-footer progress{width:100%}}
+.game>.content:has(.dojo-screen){padding:0;border:0;background:#08121f}.game>.content:has(.dojo-screen)>.content-top{display:none}
+.dbi-training.dojo-screen{grid-template-columns:minmax(0,1.58fr) minmax(340px,1fr);gap:0;align-items:stretch;border-radius:0;overflow:visible}
+.dojo-screen .dojo-art{min-height:clamp(530px,42vw,770px);border:0;border-radius:0;background: url('../assets/ui/trening-dojo.webp') center bottom / cover no-repeat}
+.dojo-screen .dojo-art header{display:flex;align-items:center;gap:22px;padding:12px 3%;background:linear-gradient(100deg,#08101def,#101c30e8);border-bottom:1px solid #536078}
+.dojo-screen .dojo-art h2{margin:0;padding:0 6px 6px;color:#fff4db;font:bold italic clamp(28px,3vw,49px) Georgia,serif;border-bottom:3px solid #ee9f41}
+.dojo-screen .dojo-art header p{max-width:290px;font:clamp(14px,1.15vw,19px)/1.22 Georgia,serif;color:#e5e9f1;margin:0}
+.dojo-screen .dojo-planner{align-self:center;margin:10px 6px 12px 0;padding:clamp(12px,1.1vw,22px);background:linear-gradient(140deg,#1d2b42,#0d1828 42%,#091423);border:1px solid #6888a9;box-shadow:inset 0 0 0 3px #101c30,inset 0 0 0 4px #354861,0 6px 18px #0007;border-radius:12px}
+.dojo-planner h2{border-bottom:1px solid #6f8092;padding-bottom:7px;margin:0;color:#fffbf5}.dojo-planner h2:before{content:'▦';color:#ffbc5f;margin-right:.4em}.dojo-instruction{font:15px/1.35 Georgia,serif;margin:8px 0;color:#e3e7ed}
+.dojo-screen .dojo-attributes button{border-radius:8px;padding:6px 12px;min-height:clamp(48px,3.8vw,66px);gap:12px;background:linear-gradient(105deg,#283b52,#182536);border:1px solid #577087}
+.dojo-screen .dojo-attributes button img{width:clamp(31px,3vw,52px);height:40px;object-fit:contain;mix-blend-mode:lighten}
+.dojo-screen .dojo-attributes button span{width:auto;text-align:left;color:#f8f6f1;flex:1}
+.dojo-screen .dojo-attributes button b{font:700 clamp(17px,1.45vw,24px) Georgia,serif}.dojo-screen .dojo-attributes button small{display:block;color:#d9e3ed;margin:3px 0 0;font:clamp(11px,.88vw,14px)/1.2 system-ui}
+.dojo-attributes button i{border:2px solid #7890ae;width:17px;height:17px;border-radius:50%}.dojo-attributes button[aria-pressed=true] i{border-color:#ffb959;background:#fff2cb;box-shadow:inset 0 0 0 3px #a35416}
+.dojo-screen .dojo-attributes button[aria-pressed=true]{border-color:#ffb14d;background:linear-gradient(95deg,#764224,#30272b);box-shadow:0 0 9px #f8843a88,inset 0 0 0 1px #ffae46}
+.dojo-screen .dojo-result{justify-content:space-between;border:1px solid #b2844b;padding:9px 14px;background:#192531;font-family:Georgia,serif}
+.dojo-screen .dbi-training-action{font-size:clamp(19px,1.7vw,28px);background:linear-gradient(#ed993d,#b9530d);box-shadow:inset 0 0 0 2px #e88b2d,0 3px 8px #0007}
+.dojo-screen .dojo-footer{min-height:65px;margin-top:8px;border-radius:7px;font:clamp(16px,1.3vw,22px) Georgia,serif}.dojo-screen .dojo-footer strong{border-right:1px solid #627186;padding-right:24px}
+@media(max-width:800px){.dbi-training.dojo-screen{grid-template-columns:1fr}.dojo-screen .dojo-art{min-height:260px;background-position:center 42%}.dojo-screen .dojo-planner{margin:8px 0}.dojo-screen .dojo-art header p{font-size:13px}}
+
+.dojo-planner .dojo-result,.dojo-planner .dbi-training-action,.dojo-screen .dojo-footer{border:0;border-radius:0;box-shadow:none;background-color:transparent;background-position:center;background-repeat:no-repeat;background-size:100% 100%}
+.dojo-planner .dojo-result{background-image:url('../assets/ui/dojo-controls/reward.webp');padding:13px 5%;font:bold clamp(14px,1.15vw,20px) Georgia,serif;color:#fff4df;justify-content:flex-start;gap:clamp(10px,2vw,32px)}
+.dojo-result span::before{content:'▮▥';color:#ffb044;margin-right:8px}
+.dojo-planner .dbi-training-action{background-image:url('../assets/ui/dojo-controls/action.webp');padding:18px 12px;color:#fff9e8;text-shadow:0 2px 3px #69320c}
+.dojo-planner .dbi-training-action::before{content:'▶';margin-right:.65em}.dojo-planner .dbi-training-action:enabled:hover{filter:brightness(1.13)}
+.atlas-view .dojo-screen .dojo-footer{background-image:url('../assets/ui/dojo-controls/status.webp');padding:15px clamp(22px,3vw,55px);gap:clamp(6px,1.2vw,22px);min-height:70px}
+.dojo-footer strong::before{content:'';display:inline-block;width:34px;height:33px;vertical-align:middle;margin-right:9px;background:url('../assets/ui/dojo-controls/training.png') center/contain no-repeat}
+.dojo-footer time{color:#ffba5d;font-weight:bold;font-variant-numeric:tabular-nums}
+.dojo-footer :is(b,time,small):empty,.dojo-footer progress[hidden]{display:none}
+.atlas-view .dojo-footer progress{flex:1;min-width:85px;height:11px}
+/* Keep all three desktop columns explicit so both bars span the planner. */
+@media(min-width:901px){
+ body .game.atlas-app:has(.dojo-screen){
+  grid-template-columns:clamp(150px,13.3vw,242px) minmax(0,1.58fr) minmax(315px,1fr);
+  grid-template-rows:auto minmax(min-content,1fr) auto;
+ }
+ .atlas-view:has(.dojo-screen),.atlas-view #pageBody:has(>.dojo-screen),.atlas-view .dojo-screen{display:contents}
+ .atlas-app:has(.dojo-screen)>.atlas-hud{grid-column:1/4;grid-row:1}
+ .atlas-app:has(.dojo-screen)>.atlas-rail{grid-column:1;grid-row:2}
+ .dojo-screen .dojo-art{grid-column:2;grid-row:2;min-width:0}
+ .atlas-view .dojo-screen .dojo-planner{grid-column:3;grid-row:2;min-width:0;margin:10px}
+ .atlas-view .dojo-screen .dojo-footer{grid-column:1/4;grid-row:3;min-width:0;margin:4px 8px 8px}
+}
+.atlas-view .dojo-planner .dojo-result{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
+ gap:8px;padding:12px clamp(10px,1vw,18px);font-size:clamp(14px,1.05vw,19px)
+}
+.dojo-planner .dojo-result strong{white-space:nowrap}
+
+.atlas-view .dojo-screen .dojo-planner{
+ align-self:start;margin:clamp(8px,1vw,18px) 7px 12px 0;padding:clamp(3px,.3vw,6px);
+ border:16px solid transparent;border-image:url('../assets/ui/dojo-controls/planner-frame.webp') 16 stretch;
+ border-radius:0;box-shadow:none;background:linear-gradient(145deg,#19283d,#0b1727 72%,#142438)
+}
+.dojo-planner h2{display:flex;align-items:center;gap:8px;border:0;margin:0;padding:0 0 7px;background:linear-gradient(90deg,transparent,#ee9c3d 12%,#92643a 42%,transparent 86%) left bottom/100% 2px no-repeat;font-size:clamp(22px,2vw,34px)}
+.dojo-planner h2::before,.dojo-planner h3::before,.dojo-planner .dojo-result span::before{content:'';display:inline-block;vertical-align:middle;background:center/contain no-repeat;mix-blend-mode:lighten}
+.dojo-planner h2::before{width:32px;height:32px;background-image:url('../assets/ui/dojo-controls/calendar.webp')}
+.dojo-planner h3::before{width:22px;height:22px;margin-right:6px;background-image:url('../assets/ui/dojo-controls/clock.webp')}
+.dojo-planner .dojo-result span::before{width:24px;height:25px;background-image:url('../assets/ui/dojo-controls/reward-bars.webp')}
+.dojo-planner .dojo-attributes button{border:10px solid transparent;border-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M7 1H33L39 7V33L33 39H7L1 33V7Z' fill='none' stroke='%23576c86' stroke-width='1.5'/%3E%3C/svg%3E") 12 stretch;border-radius:0;padding:0 4px;min-height:clamp(45px,3.8vw,65px)}
+.dojo-planner .dojo-attributes button[aria-pressed=true]{border:10px solid transparent;border-image:url('../assets/ui/dojo-controls/chosen-frame.webp') 12 stretch;box-shadow:0 0 8px #f88d3350}
+.dojo-planner .dojo-attributes button small{margin:1px 0 0}
+.dojo-planner .dojo-instruction{font:clamp(13px,1.05vw,17px)/1.3 Georgia,serif}
+@media(max-width:800px){.atlas-view .dojo-screen .dojo-planner{margin:8px 0}}

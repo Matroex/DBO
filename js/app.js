@@ -98,6 +98,14 @@ if (!dbiSession?.name) {
     if(level>=DBI_MAX_LEVEL)exp=0;
     else {while(level<DBI_MAX_LEVEL&&exp>=dbiRequiredExp(level)){exp-=dbiRequiredExp(level);level++}}
     document.querySelector('#name').textContent=character.name;
+    const avatarBox=document.getElementById('hudAvatar');
+    avatarBox.textContent=Array.from(character.name.trim())[0]?.toLocaleUpperCase('pl')||'?';
+    const portrait=character.avatar||character.portrait;
+    if(typeof portrait==='string'&&/^assets\/[a-z0-9/_-]+\.(png|webp|jpg)$/i.test(portrait)){
+     const image=new Image();image.alt='';
+     image.onload=()=>avatarBox.replaceChildren(image);
+     image.src=portrait;
+    }
     const raceField=document.querySelector('.mini-stats strong');
     if(raceField)raceField.textContent=character.race||'Nie wybrano';
   }
@@ -116,6 +124,11 @@ function dbiSaveProgress(){
 }
 
 // Liczniki w nagłówku odczytują istniejące zapisy, bez nadpisywania walut.
+function formatHudCurrency(amount){
+ const value=Math.max(0,Math.floor(amount));
+ if(value<1000000)return value.toLocaleString('pl-PL');
+ return (Math.floor(value/10000)/100).toLocaleString('pl-PL',{maximumFractionDigits:2})+'kk';
+}
 function dbiRefreshHeaderWallet(){
  const id=String(dbiActive?.id||'test');
  const gold=Number(localStorage.getItem('dboidle_gold_v1_'+id))||0;
@@ -124,14 +137,15 @@ function dbiRefreshHeaderWallet(){
  const premium=Number(localStorage.getItem('dboidle_premium_v1_'+id))||0;
  const fmt=n=>Math.max(0,Math.floor(n)).toLocaleString('pl-PL');
  const values=[['dbiHeaderGold',gold],['dbiHeaderDragon',dragon],['dbiHeaderPremium',premium]];
- for(const [name,value] of values){const el=document.getElementById(name);if(el)el.textContent=fmt(value)}
+ for(const [name,value] of values){const el=document.getElementById(name);if(el){el.textContent=formatHudCurrency(value);el.parentElement.title=fmt(value);document.getElementById(name+'Full').textContent=fmt(value)}}
 }
 window.DBIRefreshWallet=dbiRefreshHeaderWallet;
 window.addEventListener('storage',dbiRefreshHeaderWallet);
 dbiRefreshHeaderWallet();
-const setLog=t=>document.querySelector('#log').textContent=t;
+const setLog=t=>{const log=document.querySelector('#log');if(log)log.textContent=t};
 function showPage(title,section){
   if(title==='Panel GM'&&!dbiIsGameMaster())title='Pulpit';
+  nav.dataset.page=title;
   if(dbiActive?.id)sessionStorage.setItem('dboidle_last_page_'+dbiActive.id,JSON.stringify({title,section}));
   // Reset stanu przeciągania przy każdej zmianie widoku.
   dragIndex=null;dragActive=false;dragSourceElement=null;clearTimeout(tabHoverTimer);tabHoverTimer=null;
@@ -773,9 +787,46 @@ function renderCombatLayout(){
 }
 
 function renderFastTravel(){
+ // Wyłącznie statyczna makieta UI: nie tworzy akcji, teleportów ani zapisów.
  hideItemPopups();
  document.querySelector('#breadcrumb').textContent='AKTYWNOŚCI / SZYBKA PODRÓŻ';
- document.querySelector('#pageBody').innerHTML=`<section class="dbi-tournament" aria-label="Szybka podróż"><header class="dbi-tournament-header"><span class="eyebrow">SZYBKA PODRÓŻ</span><h2>Szybka podróż</h2><p>Aktualnie nie ma tutaj niczego na czym mógłbyś podróżować</p></header></section>`;
+ document.querySelector('#pageBody').innerHTML=`
+ <section class="dbi-fast-travel" aria-label="Szybka podróż — podgląd interfejsu">
+  <header class="dbi-ft-top">
+   <div class="dbi-ft-title">
+    <img src="assets/ui/dojo-controls/map.png" alt="" aria-hidden="true">
+    <div><span class="dbi-ft-overline">MAPA SZLAKÓW</span><h2>Szybka podróż</h2></div>
+   </div>
+   <p>Przegląd miejsc i punktów podróży świata wojowników.</p>
+   <span class="dbi-ft-tag">PODGLĄD SYSTEMU</span>
+  </header>
+  <div class="dbi-ft-layout">
+   <section class="dbi-ft-map-panel" aria-label="Mapa szlaków">
+    <header class="dbi-ft-section-title"><span class="dbi-ft-decor">✦</span><h3>Mapa świata</h3><small>Szlaki i lokalizacje</small></header>
+    <div class="dbi-ft-map-illustration">
+     <img src="assets/ui/fast-travel/mapa-przejsc.webp" alt="Ilustracja mapy z Wioską Ryūen, Doliną Sosen, Ruinami Astralnymi i Klasztorem Niebiańskiej Pięści. Trasy i znaczniki są częścią ilustracji, nie są interaktywne.">
+     <div class="dbi-ft-map-badge">✦ Zaznaczona: Dolina Sosen</div>
+    </div>
+    <div class="dbi-ft-map-legend"><span><i class="dbi-ft-dot dbi-ft-dot-current"></i> Wybrana na makiecie</span><span><i class="dbi-ft-dot"></i> Pozostałe miejsca</span><span class="dbi-ft-muted">Mapa poglądowa</span></div>
+   </section>
+   <aside class="dbi-ft-side" aria-label="Lista punktów szybkiej podróży">
+    <div class="dbi-ft-section-title"><span class="dbi-ft-decor">✧</span><h3>Punkty podróży</h3></div>
+    <p class="dbi-ft-side-info">Przykładowe miejsca docelowe. Wybór i teleportacja nie są jeszcze dostępne.</p>
+    <div class="dbi-ft-destinations" aria-label="Miejsca z mapy">
+     <div class="dbi-ft-destination" aria-disabled="true"><span class="dbi-ft-location-icon">⌂</span><div><strong>Wioska Ryūen</strong><small>Osada wojowników</small></div><span class="dbi-ft-destination-mark">◇</span></div>
+     <div class="dbi-ft-destination is-preview" aria-disabled="true"><span class="dbi-ft-location-icon">♠</span><div><strong>Dolina Sosen</strong><small>Leśna dolina</small></div><span class="dbi-ft-destination-mark">◆</span></div>
+     <div class="dbi-ft-destination" aria-disabled="true"><span class="dbi-ft-location-icon">✧</span><div><strong>Klasztor Niebiańskiej Pięści</strong><small>Górskie sanktuarium</small></div><span class="dbi-ft-destination-mark">◇</span></div>
+     <div class="dbi-ft-destination" aria-disabled="true"><span class="dbi-ft-location-icon">♜</span><div><strong>Ruiny Astralne</strong><small>Starożytne ruiny</small></div><span class="dbi-ft-destination-mark">◇</span></div>
+    </div>
+    <div class="dbi-ft-detail">
+      <img src="assets/ui/fast-travel/dolina-sosen.webp" alt="Widok leśnej Doliny Sosen">
+      <div class="dbi-ft-detail-caption"><span>WYBRANY CEL — PODGLĄD</span><strong>Dolina Sosen</strong><p>Spokojna dolina pośród sosen i górskich szlaków.</p></div>
+    </div>
+    <button class="dbi-ft-travel-btn" type="button" disabled aria-label="Rozpocznij podróż — funkcja niedostępna">✦ Rozpocznij podróż</button>
+    <p class="dbi-ft-inactive">Przycisk demonstracyjny — podróż nie została jeszcze zaimplementowana.</p>
+   </aside>
+  </div>
+ </section>`;
 }
 function renderTournament(){
  const host=document.querySelector('#pageBody');
@@ -1021,50 +1072,72 @@ window.addEventListener('storage',event=>{
  if(['dboidle_gold_v1_','dboidle_dragon_wallet_v1_','dboidle_premium_v1_'].some(prefix=>event.key===prefix+id))dbiRefreshHeaderWallet();
 });
 function renderNav(){
+ const scroll=nav.scrollTop;
  nav.replaceChildren();
+ const icons=['map','hero','training','battle','♟','guild','✉','quests','⚙'];
  menus.forEach((menu,index)=>{
-  const item=document.createElement('div');item.className='nav-item';
   const button=document.createElement('button');
-  button.className='nav-button'+(opened===index?' active':'');
+  button.type='button';
+  button.dataset.category=String(index);
+  const icon=icons[index];
+  if(['♟','✉','⚙'].includes(icon)){
+   const symbol=document.createElement('span');
+   symbol.className='rail-symbol';symbol.setAttribute('aria-hidden','true');
+   symbol.textContent=icon;button.append(symbol);
+  }else{
+   const image=new Image();image.className='rail-icon';image.alt='';
+   image.src='assets/ui/dojo-controls/'+icon+'.png';button.append(image);
+  }
+  const label=menu.name==='GM'?'GM':menu.name[0]+menu.name.slice(1).toLocaleLowerCase('pl');
+  const caption=document.createElement('span');caption.className='rail-caption';caption.textContent=label;button.append(caption);
   button.disabled=!!menu.disabled;
-  button.textContent=menu.name;
-  if(menu.page==='Poczta'){
-   button.dataset.mailNav='1';
-   const id=dbiActive?.id;
-   if(id){
-    const count=window.DBILocalPost.inbox(id).filter(entry=>!entry.read).length;
-    if(count)button.append(' ('+count+')');
+  if(menu.page===nav.dataset.page)button.setAttribute('aria-current','page');
+  if(menu.options?.includes(nav.dataset.page))button.classList.add('rail-current');
+  if(menu.page==='Poczta'&&dbiActive?.id){
+   const count=window.DBILocalPost.inbox(dbiActive.id).filter(entry=>!entry.read).length;
+   if(count)button.append(' ('+count+')');
+  }
+  nav.append(button);
+  if(!menu.options){
+   if(menu.page)button.onclick=()=>showPage(menu.page,menu.name);
+   return;
+  }
+  const panel=document.createElement('div');
+  panel.className='rail-options';panel.id='rail-options-'+index;
+  panel.hidden=opened!==index;
+  button.setAttribute('aria-controls',panel.id);
+  button.setAttribute('aria-expanded',String(!panel.hidden));
+  button.onclick=()=>{
+   opened=opened===index?null:index;
+   for(const toggle of nav.querySelectorAll('[aria-controls]')){
+    const expanded=Number(toggle.dataset.category)===opened;
+    toggle.setAttribute('aria-expanded',String(expanded));
+    document.getElementById(toggle.getAttribute('aria-controls')).hidden=!expanded;
    }
+   const offset=button.getBoundingClientRect().top-nav.getBoundingClientRect().top;
+   if(offset<0)nav.scrollTop+=offset;
+  };
+  for(const name of menu.options){
+   const option=document.createElement('button');option.type='button';option.textContent=name;
+   if(nav.dataset.page===name)option.setAttribute('aria-current','page');
+   option.onclick=()=>showPage(name,menu.name);
+   panel.append(option);
   }
-  if(menu.options){
-   const arrow=document.createElement('span');arrow.className='chevron';arrow.textContent=opened===index?'▲':'▼';button.append(' ',arrow);
-   button.setAttribute('aria-expanded',String(opened===index));
-   button.setAttribute('aria-haspopup','true');
-  }
-  button.addEventListener('click',event=>{
-   event.stopPropagation();
-   if(menu.disabled)return;
-   if(menu.page){showPage(menu.page);return;}
-   opened=opened===index?null:index;renderNav();
-  });
-  item.append(button);
-  if(menu.options&&opened===index){
-   const list=document.createElement('div');list.className='nav-dropdown';
-   menu.options.forEach(label=>{
-    const option=document.createElement('button');option.className='sub-button';option.textContent=label;
-    option.addEventListener('click',event=>{event.stopPropagation();showPage(label,menu.name)});
-    list.append(option);
-   });item.append(list);
-  }
-  nav.append(item);
+  nav.append(panel);
  });
+ nav.scrollTop=scroll;
 }
-document.addEventListener('click',event=>{if(opened!==null&&!nav.contains(event.target)){opened=null;renderNav()}});
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&opened!==null){opened=null;renderNav()}});
+nav.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&opened!==null){
+  const button=nav.querySelector('[data-category="'+opened+'"]');button.click();button.focus();
+ }
+});
 function renderExp(){
  document.querySelector('#level').textContent=level;
  const needed=dbiRequiredExp(level);
  document.querySelector('#expText').textContent=level>=DBI_MAX_LEVEL?'MAX LVL · 500':exp.toLocaleString('pl-PL')+' / '+needed.toLocaleString('pl-PL')+' EXP';
+ document.querySelector('#balls').title=document.querySelector('#expText').textContent;
+ document.querySelector('#balls').setAttribute('aria-label',document.querySelector('#expText').textContent);
  const balls=document.querySelector('#balls');balls.replaceChildren();
  for(let i=0;i<4;i++){
   const ball=document.createElement('div');ball.className='ball'+(level>=DBI_MAX_LEVEL||exp>=needed*(i+1)/4?' active':'');ball.textContent='★';
@@ -1220,7 +1293,7 @@ function dbiRegisterBuiltInItems(items){
  for(const item of items){
   const i=catalog.findIndex(x=>x.id===item.id);
   if(i===-1)catalog.push({...item});
-  else catalog[i]={...item,...catalog[i],slot:item.slot,image:item.image,requiredLevel:item.requiredLevel};
+  else catalog[i]={...item,...catalog[i],slot:item.slot,image:item.image,requiredLevel:item.requiredLevel,...(item.requiredRace?{requiredRace:item.requiredRace}:{})};
  }
 }
 dbiRegisterBuiltInItems(DBI_ROYAL_500_CATALOG);
@@ -1887,6 +1960,7 @@ function tooltipMarkup(item){
  return `<div class="tip-name quality-text-${qi}">${esc(displayName)}</div>
  <div class="tip-icon">${dbiItemArt(item)}</div>
  <div class="tip-level">${levelLocked?'Od Poziomu: ':'Poziom: '}${Number(item.requiredLevel)||1}</div>
+ ${item.requiredRace==='saiyan'?'<div class="tip-level">Rasa: Saiyan</div>':''}
  <div class="tip-stats">${statLines.join('')||'Brak statystyk podstawowych'}</div>
  <div class="tip-bottom"><span>${esc(item.slot)}</span><strong class="quality-text-${qi}">${esc(q).toUpperCase()}</strong></div>`;
 }
@@ -1990,54 +2064,56 @@ function renderTraining(){
  hideItemPopups();
  document.querySelector('#breadcrumb').textContent='AKTYWNOŚCI / TRENING';
  const stored=dbiTrainingRead();
- const inBattle=dbiMobBattleBlocksTraining();
- document.querySelector('#pageBody').innerHTML=`
- <div class="dbi-training"><h2 class="dbi-training-title">Trening</h2><div class="dbi-training-columns">
- ${Object.entries(DBI_TRAINING_TYPES).map(([key,type])=>{
- const session=stored[key],running=!!session&&session.endsAt>Date.now(),finished=!!session&&session.endsAt<=Date.now();
- const blocked=!session&&(inBattle||window.DBISpiritual.isActive()||Object.entries(stored).some(([other,active])=>other!==key&&active?.endsAt>Date.now()));
- return `<section class="dbi-training-column" data-training="${key}">
- <h3>${type.title}</h3>
- <div class="dbi-training-fields">
- <label><span>Atrybut</span><select class="dbi-training-attribute" ${session?'disabled':''}>${type.attributes.map(attr=>`<option value="${attr}" ${session?.attribute===attr?'selected':''}>${attr}</option>`).join('')}</select></label>
- <label><span>Czas</span><select class="dbi-training-duration" ${session?'disabled':''}>${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${session?.hours===n?'selected':''}>${n} ${n===1?'godzina':n<5?'godziny':'godzin'}</option>`).join('')}</select></label>
- </div>
- <div class="dbi-training-result"><strong>Rezultat</strong>
- <p class="dbi-training-reward">+${session?.reward??dbiTrainingReward(session?.attribute||type.attributes[0],session?.hours||1,level)}</p>
- <p class="dbi-training-status">${running?'Trening trwa':finished?'Trening zakończony':inBattle?'Najpierw zakończ walkę z potworami.':'Nie rozpoczęto treningu'}</p>
- <p class="dbi-training-clock">${running?dbiTrainingTime(session.endsAt-Date.now()):finished?'00:00:00':'—'}</p>
- <p class="dbi-training-note">${session?'Wybrano: '+esc(session.attribute):'Wybierz atrybut i czas treningu.'}</p>
- </div>
- <button class="dbi-training-action" type="button" ${blocked?'disabled':''}>${running?'Przerwij':finished?'Odbierz wynik':'Trenuj'}</button>
- </section>`;
- }).join('')}
- </div></div>`;
+ const types=Object.values(DBI_TRAINING_TYPES);
+ const firstSession=Object.values(stored).find(s=>s?.endsAt>Date.now())||Object.values(stored).find(s=>s?.attribute);
+ let attributeChoice=firstSession?.attribute||types[0].attributes[0];
+ let hoursChoice=firstSession?.hours||1;
+ const group=()=>DBI_TRAINING_TYPES.body.attributes.includes(attributeChoice)?'body':'soul';
+ const attributeNotes=['Rozwijaj siłę fizyczną wojownika.','Trenuj szybkość swojej postaci.','Zwiększaj wytrzymałość wojownika.','Rozwijaj inteligencję swojej postaci.','Trenuj energię KI.'];
+ const attrs=types.flatMap(type=>type.attributes);
+ const host=document.querySelector('#pageBody');
+ host.innerHTML=`<link rel="stylesheet" href="css/trening-dojo.css?v=dojo4"><div class="dbi-training dojo-screen">
+ <div class="dojo-art"><header><h2>Trening</h2><p>Rozwijaj atrybuty swojego wojownika i jego potencjał KI.</p></header></div>
+ <section class="dojo-planner"><h2>Zaplanuj trening</h2><p class="dojo-instruction">Wybierz atrybut, czas trwania i rozpocznij trening.</p>
+ <div class="dojo-attributes">${attrs.map((attr,i)=>`<button type="button" data-attr="${attr}" aria-pressed="false"><img src="assets/ui/attr-${i}.webp" alt=""><span><b>${attr}</b><small>${attributeNotes[i]}</small></span><i aria-hidden="true"></i></button>`).join('')}</div>
+ <h3>Czas trwania treningu</h3><div class="dojo-hours">${[1,2,3,4,5,6].map(n=>`<button type="button" data-hours="${n}">${n} h</button>`).join('')}</div>
+ <div class="dojo-result"><span>Oczekiwany bonus</span><strong></strong></div>
+ <button class="dbi-training-action" type="button">Rozpocznij trening</button></section>
+ <div class="dojo-footer"><strong></strong><b class="dojo-session-attr"></b><span class="dojo-status-message"></span><time></time><progress max="1" value="0" aria-label="Postęp treningu"></progress><small></small></div></div>`;
+ const col=host.querySelector('.dojo-planner');
+ const footer=host.querySelector('.dojo-footer');
  const update=()=>{
-  const inBattle=dbiMobBattleBlocksTraining();
-  const data=dbiTrainingRead();
-  for(const [key] of Object.entries(DBI_TRAINING_TYPES)){
-   const col=document.querySelector(`.dbi-training-column[data-training="${key}"]`);
-   if(!col)continue;
-   const session=data[key],running=session&&session.endsAt>Date.now();
-   col.querySelector('.dbi-training-status').textContent=running?'Trening trwa':session?'Trening zakończony':inBattle?'Najpierw zakończ walkę z potworami.':'Nie rozpoczęto treningu';
-   col.querySelector('.dbi-training-clock').textContent=running?dbiTrainingTime(session.endsAt-Date.now()):session?'00:00:00':'—';
-   const action=col.querySelector('.dbi-training-action');
-   action.textContent=running?'Przerwij':session?'Odbierz wynik':'Trenuj';
-   action.disabled=!session&&(inBattle||window.DBISpiritual.isActive()||Object.entries(data).some(([other,active])=>other!==key&&active?.endsAt>Date.now()));
-  }
+  const data=dbiTrainingRead(),session=data[group()],now=Date.now();
+  const running=session&&session.endsAt>now;
+  const active=Object.values(data).find(s=>s?.endsAt>now);
+  const blocked=!session&&(!!active||dbiMobBattleBlocksTraining()||window.DBISpiritual.isActive());
+  if(session){attributeChoice=session.attribute;hoursChoice=session.hours}
+  col.querySelectorAll('[data-attr]').forEach(btn=>{
+   const attr=btn.dataset.attr,key=DBI_TRAINING_TYPES.body.attributes.includes(attr)?'body':'soul';
+   btn.disabled=!!data[key]&&attr!==data[key].attribute;
+   btn.setAttribute('aria-pressed',String(attr===attributeChoice));
+  });
+  col.querySelectorAll('[data-hours]').forEach(btn=>{
+   btn.disabled=!!session;btn.setAttribute('aria-pressed',String(+btn.dataset.hours===+hoursChoice));
+  });
+  col.querySelector('.dojo-result strong').textContent=attributeChoice+' +'+(session?.reward??dbiTrainingReward(attributeChoice,hoursChoice,level));
+  const btn=col.querySelector('.dbi-training-action');
+  btn.textContent=running?'Przerwij trening':session?'Odbierz wynik':'Rozpocznij trening';
+  btn.disabled=!!blocked;
+  const shown=active||session;
+  footer.querySelector('strong').textContent=shown?(shown.endsAt>now?'Trening w toku':'Trening zakończony'):'Status treningu';
+  footer.querySelector('.dojo-session-attr').textContent=shown?.attribute||'';
+  footer.querySelector('time').textContent=shown?dbiTrainingTime(Math.max(0,shown.endsAt-now)):'';
+  footer.querySelector('small').textContent=shown?'('+shown.hours+' h)':'';
+  footer.querySelector('.dojo-status-message').textContent=shown?'Pozostały czas:':dbiMobBattleBlocksTraining()?'Najpierw zakończ walkę z potworami.':window.DBISpiritual.isActive()?'Trwa rozwój duchowy.':'Wybierz atrybut i czas treningu.';
+  const progress=footer.querySelector('progress');
+  progress.hidden=!shown;
+  if(shown)progress.value=Math.max(0,Math.min(1,1-(shown.endsAt-now)/(shown.hours*3600000)));
  };
- document.querySelectorAll('.dbi-training-column').forEach(col=>{
-  const key=col.dataset.training;
-  const refreshPreview=()=>{
-   const data=dbiTrainingRead(),session=data[key];
-   const attr=session?.attribute||col.querySelector('.dbi-training-attribute').value;
-   const hours=session?.hours||Number(col.querySelector('.dbi-training-duration').value);
-   col.querySelector('.dbi-training-reward').textContent='+'+(session?.reward??dbiTrainingReward(attr,hours,level));
-  };
-  col.querySelector('.dbi-training-attribute').addEventListener('change',refreshPreview);
-  col.querySelector('.dbi-training-duration').addEventListener('change',refreshPreview);
+ col.querySelectorAll('[data-attr]').forEach(btn=>btn.onclick=()=>{attributeChoice=btn.dataset.attr;update()});
+ col.querySelectorAll('[data-hours]').forEach(btn=>btn.onclick=()=>{hoursChoice=+btn.dataset.hours;update()});
   col.querySelector('.dbi-training-action').onclick=()=>{
-   const data=dbiTrainingRead(),session=data[key];
+   const key=group(), data=dbiTrainingRead(),session=data[key];
    if(session){
     if(session.endsAt>Date.now()){
      dbiTrainingConfirm(()=>{
@@ -2054,14 +2130,15 @@ function renderTraining(){
    }else{
     // Jeden aktywny trening na postać, niezależnie od zakładki.
     if(dbiMobBattleBlocksTraining()||window.DBISpiritual.isActive()||Object.values(data).some(active=>active?.endsAt>Date.now()))return renderTraining();
-    const attribute=col.querySelector('.dbi-training-attribute').value;
-    const hours=Number(col.querySelector('.dbi-training-duration').value);
+    const attribute=attributeChoice;
+    const hours=hoursChoice;
     const now=Date.now();
     data[key]={attribute,hours,levelAtStart:level,reward:dbiTrainingReward(attribute,hours,level),startedAt:now,endsAt:now+hours*3600000};
    }
    dbiTrainingWrite(data);renderTraining();
   };
- });
+
+ update();
  dbiTrainingTicker=setInterval(()=>{
   if(!document.querySelector('.dbi-training')){clearInterval(dbiTrainingTicker);dbiTrainingTicker=null;return}
   update();
@@ -3096,18 +3173,23 @@ function dbiBindSharedInventory(host,{refresh,onClick,onDoubleClick,onContextMen
  });
  host.querySelectorAll('.inv-actions button').forEach(b=>b.onclick=()=>{setMessage(b.dataset.action+' — opcja do późniejszego wdrożenia.');});
 }
+function dbiEquipmentRequirement(item){
+ if(level<(Number(item.requiredLevel)||1))return 'Wymagany poziom: '+item.requiredLevel;
+ const race=String(dbiCharacters[dbiCharacterIndex]?.race||'').toLowerCase();
+ if(item.requiredRace==='saiyan'&&!['saiyan','saiyanin','sayan'].includes(race))return 'Wymagana rasa: Saiyan.';
+ return '';
+}
 function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założyć.'){
  hideItemPopups();
  dbiSaveInventory();dbiSaveEquipped();
  document.querySelector('#breadcrumb').textContent='POSTAĆ / EKWIPUNEK';
  const current=equipped[equipmentSet], worn=Object.values(current).map(itemById).filter(Boolean),stats=sums(worn);
- document.querySelector('#pageBody').innerHTML=`<div class="equipment-layout">
- <section class="eq-panel eq-left"><h2>EKWIPUNEK</h2><p class="eq-caption">${worn.length} / ${DBI_SLOTS.length} slotów wyposażonych · ${equipmentSet}</p>
- <div class="eq-doll"><div class="eq-body-outline" aria-hidden="true">✦</div><div class="eq-slots">${DBI_SLOTS.map(([label,id,col,row,height])=>{
- const item=itemById(current[id]);return `<button class="eq-slot ${height===2?'eq-tall':''} ${item?'occupied':''} ${selectedSlot===id?'active':''}" data-slot="${id}" style="--col:${col};--row:${row};--span:${height}" title="${item?'':esc(label)}"><span class="slot-art">${dbiItemArt(item)}</span><span class="slot-name">${item?'':esc(label)}</span></button>`}).join('')}</div></div>
+ document.querySelector('#pageBody').innerHTML=`<div class="equipment-layout astral-equipment">
+ <section class="eq-panel eq-left"><div class="astral-eq-heading"><h2>Wyposażenie</h2><p class="eq-caption">${worn.length} / ${DBI_SLOTS.length} założonych przedmiotów · ${equipmentSet}</p></div>
+ <div class="eq-doll"><div class="eq-body-outline" aria-hidden="true">✦</div><div class="eq-slots">${DBI_SLOTS.map(([label,id,col,row,height],index)=>{
+ const item=itemById(current[id]);return `<button class="eq-slot ${item?'occupied':''} ${selectedSlot===id?'active':''}" data-slot="${id}" style="--eq-index:${index}" title="${item?'':esc(label)}" aria-label="${esc(label)}"><span class="slot-art">${dbiItemArt(item)}</span><span class="slot-name">${item?'':esc(label)}</span></button>`}).join('')}</div></div>
  <div class="eq-sets"><button class="eq-set ${equipmentSet==='Główny'?'active':''}" data-set="Główny">Zestaw główny</button><button class="eq-set ${equipmentSet==='PvP'?'active':''}" data-set="PvP">Zestaw PvP</button></div><p class="eq-selection" id="eqSelection" role="status">${esc(message)}</p></section>
- <section class="eq-panel eq-middle"><h2>STATYSTYKI EKWIPUNKU</h2><p class="eq-caption">Suma bonusów założonych przedmiotów</p>${[['OBRAŻENIA I OBRONA',[['Obrażenia',stats.attack],['Wartość ataku',stats.attackMin+'–'+stats.attackMax],['Szybkość ataku',stats.attackSpeedPct+'%'],['Obrona',stats.defense],['Maksymalne HP',stats.hp],['Szybkość ruchu',stats.moveSpeedPct+'%']]],['ENERGIA',[['Ki',stats.ki]]],['WYPOSAŻENIE',[['Założone przedmioty',worn.length]]],['ATRYBUTY POSTACI',[['Siła','—'],['Inteligencja','—'],['Szybkość','—'],['Wytrzymałość','—']]]].map(([group,rows])=>`<div class="eq-stat-group"><h3>${group}</h3>${rows.map(([name,val])=>`<div class="eq-stat"><span>${name}</span><strong>${val}</strong></div>`).join('')}</div>`).join('')}</section>
- <section class="eq-panel eq-right"><h2>INWENTARZ</h2><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((x,i)=>`<button class="inv-tab ${inventoryTab===i?'active':''}" data-tab="${i}">${x}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${renderInventoryGrid()}</div></div><div class="inv-actions"><button data-action="Sortuj">Sortuj</button><button data-action="Zaznacz">Zaznacz</button><button data-action="Zablokuj">Zablokuj</button></div></section></div>`;
+ <section class="eq-panel eq-right"><div class="astral-eq-heading"><h2>Ekwipunek</h2></div><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((x,i)=>`<button class="inv-tab ${inventoryTab===i?'active':''}" data-tab="${i}">${x}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${renderInventoryGrid()}</div></div><div class="inv-actions"><button data-action="Sortuj">Sortuj</button><button data-action="Zaznacz">Zaznacz</button><button data-action="Zablokuj">Zablokuj</button></div></section></div>`;
  // Ten sam dymek co w inwentarzu również na założonych przedmiotach.
  document.querySelectorAll('.eq-slot.occupied').forEach(slot=>{
   const item=itemById(current[slot.dataset.slot]);
@@ -3121,13 +3203,13 @@ function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założ
  document.querySelectorAll('.eq-slot').forEach(slot=>{
   slot.addEventListener('dragover',e=>{if(dragIndex===null)return;const item=itemById(inventory[dragIndex]);if(item?.slot!==slot.dataset.slot||current[slot.dataset.slot])return;e.preventDefault();e.dataTransfer.dropEffect='move';slot.classList.add('drop-target')});
   slot.addEventListener('dragleave',()=>slot.classList.remove('drop-target'));
-  slot.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();slot.classList.remove('drop-target');const idx=dragIndex;dragIndex=null;dragActive=false;if(idx===null)return;const item=itemById(inventory[idx]);if(!item||item.slot!==slot.dataset.slot){document.querySelector('#eqSelection').textContent='Ten przedmiot nie pasuje do wybranego slotu.';return}if(level<(Number(item.requiredLevel)||1)){document.querySelector('#eqSelection').textContent='Wymagany poziom: '+item.requiredLevel;return}if(current[item.slot]){document.querySelector('#eqSelection').textContent='Slot jest zajęty.';return}current[item.slot]=inventory[idx];inventory.splice(idx,1);inventoryPlacement.splice(idx,1);renderEquipment('Założono: '+item.name)});
+  slot.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();slot.classList.remove('drop-target');const idx=dragIndex;dragIndex=null;dragActive=false;if(idx===null)return;const item=itemById(inventory[idx]);if(!item||item.slot!==slot.dataset.slot){document.querySelector('#eqSelection').textContent='Ten przedmiot nie pasuje do wybranego slotu.';return}const requirement=dbiEquipmentRequirement(item);if(requirement){document.querySelector('#eqSelection').textContent=requirement;return}if(current[item.slot]){document.querySelector('#eqSelection').textContent='Slot jest zajęty.';return}current[item.slot]=inventory[idx];inventory.splice(idx,1);inventoryPlacement.splice(idx,1);renderEquipment('Założono: '+item.name)});
  });
  document.querySelectorAll('.eq-set').forEach(b=>b.onclick=()=>{equipmentSet=b.dataset.set;renderEquipment('Zestaw: '+equipmentSet)});
  // Podczas przeciągania NIE przebudowujemy całej karty: usunięcie źródła kończy natywny drag.
  dbiBindSharedInventory(document.querySelector('.eq-right'),{
   refresh:message=>renderEquipment(message),
-  onClick:index=>{const id=inventory[index],item=itemById(id);if(!item)return;if(item.id===DBI_REINFORCEMENT_PLANS.id||item.id===DBI_CHANGE_SCROLL.id||item.id===DBI_ADDITION_CHIP.id||item.id===DBI_UPDATING_CHIP.id)return renderEquipment(item.description);if(dbiIsUsableItem(item))return;if(!DBI_SLOTS.some(slot=>slot[1]===item.slot))return renderEquipment('Ten przedmiot jest nagrodą z zadania i nie można go założyć.');if(level<(Number(item.requiredLevel)||1))return renderEquipment('Wymagany poziom: '+item.requiredLevel);if(current[item.slot])return renderEquipment('Ten slot jest zajęty. Zdejmij poprzedni przedmiot.');current[item.slot]=id;inventory.splice(index,1);inventoryPlacement.splice(index,1);renderEquipment('Założono: '+item.name)},
+  onClick:index=>{const id=inventory[index],item=itemById(id);if(!item)return;if(item.id===DBI_REINFORCEMENT_PLANS.id||item.id===DBI_CHANGE_SCROLL.id||item.id===DBI_ADDITION_CHIP.id||item.id===DBI_UPDATING_CHIP.id)return renderEquipment(item.description);if(dbiIsUsableItem(item))return;if(!DBI_SLOTS.some(slot=>slot[1]===item.slot))return renderEquipment('Ten przedmiot jest nagrodą z zadania i nie można go założyć.');const requirement=dbiEquipmentRequirement(item);if(requirement)return renderEquipment(requirement);if(current[item.slot])return renderEquipment('Ten slot jest zajęty. Zdejmij poprzedni przedmiot.');current[item.slot]=id;inventory.splice(index,1);inventoryPlacement.splice(index,1);renderEquipment('Założono: '+item.name)},
   onDoubleClick:index=>dbiOpenUsableItem(index),
   setMessage:message=>{const el=document.querySelector('#eqSelection');if(el)el.textContent=message}
  });
@@ -3339,7 +3421,7 @@ function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w te
  };
  document.querySelector('#gmDelete').onclick=()=>{if(!editing)return;const id=editing;catalog=catalog.filter(x=>x.id!==id);inventoryPlacement=inventoryPlacement.filter((_,i)=>dbiDecodeItemRef(inventory[i]).id!==id);inventory=inventory.filter(x=>dbiDecodeItemRef(x).id!==id);Object.values(equipped).forEach(set=>Object.keys(set).forEach(slot=>{if(dbiDecodeItemRef(set[slot]).id===id)delete set[slot]}));dbiSaveCatalog(catalog);renderGM('Usunięto: '+id)};
  document.querySelector('#gmExport').onclick=()=>{const blob=new Blob([JSON.stringify(catalog,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dragonball-items.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
- document.querySelector('#gmImport').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||data.some(x=>!x||typeof x.id!=='string'||!/^[\w-]+$/.test(x.id)||typeof x.name!=='string'||!DBI_SLOTS.some(s=>s[1]===x.slot))||new Set(data.map(x=>x.id)).size!==data.length)throw Error('Niepoprawny katalog');catalog=data.filter(x=>x.id!=='starter-white-belt-plus-one'&&!DBI_REMOVED_ITEM_IDS.has(x.id)).map(x=>({id:x.id,name:x.name,slot:x.slot,icon:String(x.icon||''),attack:Number(x.attack)||0,defense:Number(x.defense)||0,ki:Number(x.ki)||0,description:String(x.description||''),quality:QUALITY.includes(x.quality)?x.quality:'Pospolity',image:typeof x.image==='string'?x.image:undefined,requiredLevel:Math.max(1,Number(x.requiredLevel)||1)}));for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';dbiRegisterBuiltInItems([...DBI_ROYAL_500_CATALOG,DBI_REINFORCEMENT_PLANS,DBI_CHANGE_SCROLL,DBI_ADDITION_CHIP,DBI_UPDATING_CHIP]);dbiSaveCatalog(catalog);renderGM('Zaimportowano '+catalog.length+' przedmiotów.')}catch(err){document.querySelector('#gmMessage').textContent='Błąd importu: '+err.message}};
+ document.querySelector('#gmImport').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||data.some(x=>!x||typeof x.id!=='string'||!/^[\w-]+$/.test(x.id)||typeof x.name!=='string'||!DBI_SLOTS.some(s=>s[1]===x.slot))||new Set(data.map(x=>x.id)).size!==data.length)throw Error('Niepoprawny katalog');catalog=data.filter(x=>x.id!=='starter-white-belt-plus-one'&&!DBI_REMOVED_ITEM_IDS.has(x.id)).map(x=>({id:x.id,name:x.name,slot:x.slot,icon:String(x.icon||''),attack:Number(x.attack)||0,defense:Number(x.defense)||0,ki:Number(x.ki)||0,description:String(x.description||''),quality:QUALITY.includes(x.quality)?x.quality:'Pospolity',image:typeof x.image==='string'?x.image:undefined,requiredLevel:Math.max(1,Number(x.requiredLevel)||1)}));for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';dbiRegisterBuiltInItems([...DBI_SAYAN_50_ITEMS,...DBI_ROYAL_500_CATALOG,DBI_REINFORCEMENT_PLANS,DBI_CHANGE_SCROLL,DBI_ADDITION_CHIP,DBI_UPDATING_CHIP]);dbiSaveCatalog(catalog);renderGM('Zaimportowano '+catalog.length+' przedmiotów.')}catch(err){document.querySelector('#gmMessage').textContent='Błąd importu: '+err.message}};
 }
 
 // Zamknij menu akcji po kliknięciu poza nim.
@@ -4014,3 +4096,20 @@ if(dbiActive?.id){
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
  else start();
 })();
+
+function refreshAtlasVitals(){
+ if(document.hidden)return;
+ const combat=document.querySelector('.world-battle-top')?.parentElement;
+ const labels=combat?.querySelectorAll('.world-hero-grid .world-vital-label span:last-child');
+ const stats=window.DBIWorldInventory?.character();
+ if(!stats)return;
+ for(const [index,id,max] of [[0,'Hp',stats.maxHp],[1,'Ki',stats.maxKi]]){
+  const values=labels?.[index]?.textContent?.replace(/[^0-9.,/]/g,'').replace(/,/g,'.').split('/').map(Number);
+  const live=values?.length===2&&values.every(Number.isFinite);
+  const current=live?values[0]:max,limit=live?values[1]:max;
+  document.getElementById('atlas'+id+'Value').textContent=Math.round(current).toLocaleString('pl-PL')+'/'+Math.round(limit).toLocaleString('pl-PL');
+  document.getElementById('atlas'+id).value=limit?current/limit:0;
+ }
+}
+refreshAtlasVitals();
+setInterval(refreshAtlasVitals,1500);

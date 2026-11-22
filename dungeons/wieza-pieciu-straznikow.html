@@ -27,7 +27,7 @@ button:hover:not(:disabled){filter:brightness(1.2)} button:disabled{opacity:.45;
 </div>
 <canvas id="scene" width="760" height="356" aria-label="Widok zza pleców postaci w korytarzu wieży"></canvas>
 <footer>
-<div class="row"><strong id="enemy"></strong><span id="progress"></span></div>
+<div class="row"><span><img id="enemy-art" hidden width="38" height="38" alt="" style="vertical-align:middle;border-radius:4px"> <strong id="enemy"></strong></span><span id="progress"></span></div>
 <p id="status" role="status"></p>
 <div class="controls">
 <button id="forward">W / ↑ · Naprzód</button><button id="attack">J · Atak</button><button id="wave">K · Fala KI (25 KI)</button><button id="restart">Od początku</button>
@@ -297,6 +297,15 @@ button:hover:not(:disabled){filter:brightness(1.2)} button:disabled{opacity:.45;
     $('hp').max=hpMax;$('ki').max=Math.max(1,kiMax);$('hp').value=hp;$('ki').value=ki;
     $('hpLabel').textContent='HP '+hp+' / '+hpMax;$('kiLabel').textContent='KI '+ki+' / '+kiMax;
     $('progress').textContent='Piętro '+(floor+1)+' / 5';
+    const portrait=$('enemy-art');
+    if(portrait.dataset.name!==(foe?.name||'')){
+      portrait.dataset.name=foe?.name||'';
+      portrait.hidden=!foe;
+      if(foe){
+        const key=foe.name.toLowerCase().replace(/ł/g,'l').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ +/g,'-');
+        portrait.src='../assets/ui/moby/'+key+'.webp';
+      }
+    }
     $('enemy').textContent=foe?(foe.boss?'Boss · ':'')+foe.name+' · '+foe.hp+' / '+foe.max+' HP':'Brama otwarta';
     $('restart').hidden=embeddedRun;$('restart').disabled=embeddedRun;$('forward').disabled=!playing;$('attack').disabled=!inRange||now<recoveryUntil||foe.z-position>48;
     const activePunch=effects.find(effect=>effect.type==='attack');
