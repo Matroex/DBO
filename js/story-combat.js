@@ -15,11 +15,20 @@ function dodgeChance(defender,attacker){
 function stunChance(chance,resistance){
  return Math.min(100,number(chance))*(1-Math.min(100,number(resistance))/100);
 }
+function combatRaceKey(race){
+ const name=String(race||'').trim().toLowerCase();
+ return ({ziemianin:'earthling',człowiek:'earthling',nameczanin:'namekian',namek:'namekian','demon mrozu':'frostDemon',majin:'majin'})[name];
+}
 function hit(attack,defense,attacker,technique=false,intelligenceReduction=0,defender={},forcedCriticalMultiplier=0){
  if(roll(dodgeChance(defender,attacker)))return {damage:0,critical:false,dodged:true};
  const penetration=Math.min(100,number(attacker.armorPenetration));
  const armor=defense*(technique ? 0.2 : 1)*(1-penetration/100);
- const base=dealt(attack,armor)*(1-intelligenceReduction);
+ const outgoing=number(attacker.raceDamage?.[combatRaceKey(defender.race)]);
+ const incoming=number(defender.raceReduction?.[combatRaceKey(attacker.race)]);
+ const techniqueReduction=technique?number(defender.techniqueReductionPct):0;
+ const average=Number(technique?attacker.averageTechniqueDamagePct:attacker.averageDamagePct)||0;
+ const base=dealt(attack,armor)*Math.max(0,1+average/100)*(1-intelligenceReduction)*(1+outgoing/100)
+  *Math.max(0,1-incoming/100)*Math.max(0,1-techniqueReduction/100);
  const chance=number(technique?attacker.techniqueCritChance:attacker.critChance);
  const critical=base>0&&(forcedCriticalMultiplier>0||roll(chance));
  const bonus=number(technique?attacker.techniqueCritDamage:attacker.critDamage);
@@ -31,7 +40,9 @@ function hit(attack,defense,attacker,technique=false,intelligenceReduction=0,def
 window.DBICombatHit=hit;
 window.DBICombatRoll=roll;
 window.DBICombatStunChance=stunChance;
-const stats=(name,race,level,s)=>({name,race,level,speed:number(s.speed),attack:number(s.attack),
+const stats=(name,race,level,s)=>({name,race:s.race||race,level:s.level||level,speed:number(s.speed),attack:number(s.attack),
+ averageDamagePct:Number(s.averageDamagePct)||0,averageTechniqueDamagePct:Number(s.averageTechniqueDamagePct)||0,
+ raceDamage:s.raceDamage,raceReduction:s.raceReduction,techniqueReductionPct:number(s.techniqueReductionPct),techniqueValuePct:number(s.techniqueValuePct),
  statusSkills:s.statusSkills||{},bleedChance:number(s.bleedChance),
  stunChance:number(s.stunChance),stunResistance:number(s.stunResistance),
  criticalDamageReduction:number(s.criticalDamageReduction),
@@ -72,7 +83,7 @@ function resolveTurn(attacker,defender,round,mode){
  const last=attacker.lastTechniqueRound[tech?.id];
  if(tech&&attacker.ki>=number(tech.mana)&&(last===undefined||round-last>13)){
   attacker.ki=Math.max(0,attacker.ki-number(tech.mana));attacker.lastTechniqueRound[tech.id]=round;
-  const attack=Math.max(0,(number(tech.baseDamage)+number(mode==='pvp'?attacker.techniqueAttackPvp:attacker.techniqueAttackPvm)+attacker.techniqueKi*.01)*(1+attacker.techniqueDamageBonusPct/100));
+  const attack=Math.max(0,(number(tech.baseDamage)+number(mode==='pvp'?attacker.techniqueAttackPvp:attacker.techniqueAttackPvm)+attacker.techniqueKi*.01)*(1+attacker.techniqueValuePct/100)*(1+attacker.techniqueDamageBonusPct/100));
   const reduction=Math.min(.5,Math.max(0,(defender.intelligence-attacker.techniqueKi)*.00001));
   const result=hit(attack,defender.defense,attacker,true,reduction,defender);
   if(result.dodged)return log(defender.name+': unik techniki '+tech.name);
@@ -103,8 +114,17 @@ function resolveTurn(attacker,defender,round,mode){
  return log([`${attacker.name}: ${name}${critical?' (krytyk)':''} · ${Math.round(actual*100)/100} obrażeń`,...effects].join(' · '));
 }
 // Symulacja turnieju bez UI, z identyczną kolejnością i wzorami jak pojedynek.
+function weakenOpponents(first,second,firstReduction,secondReduction){
+ const scales=[1-Math.min(100,number(secondReduction))/100,1-Math.min(100,number(firstReduction))/100];
+ for(const [index,fighter] of [first,second].entries()){
+  for(const key of ['speed','attack','defense','intelligence','techniqueKi','power']){
+   if(fighter[key]!==null&&fighter[key]!==undefined)fighter[key]*=scales[index];
+  }
+ }
+}
 function simulate(player,enemy,mode='pvp'){
  const p=stats(player.name||'Gracz','',player.level||1,player),e=stats(enemy.name||'Przeciwnik','',enemy.level||1,enemy),log=[];
+ weakenOpponents(p,e,player.enemyStatsReductionPct,enemy.enemyStatsReductionPct);
  const order=p.speed>=e.speed?[[p,e],[e,p]]:[[e,p],[p,e]];
  for(let round=1;round<=21;round++){
   for(const [attacker,defender] of order){
@@ -130,6 +150,7 @@ function open({characterId='test',playerName='Wojownik',playerRace='Wojownik',op
  }
  // Statystyki przeciwnika są tymczasowe do czasu zatwierdzenia parametrów Krillina.
  const e=stats(opponentName,'Człowiek',3,opponentStats||{speed:3,attack:2,defense:1,maxHp:20,maxKi:5});
+ weakenOpponents(p,e,source.enemyStatsReductionPct,opponentStats?.enemyStatsReductionPct);
  const order=p.speed>=e.speed?[['p',p,e],['e',e,p]]:[['e',e,p],['p',p,e]];
  let round=1,step=0,result=null;running=true;
  const shade=document.createElement('div');shade.className='story-shade';shade.setAttribute('role','dialog');shade.setAttribute('aria-modal','true');shade.setAttribute('aria-label',mode==='pvp'?'Walka PvP':'Walka fabularna');
