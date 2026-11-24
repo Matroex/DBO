@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="148" viewBox="0 0 660 148">
+  <defs>
+    <linearGradient id="case" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#a5bdcf"/><stop offset=".14" stop-color="#35495a"/>
+      <stop offset=".28" stop-color="#091625"/><stop offset=".74" stop-color="#192736"/><stop offset="1" stop-color="#8ca1b0"/>
+    </linearGradient>
+    <linearGradient id="main" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#581222"/><stop offset=".18" stop-color="#1a0712"/><stop offset=".48" stop-color="#581222"/><stop offset=".77" stop-color="#1a0712"/><stop offset="1" stop-color="#581222"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ffe0a2" stop-opacity=".30"/><stop offset=".20" stop-color="#ff333b" stop-opacity=".16"/><stop offset=".36" stop-color="#ff333b" stop-opacity="0"/><stop offset=".77" stop-color="#ff333b" stop-opacity=".10"/><stop offset="1" stop-color="#ff333b" stop-opacity=".43"/>
+    </linearGradient>
+    <linearGradient id="flare" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#ff333b" stop-opacity="0"/><stop offset=".16" stop-color="#ffe2a4" stop-opacity=".92"/><stop offset=".42" stop-color="#ff333b" stop-opacity=".2"/><stop offset=".58" stop-color="#ff333b" stop-opacity=".2"/><stop offset=".85" stop-color="#ffe2a4" stop-opacity=".94"/><stop offset="1" stop-color="#ff333b" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="halo" x="-30%" y="-80%" width="160%" height="260%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+  <!-- Corona and electrified floor beneath button; kept inside SVG bounds. -->
+  <path d="M38 78 L14 63 38 71 50 43 46 65 68 74 M622 78 L646 63 622 71 610 43 614 65 592 74" fill="none" stroke="#ff333b" stroke-width="2.5" opacity=".9"/>
+  <path d="M47 101 10 116 29 102 13 98 46 98 M613 101 650 116 631 102 647 98 614 98" fill="none" stroke="#ff665b" stroke-width="2" opacity=".83"/>
+  <path d="M118 13H542L625 73 543 135H116L35 73Z" fill="#ff333b" opacity=".62" filter="url(#halo)"/>
+  <!-- Layered cut-corner outer plating -->
+  <path d="M117 12H543L627 73 542 136H117L33 74Z" fill="url(#case)" stroke="#020913" stroke-width="3"/>
+  <path d="M122 16H538L617 73 539 131H121L43 74Z" fill="#1a0712" stroke="#ff333b" stroke-width="4"/>
+  <path d="M129 21H532L611 73 533 125H128L50 74Z" fill="url(#main)" stroke="#ffe2a4" stroke-opacity=".9" stroke-width="1.8"/>
+  <path d="M129 21H532L611 73 533 125H128L50 74Z" fill="url(#shine)"/>
+  <!-- Double nested trim and specular highlights -->
+  <path d="M137 27H524L602 73 525 119H135L59 74Z" fill="none" stroke="#ff333b" stroke-opacity=".74" stroke-width="2"/>
+  <path d="M147 32H514" stroke="#ffe0a2" stroke-opacity=".82" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M144 115H517" stroke="#ff333b" stroke-opacity=".66" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M160 124H495" stroke="#ffe0a2" stroke-opacity=".40" stroke-width="1.2"/>
+  <path d="M60 72 125 26M600 72 535 26" stroke="#ffe0a2" stroke-opacity=".28" stroke-width="1.4"/>
+  <path d="M62 76 130 119M598 76 530 119" stroke="#ff333b" stroke-opacity=".4" stroke-width="1.5"/>
+  <path d="M112 11H550" stroke="url(#flare)" stroke-width="3.8"/>
+  <path d="M119 136H543" stroke="url(#flare)" stroke-width="4.2"/>
+  <!-- Metallic corner anchors -->
+  <path d="M83 73L119 42 132 42 90 75 130 106 115 106Z" fill="#ff333b" opacity=".21"/>
+  <path d="M577 73L541 42 528 42 570 75 530 106 545 106Z" fill="#ff333b" opacity=".21"/>
+  <path d="M104 31 140 31 132 38 110 38ZM520 31 556 31 550 38 528 38Z" fill="#ffe0a2" opacity=".55"/>
+  <!-- Chevron light bars on each end -->
+  <path d="M109 60l-13 13 13 13M551 60l13 13-13 13" stroke="#ffb347" stroke-width="3.1" fill="none" stroke-linejoin="bevel" opacity=".84"/>
+  <path d="M125 60l-13 13 13 13M535 60l13 13-13 13" stroke="#ffe2a4" stroke-width="1.8" fill="none" stroke-linejoin="bevel" opacity=".76"/>
+  <!-- top and bottom power cells -->
+  <path d="M151 24h55l-8 5h-39z M454 24h55l-8 5h-39z" fill="#ff333b" opacity=".56"/>
+  <path d="M173 121h35 M452 121h35" stroke="#ffe0a2" stroke-opacity=".5" stroke-width="2"/>
+  <!-- central dark letterplate, preserves text contrast -->
+  <path d="M200 41H460L493 73 460 106H200L167 73Z" fill="#1a0712" opacity=".27"/>
+</svg>

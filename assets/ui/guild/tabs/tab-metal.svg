@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 108" fill="none" preserveAspectRatio="none">
+<defs>
+ <linearGradient id="metal" x1="0" y1="8" x2="0" y2="97" gradientUnits="userSpaceOnUse"><stop stop-color="#0a1d31"/><stop offset=".22" stop-color="#1d3651"/><stop offset=".51" stop-color="#233b53"/><stop offset=".75" stop-color="#172b42"/><stop offset=".92" stop-color="#0a1d31"/><stop offset="1" stop-color="#061326"/></linearGradient>
+ <linearGradient id="top" x1="55" y1="0" x2="435" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#bacfe0"/><stop offset=".22" stop-color="#637f97"/><stop offset=".60" stop-color="#486983"/><stop offset=".92" stop-color="#8fafca"/><stop offset="1" stop-color="#bbd5ee"/></linearGradient>
+ <linearGradient id="side" x1="0" y1="0" x2="500" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#a9c6df"/><stop offset=".35" stop-color="#294b69"/><stop offset=".75" stop-color="#527c9d"/><stop offset="1" stop-color="#b1cfe4"/></linearGradient>
+ <linearGradient id="light" x1="130" y1="23" x2="330" y2="102" gradientUnits="userSpaceOnUse">
+  <stop stop-color="#ffffff" stop-opacity=".12"/><stop offset=".35" stop-color="#b2e3ff" stop-opacity=".07"/><stop offset=".75" stop-color="#010916" stop-opacity="0"/><stop offset="1" stop-color="#00060b" stop-opacity=".38"/>
+ </linearGradient>
+ <linearGradient id="bottom" x1="0" y1="0" x2="500" y2="0" gradientUnits="userSpaceOnUse">
+  <stop stop-color="#668fac" stop-opacity="0"/><stop offset=".10" stop-color="#668fac" stop-opacity=".65"/>
+  <stop offset=".47" stop-color="#cde8ff" stop-opacity=".95"/><stop offset=".78" stop-color="#668fac" stop-opacity=".65"/><stop offset="1" stop-color="#668fac" stop-opacity="0"/>
+ </linearGradient>
+ <filter id="soft" x="-.3" y="-.7" width="1.6" height="2.4"><feGaussianBlur stdDeviation="3"/></filter>
+ <filter id="wide" x="-.4" y="-1" width="1.8" height="3"><feGaussianBlur stdDeviation="7"/></filter>
+ <pattern id="brushed" width="15" height="15" patternUnits="userSpaceOnUse"><path d="M0 .5H15 M0 7.5H15 M0 12.5H15" stroke="#e8f7ff" stroke-opacity=".025" stroke-width=".6"/></pattern>
+</defs>
+<!-- outer soft light that remains visible around bevels -->
+<path d="M54 7H439L493 99H8Z" stroke="#809fb8" stroke-width="6" opacity=".35" filter="url(#soft)" />
+<path d="M54 6H439L494 99H6Z" fill="#030e1b" stroke="#060d18" stroke-width="4"/>
+<path d="M56 10H436L489 95H13Z" fill="url(#side)" stroke="#809fb8" stroke-opacity=".4" stroke-width="2"/>
+<path d="M61 14H432L484 92H18Z" fill="url(#metal)"/>
+<path d="M61 14H432L484 92H18Z" fill="url(#brushed)"/>
+<path d="M61 14H432L484 92H18Z" fill="url(#light)"/>
+<!-- gloss on the upper beveled edge -->
+<path d="M56 10H436L433 15H60Z" fill="url(#top)" opacity=".72"/>
+<path d="M62 17H431" stroke="#cde8ff" stroke-opacity=".25" stroke-width="1.5"/>
+<path d="M55 10L12 96" stroke="#c1d9ec" stroke-opacity=".38" stroke-width="2.5"/>
+<path d="M437 10L489 96" stroke="#c1d9ec" stroke-opacity=".45" stroke-width="2.5"/>
+<!-- lower engraved bevel and light reflection -->
+<path d="M18 89L15 95H487L482 89Z" fill="#071223" fill-opacity=".45" />
+<path d="M17 94H486" stroke="url(#bottom)" stroke-width="3" stroke-linecap="round"/>
+<path d="M21 98H478" stroke="#4e92c4" stroke-opacity=".5" stroke-width="4" filter="url(#soft)"/>
+<path d="M71 22L34 83" stroke="#cde8ff" stroke-opacity=".17" stroke-width="3"/>
+<path d="M426 22L468 82" stroke="#cde8ff" stroke-opacity=".18" stroke-width="3"/>
+<path d="M29 96H465" stroke="#66b4e3" stroke-width="3" opacity=".34" filter="url(#soft)"/>
+      <path d="M49 27H449" stroke="#cde9f4" stroke-opacity=".12" stroke-width="2"/>
+      <path d="M46 80H453" stroke="#64a3d5" stroke-opacity=".13" stroke-width="2"/>
+</svg>

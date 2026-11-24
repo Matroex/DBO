@@ -24,7 +24,7 @@ function dbiRequiredExp(lvl){
 }
 function dbiExpMultiplier(){
  const gear=dbiMainBonus('expBonusPct','experienceBonusPct');
- return 1+(gear+20*(window.DBISpiritual?.currentBonuses()?.exp||0))/100;
+ return 1+(dbiGuildBonus().education+gear+20*(window.DBISpiritual?.currentBonuses()?.exp||0))/100;
 }
 function dbiGainExp(amount,pvm=false){
  const base=Math.max(0,Math.floor((Number(amount)||0)*dbiExpMultiplier()));
@@ -112,6 +112,17 @@ if (!dbiSession?.name) {
 }
 const dbiIsGameMaster=()=>dbiCharacterIndex>=0&&window.DBIGmAccess.hasSession()&&window.DBIGmAccess.allowed(dbiSession?.name);
 if(dbiIsGameMaster())menus.push({name:'GM',page:'Panel GM'});
+window.DBIGuildDonateExp=(amount,saveGuild)=>{
+ if(!Number.isSafeInteger(amount)||amount<=0||amount>exp)throw Error('Za mało EXP na bieżącym poziomie.');
+ const key='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
+ const old=localStorage.getItem(key),records=JSON.parse(old||'[]');
+ const character=records.find(c=>c.id===dbiActive.id);
+ if(!character||Number(character.exp)!==exp||Number(character.level)!==level)throw Error('Odśwież dane postaci.');
+ character.exp=exp-amount;
+ localStorage.setItem(key,JSON.stringify(records));
+ try{saveGuild()}catch(err){localStorage.setItem(key,old);throw err}
+ exp-=amount;dbiCharacters[dbiCharacterIndex].exp=exp;renderExp();
+};
 function dbiSaveProgress(){
   if(!dbiSession?.name||dbiCharacterIndex<0)return;
   const key='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
@@ -942,22 +953,23 @@ function dbiArenaPvpStats(character,isSelf){
  const spirit=isSelf?window.DBISpiritual?.currentBonuses?.():dbiRankRead('dboidle_spiritual_v1_'+character.id,{})?.bonuses;
  const statMultiplier=1+(Number(spirit?.stats)||0)/100;
  const skills=dbiSkillBonuses(dbiRankRead('dboidle_skills_v1_'+character.id,{}));
- const effective=(value,key)=>value*statMultiplier*dbiPlanAttributeMultiplier(gear,key)+signStats+skills.stats;
+ const gb=dbiGuildBonus(character.id);
+ const effective=(value,key)=>dbiGuildAttribute(value*statMultiplier*dbiPlanAttributeMultiplier(gear,key)+signStats+skills.stats,gb);
  const sum=(...keys)=>gear.reduce((n,item)=>n+(dbiStatNumber(item,keys)||0),0);
  const strength=effective(base('strength'),'strength'),speed=effective(base('speed'),'speed');
  const endurance=effective(base('endurance'),'endurance'),intelligence=effective(base('intelligence'),'intelligence');
  const techniqueKi=effective(Number(source.kiStat??source.kiPower??source.ki??source.KI??character.kiStat??character.kiPower??character.ki??0)||0,'ki');
  const techniqueFixed=base('techniqueAttack')+sum('techniqueAttack','techniquePower')+skills.techniqueAttack;
  const techniqueAttackPvp=base('techniqueAttackMax')+sum('techniqueAttackMax')+techniqueFixed;
- const techniqueDamageBonusPct=base('techniqueDamageBonusPct')+sum('techniqueDamageBonusPct');
+ const techniqueDamageBonusPct=base('techniqueDamageBonusPct')+sum('techniqueDamageBonusPct')+(Number(source.questTechniqueDamagePct)||0);
  const tech=dbiCombatFighterTechniques(character,'pvp');
  // PvP: odrębny bonus ataku PvP; nie korzystamy z redukcji PvM.
  const percent=dbiCharacterBonus(character,gear,['attackValuePct','attackBonusPct','attackPct','attackPowerPct','physicalAttackPct','bonusAttackPct'])+(Number(spirit?.attack)||0)*.5;
- const atk=Math.max(0,Math.ceil(strength*.5*(1+percent/100))+sum('pvpAttack')+sum('attackMax','attackMin','attack','physicalAttack','physicalAttackPower','attackPower')+sum('attackRange')+sum('planAttackPvp')+skills.attack);
+ const atk=Math.max(0,Math.ceil(strength*.5*(1+percent/100))+sum('pvpAttack')+sum('attackMax','attackMin','attack','physicalAttack','physicalAttackPower','attackPower')+sum('attackRange')+sum('planAttackPvp')+skills.attack+gb.attack);
  return {...dbiCombatHitBonuses(character,gear,skills),...dbiPlanCombatFields(character,gear),level:Number(character.level)||1,speed,
-  attack:atk,defense:Math.max(0,(endurance*.1+skills.defense+sum('defense')+(Number(source.questDefenseBonus)||0))*(1+sum('defensePct')/100)),
-  maxHp:Math.max(1,(Number(source.gmMaxHp??(50+endurance*.01+sum('hp','maxHp','health')))+(source.gmMaxHp!=null?dbiPlanRolledTotal(gear,'hp'):0)+skills.hp+(Number(source.questMaxHp)||0))*(1+sum('maxHpPct')/100)),
-  maxKi:Math.max(0,(Number(source.gmMaxKi??(100+intelligence*.01+sum('kiPoints','maxKi','maxMp','mana','ki')))+(source.gmMaxKi!=null?dbiPlanRolledTotal(gear,'maxKi'):0))*(1+sum('maxKiPct')/100)),
+  attack:atk,defense:Math.max(0,(endurance*.1+skills.defense+sum('defense')+(Number(source.questDefenseBonus)||0))*(1+sum('defensePct')/100)*(1+gb.defensePct/100)),
+  maxHp:Math.max(1,(Number(source.gmMaxHp??(50+endurance*.01+sum('hp','maxHp','health')))+(source.gmMaxHp!=null?dbiPlanRolledTotal(gear,'hp'):0)+skills.hp+(Number(source.questMaxHp)||0))*(1+sum('maxHpPct')/100)*(1+gb.hpPct/100)+gb.hp),
+  maxKi:Math.max(0,(Number(source.gmMaxKi??(100+intelligence*.01+sum('kiPoints','maxKi','maxMp','mana','ki')))+(source.gmMaxKi!=null?dbiPlanRolledTotal(gear,'maxKi'):0))*(1+sum('maxKiPct')/100)*(1+gb.kiPct/100)+gb.ki),
   intelligence,techniqueKi,techniqueAttackPvp,techniqueDamageBonusPct,techniqueValuePct:sum('techniqueValuePct'),gloryBonus:sum('gloryBonus'),
   moves:tech.moves,unlockedTechniques:tech.unlocked,statusSkills:dbiCombatStatusSkills(character.id)};
 }
@@ -1045,7 +1057,8 @@ function dbiReloadLocalInventory(){
  const layout=dbiRankRead(DBI_INV_POS_KEY,{});
  if(!Array.isArray(records))return;
  inventory=records;
- inventoryPlacement=records.map((ref,i)=>layout?.items?.[i]===ref?layout.positions?.[i]??null:null);
+ // Odtwórz pozycje po identyfikatorach stosów, także gdy indeksy zmieniły się przy przyznaniu/zużyciu przedmiotów.
+ inventoryPlacement=dbiInventoryKeepPositions(records,records.map((ref,i)=>layout?.items?.[i]===ref?layout.positions?.[i]??null:null),layout);
  dbiLastPositionSave='';
 }
 window.addEventListener('storage',event=>{
@@ -1071,6 +1084,78 @@ window.addEventListener('storage',event=>{
  }
  if(['dboidle_gold_v1_','dboidle_dragon_wallet_v1_','dboidle_premium_v1_'].some(prefix=>event.key===prefix+id))dbiRefreshHeaderWallet();
 });
+// Nawigacja v2 — podmenu wysuwa się obok lewego paska, poza przewijanym #nav.
+// Nazwy podstron i istniejąca funkcja showPage() pozostają bez zmian.
+let dbiNavFlyout=null;
+function dbiNavFlyoutElement(){
+ if(!dbiNavFlyout){
+  dbiNavFlyout=document.createElement('div');
+  dbiNavFlyout.id='dbiNavFlyout';
+  dbiNavFlyout.className='dbi-nav-flyout';
+  dbiNavFlyout.hidden=true;
+  dbiNavFlyout.setAttribute('role','group');
+  document.body.append(dbiNavFlyout);
+ }
+ return dbiNavFlyout;
+}
+function dbiNavCloseFlyout(focusButton=false){
+ const previous=opened;
+ opened=null;
+ const flyout=dbiNavFlyout;
+ if(flyout){flyout.hidden=true;flyout.replaceChildren()}
+ nav.querySelectorAll('[aria-controls="dbiNavFlyout"]').forEach(button=>{
+  button.setAttribute('aria-expanded','false');
+ });
+ if(focusButton&&previous!==null)nav.querySelector('[data-category="'+previous+'"]')?.focus();
+}
+function dbiNavPositionFlyout(){
+ if(opened===null||!dbiNavFlyout||dbiNavFlyout.hidden)return;
+ const button=nav.querySelector('[data-category="'+opened+'"]');
+ if(!button){dbiNavCloseFlyout();return}
+ const rect=button.getBoundingClientRect();
+ const railRect=(nav.closest('.atlas-rail')||nav).getBoundingClientRect();
+ const navRect=nav.getBoundingClientRect();
+ // Nie zostawiaj podmenu otwartego obok kategorii, która zniknęła podczas przewijania.
+ if(rect.bottom<=navRect.top||rect.top>=navRect.bottom){dbiNavCloseFlyout();return}
+ const gap=6;
+ const width=Math.min(246,Math.max(165,window.innerWidth-16));
+ const opensRight=railRect.right+gap+width<=window.innerWidth-8;
+ const left=opensRight?railRect.right+gap:Math.max(8,Math.min(rect.left,window.innerWidth-width-8));
+ const naturalHeight=Math.min(dbiNavFlyout.scrollHeight,window.innerHeight-16);
+ const anchorTop=opensRight?rect.top:rect.bottom+gap;
+ const top=Math.max(8,Math.min(anchorTop,window.innerHeight-naturalHeight-8));
+ Object.assign(dbiNavFlyout.style,{
+  left:Math.round(left)+'px',top:Math.round(top)+'px',width:Math.round(width)+'px',
+  maxHeight:Math.max(80,window.innerHeight-16)+'px'
+ });
+ dbiNavFlyout.classList.toggle('dbi-nav-flyout-below',!opensRight);
+}
+function dbiNavToggleFlyout(index){
+ if(opened===index){dbiNavCloseFlyout();return}
+ const menu=menus[index];
+ if(!menu?.options)return;
+ const flyout=dbiNavFlyoutElement();
+ opened=index;
+ flyout.replaceChildren();
+ flyout.setAttribute('aria-label','Podkategorie: '+menu.name);
+ for(const name of menu.options){
+  const option=document.createElement('button');
+  option.type='button';option.textContent=name;
+  if(nav.dataset.page===name)option.setAttribute('aria-current','page');
+  option.onclick=()=>{
+   dbiNavCloseFlyout();
+   showPage(name,menu.name);
+  };
+  flyout.append(option);
+ }
+ for(const button of nav.querySelectorAll('[aria-controls="dbiNavFlyout"]')){
+  button.setAttribute('aria-expanded',String(Number(button.dataset.category)===index));
+ }
+ // Wymuś ponowne odtworzenie krótkiej animacji przy zmianie kategorii.
+ flyout.hidden=true;
+ flyout.hidden=false;
+ dbiNavPositionFlyout();
+}
 function renderNav(){
  const scroll=nav.scrollTop;
  nav.replaceChildren();
@@ -1099,39 +1184,34 @@ function renderNav(){
   }
   nav.append(button);
   if(!menu.options){
-   if(menu.page)button.onclick=()=>showPage(menu.page,menu.name);
+   if(menu.page)button.onclick=()=>{dbiNavCloseFlyout();showPage(menu.page,menu.name)};
    return;
   }
-  const panel=document.createElement('div');
-  panel.className='rail-options';panel.id='rail-options-'+index;
-  panel.hidden=opened!==index;
-  button.setAttribute('aria-controls',panel.id);
-  button.setAttribute('aria-expanded',String(!panel.hidden));
-  button.onclick=()=>{
-   opened=opened===index?null:index;
-   for(const toggle of nav.querySelectorAll('[aria-controls]')){
-    const expanded=Number(toggle.dataset.category)===opened;
-    toggle.setAttribute('aria-expanded',String(expanded));
-    document.getElementById(toggle.getAttribute('aria-controls')).hidden=!expanded;
-   }
-   const offset=button.getBoundingClientRect().top-nav.getBoundingClientRect().top;
-   if(offset<0)nav.scrollTop+=offset;
-  };
-  for(const name of menu.options){
-   const option=document.createElement('button');option.type='button';option.textContent=name;
-   if(nav.dataset.page===name)option.setAttribute('aria-current','page');
-   option.onclick=()=>showPage(name,menu.name);
-   panel.append(option);
-  }
-  nav.append(panel);
+  button.setAttribute('aria-controls','dbiNavFlyout');
+  button.setAttribute('aria-expanded',String(opened===index));
+  button.setAttribute('aria-haspopup','true');
+  button.onclick=()=>dbiNavToggleFlyout(index);
  });
  nav.scrollTop=scroll;
+ if(opened!==null){const active=opened;opened=null;dbiNavToggleFlyout(active)}
+ else if(dbiNavFlyout)dbiNavCloseFlyout();
 }
-nav.addEventListener('keydown',event=>{
+// Podmenu zamyka się po kliknięciu poza nim, ale kliknięcie innej kategorii
+// jest obsługiwane przez jej oryginalny przycisk i podmienia zawartość.
+document.addEventListener('pointerdown',event=>{
+ if(opened===null)return;
+ if(dbiNavFlyout?.contains(event.target))return;
+ if(event.target.closest?.('#nav > button[data-category]:not(:disabled)'))return;
+ dbiNavCloseFlyout();
+});
+document.addEventListener('keydown',event=>{
  if(event.key==='Escape'&&opened!==null){
-  const button=nav.querySelector('[data-category="'+opened+'"]');button.click();button.focus();
+  event.preventDefault();dbiNavCloseFlyout(true);
  }
 });
+nav.addEventListener('scroll',dbiNavPositionFlyout,{passive:true});
+window.addEventListener('resize',dbiNavPositionFlyout,{passive:true});
+window.addEventListener('scroll',dbiNavPositionFlyout,{passive:true,capture:true});
 function renderExp(){
  document.querySelector('#level').textContent=level;
  const needed=dbiRequiredExp(level);
@@ -1256,6 +1336,7 @@ const DBI_FOREST_CHEST={id:'skrzynia-lesnego-wojownika',name:'Skrzynia Leśnego 
 const dbiForestChestExisting=catalog.find(item=>item.id===DBI_FOREST_CHEST.id);
 if(dbiForestChestExisting){dbiForestChestExisting.slot='użytkowy';dbiForestChestExisting.image=DBI_FOREST_CHEST.image;dbiForestChestExisting.description=DBI_FOREST_CHEST.description}
 else catalog.push(DBI_FOREST_CHEST);
+if(!catalog.some(item=>item.id==='guardian-chest'))catalog.push({...DBI_FOREST_CHEST,id:'guardian-chest',name:'Skrzynia Strażnika Lasu',slot:'pozostałe',image:'assets/world/frontier/guardian-chest.png',description:'Nagroda za pokonanie Strażnika Lasu.'});
 if(!catalog.some(item=>item.id==='high-tower-chest'))catalog.push({...DBI_FOREST_CHEST,id:'high-tower-chest',name:'Skrzynia Wysokiej Wieży',slot:'pozostałe',description:'Nagroda za ukończenie Wyzwania Wysokiej Wieży.'});
 const dbiGeorgeExisting=catalog.find(item=>item.id===DBI_GEORGE_ITEM.id);
 if(dbiGeorgeExisting){Object.assign(dbiGeorgeExisting,DBI_GEORGE_ITEM)}
@@ -1436,21 +1517,73 @@ if(inventory.some(ref=>dbiMigrateTurtleOutfitRef(ref)!==ref)){
 localStorage.setItem(DBI_INV_KEY,JSON.stringify(inventory));
 const DBI_INV_POS_KEY='dboidle_inventory_positions_v1_'+String(dbiActive?.id||'test');
 let inventoryPlacement=inventory.map(()=>null);
-try{
- const saved=JSON.parse(localStorage.getItem(DBI_INV_POS_KEY)||'null');
- // Nie stosuj pozycji do innego układu przedmiotów (np. po migracji zapisu).
- if(saved&&Array.isArray(saved.items)&&Array.isArray(saved.positions)&&
-    saved.items.length===inventory.length&&saved.items.every((id,i)=>id===inventory[i])){
-  inventoryPlacement=inventory.map((_,i)=>{
-   const pos=saved.positions[i];
-   return pos&&Number.isInteger(pos.page)&&pos.page>=0&&pos.page<100&&
-     Number.isInteger(pos.cell)&&pos.cell>=0&&pos.cell<60?{page:pos.page,cell:pos.cell}:null;
-  });
+// Centralny mechanizm pamiętania pozycji: pracuje na identyfikatorach zapisanych przedmiotów,
+// a nie na z góry zdefiniowanych typach (działa również dla nowych przedmiotów dodanych do katalogu).
+function dbiInventoryReadPositionLayout(){
+ try{return JSON.parse(localStorage.getItem(DBI_INV_POS_KEY)||'null')}catch{return null}
+}
+function dbiInventoryValidPosition(pos){
+ return !!pos&&Number.isInteger(pos.page)&&pos.page>=0&&pos.page<100&&
+  Number.isInteger(pos.cell)&&pos.cell>=0&&pos.cell<60;
+}
+function dbiInventoryKeepPositions(items,positions,previous=dbiInventoryReadPositionLayout()){
+ const stable=items.map((_,i)=>{
+  const pos=positions?.[i];
+  return dbiInventoryValidPosition(pos)?{page:pos.page,cell:pos.cell}:null;
+ });
+ if(!previous||!Array.isArray(previous.items)||!Array.isArray(previous.positions))return stable;
+ const oldAnchors=new Map();
+ previous.items.forEach((ref,i)=>{
+  const pos=previous.positions[i];
+  if(!oldAnchors.has(ref)&&dbiInventoryValidPosition(pos))oldAnchors.set(ref,{page:pos.page,cell:pos.cell});
+ });
+ const first=new Map(),newAnchors=new Map();
+ items.forEach((ref,i)=>{
+  if(!first.has(ref))first.set(ref,i);
+  if(!newAnchors.has(ref)&&stable[i])newAnchors.set(ref,stable[i]);
+ });
+ // Ekwipunek pokazuje identyczne referencje jako jeden stos (pierwsza sztuka jest jego reprezentantem).
+ // Gdy pierwsza sztuka zostanie zużyta, trzeba przenieść jej pozycję na pozostały stos.
+ const used=new Map();
+ const slotById=new Map(catalog.map(item=>[item.id,item.slot]));
+ const tall=ref=>['bron','zbroja','stroj'].includes(slotById.get(String(ref).split('~')[0]));
+ const occupies=(ref,pos)=>tall(ref)?[pos.cell,pos.cell+6]:[pos.cell];
+ const canFit=(ref,pos)=>{
+  if(!dbiInventoryValidPosition(pos)||tall(ref)&&Math.floor(pos.cell/6)===9)return false;
+  const taken=used.get(pos.page);
+  return !taken||occupies(ref,pos).every(cell=>!taken.has(cell));
+ };
+ const reserve=(ref,pos)=>{
+  if(!used.has(pos.page))used.set(pos.page,new Set());
+  for(const cell of occupies(ref,pos))used.get(pos.page).add(cell);
+ };
+ for(const [ref,i] of first)if(stable[i])reserve(ref,stable[i]);
+ for(const [ref,i] of first){
+  if(stable[i])continue;
+  // Stos może mieć zapisane miejsce przy innej sztuce, mimo że pierwsza została usunięta.
+  const anchor=newAnchors.get(ref)||oldAnchors.get(ref)||null;
+  if(!anchor)continue; // Zupełnie nowy przedmiot: dostanie wolny slot standardowym algorytmem.
+  let target=canFit(ref,anchor)?anchor:null;
+  if(!target){
+   // Jeśli ulepszony przedmiot zajął dawny slot stosu, pozostały stos zostaje na tej samej stronie.
+   // Nie przenosimy go automatycznie na stronę I; szukamy najbliższej wolnej kratki.
+   const ordered=Array.from({length:60},(_,cell)=>cell).sort((a,b)=>
+    (Math.abs(Math.floor(a/6)-Math.floor(anchor.cell/6))*6+Math.abs(a%6-anchor.cell%6))-
+    (Math.abs(Math.floor(b/6)-Math.floor(anchor.cell/6))*6+Math.abs(b%6-anchor.cell%6)));
+   const cell=ordered.find(cell=>canFit(ref,{page:anchor.page,cell}));
+   if(cell!==undefined)target={page:anchor.page,cell};
+  }
+  if(target){stable[i]={page:target.page,cell:target.cell};reserve(ref,target)}
  }
-}catch{}
+ return stable;
+}
+try{inventoryPlacement=dbiInventoryKeepPositions(inventory,inventoryPlacement)}catch{}
 let dbiLastPositionSave='';
 function dbiSaveInventoryPositions(){
  try{
+  const draft=JSON.stringify({items:inventory,positions:inventoryPlacement});
+  if(draft===dbiLastPositionSave)return;
+  inventoryPlacement=dbiInventoryKeepPositions(inventory,inventoryPlacement);
   const value=JSON.stringify({items:inventory,positions:inventoryPlacement});
   if(value!==dbiLastPositionSave){localStorage.setItem(DBI_INV_POS_KEY,value);dbiLastPositionSave=value}
  }catch{}
@@ -1618,7 +1751,7 @@ function dbiPlanAttributeMultiplier(items,key){
 }
 function dbiPlanCombatFields(character,items){
  return {race:character?.race??character?.stats?.race,
-  averageDamagePct:dbiPlanSum(items,'averageDamagePct'),averageTechniqueDamagePct:dbiPlanSum(items,'averageTechniqueDamagePct'),
+  averageDamagePct:dbiPlanSum(items,'averageDamagePct')+dbiGuildBonus(character.id).damagePct,averageTechniqueDamagePct:dbiPlanSum(items,'averageTechniqueDamagePct'),
   techniqueReductionPct:dbiPlanSum(items,'techniqueReductionPct'),enemyStatsReductionPct:dbiPlanSum(items,'enemyStatsReductionPct'),
   raceDamage:Object.fromEntries(Object.keys(DBI_PLAN_RACES).map(key=>[key,dbiPlanSum(items,'raceDamage_'+key)])),
   raceReduction:Object.fromEntries(Object.keys(DBI_PLAN_RACES).map(key=>[key,dbiPlanSum(items,'raceReduction_'+key)]))};
@@ -2023,7 +2156,7 @@ function dbiTrainingReward(attribute,hours,characterLevel){
  for(let i=1;i<Number(hours);i++)value=Math.ceil(value*1.5);
  const spiritualBonus=Number(window.DBISpiritual?.currentBonuses()?.training||0);
  const gearBonus=dbiMainBonus('trainingBaseBonusPercent');
- return Math.max(1,Math.floor(value*(1+.01*(spiritualBonus+gearBonus+dbiMainBonus('chipTrainingBasePct')))*(1+(skills.trainingResult+dbiSmithCheckpointBonus('trainingResult')+dbiMainBonus('trainingResultPct'))/100)));
+ return Math.max(1,Math.floor(value*(1+.01*(spiritualBonus+gearBonus+dbiMainBonus('chipTrainingBasePct')))*(1+(dbiGuildBonus().training+skills.trainingResult+dbiSmithCheckpointBonus('trainingResult')+dbiMainBonus('trainingResultPct'))/100)));
 }
 function dbiTrainingGrant(session){
  const character=dbiCharacters[dbiCharacterIndex];
@@ -2227,8 +2360,12 @@ function dbiSpiritStatPercent(){
 function dbiEquippedAllStats(loadout){
  return Object.values(loadout||{}).reduce((total,ref)=>total+(Number(itemById(ref)?.allStats)||0),0);
 }
+function dbiGuildBonus(id=dbiActive?.id){return window.DBIGuild.bonusesFor(id)}
+function dbiGuildAttribute(value,b){
+ return (value+b.stats)*(1+b.statsPct/100);
+}
 function dbiSpiritEffectiveStat(value,signStats=0){
- return (Number(value)||0)*(1+dbiSpiritStatPercent()/100)+signStats;
+ return dbiGuildAttribute((Number(value)||0)*(1+dbiSpiritStatPercent()/100)+signStats,dbiGuildBonus());
 }
 function dbiAttackRange(character,worn,signStats,skills=dbiSkillBonuses()){
  const sources=[character?.stats,character?.attributes,character?.baseStats,character];
@@ -2240,7 +2377,7 @@ function dbiAttackRange(character,worn,signStats,skills=dbiSkillBonuses()){
  const percent=read(percentKeys,bonusSources)+(worn||[]).reduce((sum,item)=>sum+(dbiStatNumber(item,percentKeys)||0),0)+spiritPercent+dbiPlanSum(worn,'pvmAttackPct');
  const base=Math.max(0,Math.ceil(strength*0.5*(1+percent/100)));
  const flatKeys=['attack','physicalAttack','physicalAttackPower','attackPower'];
- const fixed=read(flatKeys,bonusSources);
+ const fixed=read(flatKeys,bonusSources)+dbiGuildBonus(character.id).attack;
  const minExtra=read(['attackMin'],bonusSources);
  const maxExtra=read(['attackMax'],bonusSources);
  let gearMin=0,gearMax=0;
@@ -2257,13 +2394,13 @@ function dbiAttackRange(character,worn,signStats,skills=dbiSkillBonuses()){
 }
 function dbiAttributeTotal(character,signStats,worn=[]){
  const aliases=[['strength','sila'],['speed','szybkosc'],['endurance','wytrzymalosc'],['intelligence','inteligencja'],['ki','KI']];
- return Math.round(aliases.reduce((sum,keys)=>{
+ return Math.round((aliases.reduce((sum,keys)=>{
    for(const src of [character?.stats,character?.attributes,character?.baseStats,character]){
      const val=dbiStatNumber(src,keys);
      if(val!==null)return sum+val*dbiPlanAttributeMultiplier(worn,keys[0]);
    }
    return sum;
- },0)*(1+dbiSpiritStatPercent()/100)+aliases.length*signStats);
+ },0)*(1+dbiSpiritStatPercent()/100)+aliases.length*(signStats+dbiGuildBonus().stats))*(1+dbiGuildBonus().statsPct/100));
 }
 function renderCharacterStatistics(){
  hideItemPopups();
@@ -2310,7 +2447,7 @@ function renderCharacterStatistics(){
    }
    if(label==='Średnie obrażenia ataku'){
     const range=dbiAttackRange(character,worn,signStats);
-    rows.push(renderRow(label,(range.min*(1+dbiPlanSum(worn,'averageDamagePct')/100)).toLocaleString('pl-PL',{maximumFractionDigits:2})));
+    rows.push(renderRow(label,(range.min*(1+(dbiPlanSum(worn,'averageDamagePct')+dbiGuildBonus().damagePct)/100)).toLocaleString('pl-PL',{maximumFractionDigits:2})));
     continue;
    }
    if(label==='Średnie obrażenia technik'){
@@ -2320,6 +2457,11 @@ function renderCharacterStatistics(){
      rows.push(renderRow(label,average.toLocaleString('pl-PL',{maximumFractionDigits:2})));
     }
     continue;
+   }
+   const combatKey={'Obrona':'defense','Punkty życia':'maxHp','Punkty KI':'maxKi'}[label];
+   if(group==='Aktywne'&&combatKey){
+    const total=window.DBIWorldInventory.character()[combatKey];
+    rows.push(renderRow(label,total.toLocaleString('pl-PL',{maximumFractionDigits:2})));continue;
    }
    const sources=group==='Podstawowe'?baseSources:bonusSources;
    const value=(group==='Podstawowe'&&label==='Moc')?dbiAttributeTotal(character,signStats+skills.stats,worn):(group==='Podstawowe'?dbiSpiritEffectiveStat(getBase(keys,sources)*dbiPlanAttributeMultiplier(worn,label==='KI'?'ki':keys[0]),signStats+skills.stats):getBase(keys,sources))+itemSum(keys)+(group==='Aktywne'&&label==='Obrona'?(Number(character.stats?.questDefenseBonus)||0):0);
@@ -2459,7 +2601,7 @@ function dbiUpgradeExcluded(item){
 function dbiUpgradeRequirements(level,item){
  if(!Number.isInteger(level)||level<0||level>=10)return null;
  const skills=dbiSkillBonuses();
- const req={chance:Math.min(100,DBI_UPGRADE_CHANCES[level]+skills.upgrade+dbiSmithCheckpointBonus('upgrade')+dbiMainBonus('upgradeChancePct')+Math.max(0,Number(window.DBISpiritual?.currentBonuses?.()?.upgrade)||0)),dust:level===9?10:1,
+ const req={chance:Math.min(100,DBI_UPGRADE_CHANCES[level]+dbiGuildBonus().smith+skills.upgrade+dbiSmithCheckpointBonus('upgrade')+dbiMainBonus('upgradeChancePct')+Math.max(0,Number(window.DBISpiritual?.currentBonuses?.()?.upgrade)||0)),dust:level===9?10:1,
   reforger:level===9?1:0,materials:[]};
  if(!dbiUpgradeExcluded(item)){
   const quantity=level-3;
@@ -2517,6 +2659,92 @@ function dbiUpgradeAttempt(){
   'Ulepszanie nieudane. Przedmiot pozostał na +'+level+', materiały zostały zużyte.';
  renderUpgradePanel();
 }
+/* Ulepszanie v6: WYŁĄCZNIE podgląd statystyk podstawowych.
+   itemById korzysta z istniejącego wzoru na jakość i poziom ulepszenia.
+   Referencje bez ~p i ~b wykluczają bonusy specjalne z planów/czipów.
+   Funkcja nie aktualizuje katalogu, przedmiotu, ekwipunku ani zapisu. */
+function dbiUpgradeBaseRows(ref,req){
+ if(!ref)return '<div class="dbi-upgrade-params-empty">Włóż przedmiot, aby zobaczyć jego bazowe bonusy.</div>';
+ const decoded=dbiDecodeItemRef(ref);
+ const original=catalog.find(entry=>entry.id===decoded.id);
+ if(!original)return '<div class="dbi-upgrade-params-empty">Brak definicji przedmiotu.</div>';
+ const current=itemById(dbiItemRef(decoded.id,decoded.enhancement,decoded.quality,false,[]));
+ const targetId=req?.reforger?dbiReforgeDestination(current):decoded.id;
+ const nextBase=req?.reforger&&targetId?catalog.find(entry=>entry.id===targetId):original;
+ const next=req&&targetId?itemById(dbiItemRef(targetId,req.reforger?0:decoded.enhancement+1,req.reforger?null:decoded.quality,false,[])):null;
+ // Dopuszczamy tylko statystyki obecne już w oryginalnym przedmiocie.
+ const defs=[
+  ['Wartość ataku',['attackMin','attackMax'],'range'],
+  ['Atak',['attack','physicalAttack','physicalAttackPower','attackPower'],''],
+  ['Wartość ataku technik',['techniqueAttackMin','techniqueAttackMax'],'range'],
+  ['Atak technik',['techniqueAttack','techniquePower'],''],
+  ['Obrona',['defense'],''],
+  ['Maksymalne HP',['hp','maxHp','health'],''],
+  ['KI',['ki','kiPoints','maxKi','mana','maxMp'],''],
+  ['Szybkość ataku',['attackSpeedPct'],'%'],
+  ['Szybkość ruchu',['moveSpeedPct'],'%'],
+  ['Szansa na krytyk',['critChance','criticalChance'],'%'],
+  ['Obrażenia krytyczne',['critDamage','criticalDamage'],'%'],
+  ['Krytyk technik',['techniqueCritChance','techCritChance'],'%'],
+  ['Obrażenia krytyczne technik',['techniqueCritDamage','techCritDamage'],'%'],
+  ['Przebicie pancerza',['armorPenetration','enemyArmorReduction'],'%'],
+  ['Szansa na krwawienie',['bleedChance'],'%'],
+  ['Szansa na ogłuszenie',['stunChance'],'%'],
+  ['Szansa na unik',['dodgeChance'],'%'],
+  ['Redukcja obrażeń krytycznych',['criticalDamageReduction'],'%'],
+  ['Odporność na omdlenia',['stunResistance','faintResistance'],'%'],
+  ['EXP',['expBonusPct','experienceBonusPct'],'%'],
+  ['Podwójny drop',['doubleMobDropChance'],'%'],
+  ['Podwójne nagrody bossów',['doubleBossRewardsChance'],'%'],
+  ['Złoto z walk',['goldBonusPct','battleGoldBonusPct'],'%'],
+  ['Redukcja obrażeń od potworów',['monsterDamageReductionPct'],'%'],
+  ['Bazowa wartość treningu',['trainingBaseBonusPercent'],'%'],
+  ['Szansa na ulepszenie',['upgradeChancePct'],'%'],
+  ['Punkt rozwoju duchowego',['spiritualPointChancePct'],'%'],
+  ['Wszystkie statystyki',['allStats'],''],
+  ['Atak ze znaku',['attackRange'],''],
+  ['Wartość ataku PvP',['pvpAttack'],''],
+  ['Obrażenia od bossów',['bossDamageBonusPct'],'%'],
+  ['Premia obrażeń technik',['techniqueDamageBonusPct'],'%'],
+  ['Szansa na drop',['dropChancePct'],'%'],
+ ];
+ const num=(obj,key)=>Number.isFinite(Number(obj?.[key]))?Number(obj[key]):0;
+ const format=value=>Number(value||0).toLocaleString('pl-PL',{maximumFractionDigits:2});
+ const display=(obj,keys,unit)=>{
+  if(!obj)return '—';
+  if(unit==='range'){
+   const min=num(obj,keys[0]),max=num(obj,keys[1]);
+   return '+'+format(min)+'–'+format(max);
+  }
+  const key=keys.find(k=>num(original,k)!==0||num(nextBase,k)!==0)||keys[0];
+  return (num(obj,key)>=0?'+':'')+format(num(obj,key))+(unit==='%'?'%':'');
+ };
+ const rows=[];
+ for(const [label,keys,unit] of defs){
+  if(!keys.some(key=>num(original,key)!==0||num(nextBase,key)!==0))continue;
+  if(label==='Atak'&&(num(original,'attackMin')||num(original,'attackMax')))continue;
+  if(label==='Atak technik'&&(num(original,'techniqueAttackMin')||num(original,'techniqueAttackMax')))continue;
+  rows.push(`<div class="dbi-upgrade-stat-row"><span class="dbi-upgrade-stat-name">${esc(label)}</span><span class="dbi-upgrade-stat-before">${esc(display(current,keys,unit))}</span><span class="dbi-upgrade-stat-arrow" aria-hidden="true">»</span><strong class="dbi-upgrade-stat-after">${esc(display(next,keys,unit))}</strong></div>`);
+ }
+ // Znaki otrzymują kolejne własne bonusy na progach +5 i +8. To nadal bazowe
+ // efekty znaku, a nie dodatkowe bonusy z planów czy czipów.
+ if(DBI_SIGN_BONUSES[decoded.id]){
+  const signNames={allStats:'Wszystkie statystyki',attackRange:'Wartość ataku',pvpAttack:'Wartość ataku PvP',defense:'Obrona',critChance:'Szansa na krytyk',expBonusPct:'Premia EXP',dropChancePct:'Szansa na drop',battleGoldBonusPct:'Premia do złota',bossDamageReductionPct:'Redukcja obrażeń od bossów',bossDamageBonusPct:'Obrażenia od bossów',doubleBossRewardsChance:'Podwójna nagroda bossa',techniqueDamageBonusPct:'Obrażenia technik',trainingBaseBonusPercent:'Premia do treningu',upgradeChancePct:'Szansa ulepszenia',spiritualPointChancePct:'Punkt rozwoju duchowego'};
+  const seen=new Set(rows.map(row=>row.match(/dbi-upgrade-stat-name">([^<]+)/)?.[1]));
+  const curSign=new Map((current?.signBonuses||[]).map(e=>[e.key,e]));
+  const nextSign=new Map((next?.signBonuses||[]).map(e=>[e.key,e]));
+  for(const key of new Set([...curSign.keys(),...nextSign.keys()])){
+   const label=signNames[key]||key;
+   if(seen.has(label))continue;
+   const prev=curSign.get(key)?.value||0;
+   const after=nextSign.get(key)?.value;
+   const suffix=/%/.test(curSign.get(key)?.label||nextSign.get(key)?.label||'')?'%':'';
+   rows.push(`<div class="dbi-upgrade-stat-row"><span class="dbi-upgrade-stat-name">${esc(label)}</span><span class="dbi-upgrade-stat-before">+${format(prev)}${suffix}</span><span class="dbi-upgrade-stat-arrow" aria-hidden="true">»</span><strong class="dbi-upgrade-stat-after">${after===undefined?'—':'+'+format(after)+suffix}</strong></div>`);
+  }
+ }
+ return rows.length?rows.join(''):'<div class="dbi-upgrade-params-empty">Ten przedmiot nie ma przypisanych bonusów bazowych.</div>';
+}
+
 function renderUpgradePanel(){
  hideItemPopups();
  document.querySelector('#breadcrumb').textContent='WZMOCNIENIA / ULEPSZANIE';
@@ -2578,16 +2806,52 @@ function renderUpgradePanel(){
  const ready=unlocked&&!!req&&(!req.reforger||!!dbiReforgeDestination(chosen))&&dustCount>=req.dust&&reforgerCount>=req.reforger&&req.materials.every(m=>dbiUpgradeMaterialCount(m.id)>=m.count);
  dbiUpgradeTab=inventoryTab;
  const gridHtml=renderInventoryGrid();
- document.querySelector('#pageBody').innerHTML=`<section class="dbi-upgrade"><h2>Ulepszanie</h2><hr><div class="dbi-upgrade-layout">
- <div class="dbi-upgrade-work"><div class="dbi-upgrade-main">
- <div class="dbi-upgrade-target"><div class="dbi-upgrade-slot" id="dbiUpgradeTarget" title="Przeciągnij przedmiot, użyj dwukliku lub kliknij włożony przedmiot, aby go wyjąć">${eligible?dbiItemArt(chosen):''}</div>${eligible?`<strong>${esc(chosen.name)}</strong>`:''}<small>Aktualne ulepszenie: ${eligible?'+'+Number(chosen.enhancement||0):'—'}</small><small>Szansa powodzenia: ${req?req.chance+'%':eligible?'MAX':'—'}</small></div>
- <div class="dbi-upgrade-dust"><img src="assets/items/pyl-smoczych-kul.png" alt=""><span>Smoczy pył</span><span>Posiadasz: ${dustCount}${req?' / '+req.dust:''}</span></div></div>
- ${req&&(req.reforger||req.materials.length)?`<div class="dbi-upgrade-materials">${req.reforger?`<div class="dbi-material-slot" title="Przekuwacz: ${reforgerCount}/1"><img src="assets/items/przekuwacz.png" alt="Przekuwacz" style="width:100%;height:100%;object-fit:contain"></div>`:req.materials.map(material=>{const info=catalog.find(x=>x.id===material.id),owned=dbiUpgradeMaterialCount(material.id);return `<div class="dbi-material-slot" title="${esc(info?.name||material.id)}: ${owned}/${material.count}" style="position:relative"><img src="${esc(info?.image||'')}" alt="${esc(info?.name||material.id)}" style="width:100%;height:100%;object-fit:contain"><span style="position:absolute;bottom:0;right:0;background:#101e2be6;color:${owned>=material.count?'#c5e5a8':'#ff9c9c'};font-size:11px;padding:0 2px">${owned}/${material.count}</span></div>`}).join('')}</div>`:''}
- ${req?.reforger?'<p class="dbi-upgrade-note dbi-reforger-count">Przekuwacz: '+reforgerCount+'/1</p>':''}
-
- <button class="dbi-upgrade-action" id="dbiUpgradeAction" ${ready?'':'disabled'} title="${!unlocked?'Wymaga Podstawowego Kowalstwa':req?.reforger?(dbiReforgeDestination(chosen)?'Przekuj przedmiot na nową zbroję +0':'Nie ustalono jeszcze przedmiotu wynikowego'):!ready?'Brakuje wymaganych materiałów':'Ulepsz przedmiot'}">${req?.reforger?'Przekuj':'Ulepsz'}</button>
- <p class="dbi-upgrade-note" role="status" id="dbiUpgradeStatus">${esc(dbiUpgradeMessage||'Wybierz wyposażenie dwuklikiem albo przeciągnij je do okienka.')}</p>
- </div><aside class="dbi-upgrade-inv"><h3>INWENTARZ</h3><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((label,i)=>`<button type="button" class="inv-tab ${i===dbiUpgradeTab?'active':''}" data-tab="${i}">${label}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${gridHtml}</div></div><div class="inv-actions"><button type="button" data-upgrade-action="Sortuj">Sortuj</button><button type="button" data-upgrade-action="Zaznacz">Zaznacz</button><button type="button" data-upgrade-action="Zablokuj">Zablokuj</button></div></aside>
+ // Dane tylko do podglądu: nie zmieniają wymagań ani zapisu ulepszania.
+ const baseStatPreview=dbiUpgradeBaseRows(dbiUpgradeSelected?.ref,req);
+ const materialCards=[{name:'Smoczy pył',image:'assets/items/pyl-smoczych-kul.png',owned:dustCount,required:req?.dust??null},
+  ...(req?.reforger?[{id:'upgrade-reforger',name:'Przekuwacz',image:'assets/items/przekuwacz.png',owned:reforgerCount,required:1}]
+  :req?.materials.map(material=>{const info=catalog.find(entry=>entry.id===material.id);return {id:material.id,name:info?.name||material.id,image:info?.image||'',owned:dbiUpgradeMaterialCount(material.id),required:material.count}})||[])];
+ while(materialCards.length<3)materialCards.push(null);
+ const materialCardHtml=materialCards.slice(0,3).map((material,index)=>material
+  ?`<div class="dbi-upgrade-mat-tile${index===0?' dbi-upgrade-dust':' dbi-material-slot'}" title="${esc(material.name)}: ${material.owned}${material.required===null?'':' / '+material.required}">
+     ${material.image?`<img src="${esc(material.image)}" alt="" draggable="false">`:'<span class="dbi-upgrade-mat-no-icon" aria-hidden="true">✧</span>'}
+     <span class="dbi-upgrade-mat-meta"><b>${esc(material.name)}</b><small class="${material.required!==null&&material.owned<material.required?'is-missing':''}">${material.owned}${material.required===null?'':' / '+material.required}</small></span>
+   </div>`
+  :`<div class="dbi-upgrade-mat-tile dbi-upgrade-mat-blank" aria-label="Dodatkowy materiał nie jest wymagany"><span class="dbi-upgrade-mat-no-icon" aria-hidden="true">—</span><span class="dbi-upgrade-mat-meta"><b>Nie wymagany</b><small>—</small></span></div>`).join('');
+ document.querySelector('#pageBody').innerHTML=`<section class="dbi-upgrade${/^(?:Ulepszanie udane!|Przekucie udane!)/.test(dbiUpgradeMessage)?' dbi-upgrade-success':''}"><h2>Ulepszanie</h2><hr><div class="dbi-upgrade-layout">
+ <div class="dbi-upgrade-work">
+  <div class="dbi-upgrade-main">
+   <div class="dbi-upgrade-target">
+    <div class="dbi-upgrade-slot" id="dbiUpgradeTarget" title="Przeciągnij przedmiot, użyj dwukliku lub kliknij włożony przedmiot, aby go wyjąć">
+     ${eligible?`<span class="dbi-upgrade-float">${dbiItemArt(chosen)}</span>`:'<span class="dbi-upgrade-empty">Włóż przedmiot</span>'}
+     <span class="dbi-upgrade-rank" aria-hidden="true">${eligible?'+'+Number(chosen.enhancement||0)+' » '+(req?.reforger?'+0':req?'+'+(Number(chosen.enhancement||0)+1):'MAX'):'—'}</span>
+    </div>
+    ${eligible?`<strong class="dbi-upgrade-item-name">${esc(chosen.name)}</strong>`:'<strong class="dbi-upgrade-item-name dbi-upgrade-item-name-empty">Wybierz wyposażenie</strong>'}
+   </div>
+   <div class="dbi-upgrade-info">
+    <section class="dbi-upgrade-card dbi-upgrade-params">
+     <h3><span>Parametry</span></h3>
+     <div class="dbi-upgrade-params-levels"><span>Bonusy bazowe przedmiotu</span><strong>${eligible?'+'+Number(chosen.enhancement||0)+' » '+(req?.reforger?'+0':req?'+'+(Number(chosen.enhancement||0)+1):'MAX'):'—'}</strong></div>
+     <div class="dbi-upgrade-stat-list">${baseStatPreview}</div>
+    </section>
+    <section class="dbi-upgrade-card dbi-upgrade-chance">
+     <h3><span>Szansa powodzenia</span><strong>${req?req.chance+'%':eligible?'MAX':'—'}</strong></h3>
+     <div class="dbi-upgrade-progress" role="meter" aria-label="Szansa powodzenia" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${req?Math.max(0,Math.min(100,req.chance)):0}"><span style="width:${req?Math.max(0,Math.min(100,req.chance)):0}%"></span></div>
+    </section>
+    <section class="dbi-upgrade-card dbi-upgrade-cost">
+     <h3><span>Koszt ulepszenia</span></h3>
+     <div class="dbi-upgrade-cost-row"><span><img src="assets/ui/gold.png" alt=""> Złoto</span><strong>Nie jest wymagane</strong></div>
+    </section>
+    <section class="dbi-upgrade-card dbi-upgrade-materials-card">
+     <h3><span>Wymagane materiały</span></h3>
+     <div class="dbi-upgrade-material-list">${materialCardHtml}</div>
+    </section>
+   </div>
+  </div>
+  <button class="dbi-upgrade-action" id="dbiUpgradeAction" ${ready?'':'disabled'} title="${!unlocked?'Wymaga Podstawowego Kowalstwa':req?.reforger?(dbiReforgeDestination(chosen)?'Przekuj przedmiot na nową zbroję +0':'Nie ustalono jeszcze przedmiotu wynikowego'):!ready?'Brakuje wymaganych materiałów':'Ulepsz przedmiot'}">${req?.reforger?'Przekuj':'Ulepsz'} <span aria-hidden="true">»</span></button>
+  <p class="dbi-upgrade-note" role="status" id="dbiUpgradeStatus">${esc(dbiUpgradeMessage||'Wybierz wyposażenie dwuklikiem albo przeciągnij je do kapsuły.')}</p>
+ </div>
+ <aside class="dbi-upgrade-inv"><h3>Ekwipunek</h3><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((label,i)=>`<button type="button" class="inv-tab ${i===dbiUpgradeTab?'active':''}" data-tab="${i}">${label}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${gridHtml}</div></div><div class="inv-actions"><button type="button" data-upgrade-action="Sortuj">Sortuj</button><button type="button" data-upgrade-action="Zaznacz">Zaznacz</button><button type="button" data-upgrade-action="Zablokuj">Zablokuj</button></div></aside>
  </div></section>`;
  document.querySelector('#dbiUpgradeAction')?.addEventListener('click',dbiUpgradeAttempt);
  const host=document.querySelector('.dbi-upgrade-inv');
@@ -2726,7 +2990,10 @@ function dbiSmithAttempt(){
  renderBlacksmith(message+dbiSmithExpMessage(expAward.gained));
 }
 function dbiSaveInventoryTransaction(items,positions,extraWrites){
- const positionSave=JSON.stringify({items,positions});
+ // Jedno miejsce obsługujące wszystkie transakcje Ekwipunku (Kowalstwo, Chi, Symbole,
+ // materiały, czipy i przyszłe przedmioty): zachowaj slot pozostałych sztuk stosu.
+ const stablePositions=dbiInventoryKeepPositions(items,positions);
+ const positionSave=JSON.stringify({items,positions:stablePositions});
  const writes=[[DBI_INV_KEY,JSON.stringify(items)],[DBI_INV_POS_KEY,positionSave],...extraWrites];
  const before=writes.map(([key])=>[key,localStorage.getItem(key)]);
  let written=0;
@@ -2739,7 +3006,7 @@ function dbiSaveInventoryTransaction(items,positions,extraWrites){
   }
   return false;
  }
- inventory=items;inventoryPlacement=positions;dbiLastPositionSave=positionSave;
+ inventory=items;inventoryPlacement=stablePositions;dbiLastPositionSave=positionSave;
  return true;
 }
 const DBI_CRAFT_RECIPES={
@@ -2785,6 +3052,53 @@ function dbiCraftResolve(accept){
   return;
  }
  renderBlacksmith(undefined,accept?'Przedmiot dodany do inwentarza.':'Usunięto wytworzony przedmiot.');
+}
+/* Tryb Kowalstwa jest wyłącznie stanem widoku; receptury i zapis pozostają bez zmian. */
+let dbiSmithView='craft';
+/* Odczyt wyłącznie do prezentacji. Wartości statystyk liczy istniejące itemById,
+   a referencja bez bonusów specjalnych (~p/~b) nie wpływa na zapisany przedmiot. */
+function dbiSmithQualityBaseView(selected,recipe){
+ if(!selected)return '<p class="dbi-forge-no-params">Wybierz przedmiot z Ekwipunku, aby zobaczyć jego parametry bazowe.</p>';
+ const ref=dbiSmithSelection?.ref;
+ if(!ref)return '<p class="dbi-forge-no-params">Wybierz przedmiot.</p>';
+ const decoded=dbiDecodeItemRef(ref);
+ const original=catalog.find(item=>item.id===decoded.id);
+ if(!original)return '<p class="dbi-forge-no-params">Brak definicji przedmiotu.</p>';
+ const current=itemById(dbiItemRef(decoded.id,decoded.enhancement,decoded.quality,false,[]));
+ const next=recipe?itemById(dbiItemRef(decoded.id,decoded.enhancement,recipe.tier,false,[])):null;
+ const defs=[
+  ['Atak',['attack','physicalAttack','attackPower'],''],
+  ['Wartość ataku',['attackMin','attackMax'],'range'],
+  ['Atak technik',['techniqueAttack','techniquePower'],''],
+  ['Wartość ataku technik',['techniqueAttackMin','techniqueAttackMax'],'range'],
+  ['Obrona',['defense'],''],['Maksymalne HP',['hp','maxHp','health'],''],
+  ['KI',['ki','kiPoints','maxKi','mana','maxMp'],''],
+  ['Szybkość ataku',['attackSpeedPct'],'%'],['Szybkość ruchu',['moveSpeedPct'],'%'],
+  ['Szansa na krytyk',['critChance','criticalChance'],'%'],
+  ['Obrażenia krytyczne',['critDamage','criticalDamage'],'%'],
+  ['Unik',['dodgeChance'],'%'],['Odporność na ogłuszenie',['stunResistance','faintResistance'],'%'],
+  ['Redukcja obrażeń od potworów',['monsterDamageReductionPct'],'%'],
+  ['Bonus do EXP',['expBonusPct','experienceBonusPct'],'%'],
+  ['Bazowy trening',['trainingBaseBonusPercent'],'%'],
+  ['Wszystkie statystyki',['allStats'],'']
+ ];
+ const val=(obj,key)=>Number(obj?.[key])||0;
+ const fmt=(n)=>n.toLocaleString('pl-PL',{maximumFractionDigits:2});
+ const rows=[];
+ for(const [name,keys,unit] of defs){
+  if(!keys.some(k=>val(original,k)!==0))continue;
+  if(name==='Atak'&&(val(original,'attackMin')||val(original,'attackMax')))continue;
+  if(name==='Atak technik'&&(val(original,'techniqueAttackMin')||val(original,'techniqueAttackMax')))continue;
+  const format=(item)=>{
+   if(!item)return '—';
+   if(unit==='range')return fmt(val(item,keys[0]))+'–'+fmt(val(item,keys[1]));
+   const key=keys.find(k=>val(original,k)!==0)||keys[0];
+   const number=val(item,key);
+   return (number>0?'+':'')+fmt(number)+(unit==='%'?'%':'');
+  };
+  rows.push(`<div class="dbi-forge-stat"><span>${esc(name)}</span><b>${esc(format(current))}</b><i aria-hidden="true">»</i><strong>${esc(format(next))}</strong></div>`);
+ }
+ return rows.join('')||'<p class="dbi-forge-no-params">Ten przedmiot nie ma przypisanych parametrów bazowych.</p>';
 }
 function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij go do okienka jakości.',craftMessage=''){
  hideItemPopups();
@@ -2854,21 +3168,99 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
  const craftMaterials=craft&&dbiCraftSelection.level==='1'?dbiCraftMaterials(craft):[];
  const craftReady=!pending&&dbiCraftSelection.race&&craftMaterials.length===3&&gold>=DBI_CRAFT_GOLD&&craftMaterials.every(id=>dbiUpgradeMaterialCount(id)>=1)&&craft.outputs.every(id=>itemById(id));
  const craftSelect=(key,label,entries)=>`<select data-craft-select="${key}" aria-label="${label}"><option value="">${label}</option>${entries.map(([value,name])=>`<option value="${value}" ${dbiCraftSelection[key]===String(value)?'selected':''}>${name}</option>`).join('')}</select>`;
- document.querySelector('#pageBody').innerHTML=`<section class="dbi-smith">
-  <header class="dbi-smith-header"><span class="dbi-smith-anvil" aria-hidden="true">⚒️</span><h2>Kowalstwo</h2></header>
-  <div class="dbi-smith-main"><div class="dbi-smith-work">
-  <section class="dbi-smith-panel" aria-label="Poziom Kowalstwa"><div class="dbi-smith-level-line"><span class="dbi-smith-level">⚒️ Poziom Kowalstwa: ${progress.level}</span><div class="dbi-smith-milestones">${DBI_SMITH_CHECKPOINTS.map(({level,label})=>{
-   const earned=progress.level>=level;
-   return `<button type="button" data-smith-checkpoint="${level}" class="${earned?'is-earned':''}" aria-label="Poziom ${level}. ${esc(label)}. ${earned?'Zdobyty':'Do zdobycia'}" aria-describedby="dbiSmithCheckpointTip">${level}</button>`;
-  }).join('')}</div></div><div class="dbi-smith-progress-line"><strong>Pasek postępu:</strong><div class="dbi-smith-progress" aria-label="Postęp Kowalstwa"><span style="width:${progressPercent}%"></span><small>${progress.needed?`${progress.exp} / ${progress.needed} (${progressPercent}%)`:'Maksymalny poziom'}</small></div></div></section>
-  <section class="dbi-smith-panel"><h3>⚒️ Tworzenie przedmiotów</h3><div class="dbi-smith-create">
-   <div class="dbi-smith-selects">${craftSelect('type','Rodzaj przedmiotu',Object.entries(DBI_CRAFT_RECIPES).map(([id,entry])=>[id,entry.label]))}${craftSelect('level','Poziom przedmiotu',[1,100,250,500].map(n=>[n,n]))}${craftSelect('race','Dla kogo',['Saiyan','Ziemianin','Demon Mrozu','Nameczanin','Majin'].map((name,i)=>[i+1,name]))}</div>
-   <div><div class="dbi-smith-materials">${[0,1,2].map(i=>{const id=craftMaterials[i],item=id?itemById(id):null;return `<div><div class="dbi-smith-slot">${item?dbiItemArt(item):''}</div>${item?`<div class="dbi-smith-muted">${esc(item.name)}<br>${dbiUpgradeMaterialCount(id)} / 1</div>`:''}</div>`}).join('')}</div><p class="dbi-smith-muted">Szansa na pomyślne stworzenie przedmiotu: ${craftMaterials.length?DBI_CRAFT_CHANCE+'%':'—'}<br>Szansa na większą ilość bonusów: ${craftMaterials.length?'0%':'—'}<br><img class="dbi-gold-icon" src="assets/ui/gold.png" alt="" width="16" height="16">Koszt złota na jedną próbę: ${craftMaterials.length?DBI_CRAFT_GOLD.toLocaleString('pl-PL'):'—'}</p><button type="button" id="dbiCraftCreate" class="${craftReady?'gold-button':'dbi-smith-disabled'}" ${craftReady?'':'disabled'} style="width:100%;margin-top:12px">Stwórz</button><p class="dbi-smith-status" role="status">${esc(craftMessage||(dbiCraftSelection.level&&dbiCraftSelection.level!=='1'?'Brak receptury dla tego poziomu.':''))}</p></div>
-   <div class="dbi-smith-preview-area"><div class="dbi-smith-preview" id="dbiCraftPreview">${crafted?`<div>${dbiItemArt(crafted)}<div>${esc(crafted.name)} +0</div></div>`:'Podgląd stworzonego przedmiotu'}</div><div class="dbi-smith-preview-buttons"><button type="button" id="dbiCraftAccept" class="${crafted?'gold-button':'dbi-smith-disabled'}" ${crafted?'':'disabled'}>Akceptuj</button><button type="button" id="dbiCraftDiscard" class="${pending?'ghost-button':'dbi-smith-disabled'}" ${pending?'':'disabled'}>Usuń</button></div></div>
-  </div></section>
-  <section class="dbi-smith-panel"><h3>⚒️ Ulepszanie jakości przedmiotów</h3><div class="dbi-smith-quality"><div class="dbi-smith-quality-target" id="dbiSmithTarget" aria-label="Okienko jakości">${selected?dbiItemArt(selected):'<span class="dbi-smith-muted">Miejsce na przedmiot do podniesienia jego jakości</span>'}</div><div class="dbi-smith-quality-work"><div class="dbi-smith-materials">${(recipe?materials:['Substancja Wynosząca','Części zamienne','Moduł Jakości'].map(name=>({item:{name}}))).map(m=>`<div><div class="dbi-smith-slot">${m.item?.image?dbiItemArt(m.item):''}</div><div class="dbi-smith-muted" style="text-align:center">${esc(m.item?.name||m.id)}${recipe?`<br>${m.owned} / ${m.count}`:''}</div></div>`).join('')}</div><p class="dbi-smith-muted">${selected?`${esc(selected.quality||QUALITY[0])}${recipe?' → '+QUALITY[recipe.tier]:' · maksymalna jakość'}<br>`:''}Szansa na powodzenie: ${recipe?recipe.chance+'%':'—'}<br><img class="dbi-gold-icon" src="assets/ui/gold.png" alt="" width="16" height="16">Koszt złota na jedną próbę: ${qualityCost}</p><button type="button" id="dbiSmithUpgrade" class="${ready?'gold-button':'dbi-smith-disabled'}" ${ready?'':'disabled'} style="width:min(100%,240px)">Podnieś jakość</button></div></div><p class="dbi-smith-status" id="dbiSmithStatus" role="status">${esc(message)}</p></section>
-  </div><aside class="dbi-smith-inventory dbi-smith-panel"><h3>🧰 INWENTARZ</h3><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((n,i)=>`<button type="button" class="inv-tab ${inventoryTab===i?'active':''}" data-tab="${i}">${n}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${renderInventoryGrid()}</div></div><div class="inv-actions"><button type="button" data-smith-action="Sortuj">Sortuj</button><button type="button" data-smith-action="Zaznacz">Zaznacz</button><button type="button" data-smith-action="Zablokuj">Zablokuj</button></div></aside></div>
-  </section>`;
+ // TYLKO WIDOK: istniejący komunikat sukcesu/porażki i nowa jakość sterują animacją.
+ // Żadnej zmiany w dbiSmithAttempt(), recepturach, losowaniu ani zapisie.
+ const smithFxSuccess=dbiSmithView==='quality'&&/^Nowa jakość:/.test(message);
+ const smithFxAttempt=smithFxSuccess||(dbiSmithView==='quality'&&/^Próba nieudana\./.test(message));
+ const smithFxTier=smithFxSuccess&&selected?Math.max(0,QUALITY.indexOf(selected.quality)):0;
+ document.querySelector('#pageBody').innerHTML=`<section class="dbi-smith dbi-forge-v2${/^Nowa jakość:/.test(message)||/Wytworzono|Utworzono|Stworzono/.test(craftMessage)?' dbi-forge-success':''}${smithFxAttempt?' dbi-forge-quality-attempt':''}${smithFxSuccess?' dbi-forge-quality-success dbi-forge-result-tier-'+smithFxTier:''}" data-smith-view="${dbiSmithView}">
+  <header class="dbi-smith-header dbi-forge-header">
+    <span class="dbi-smith-anvil" aria-hidden="true">⚒</span><div><h2>Kowalstwo</h2><p>Wytwarzanie przedmiotów i podnoszenie ich jakości</p></div>
+  </header>
+  <nav class="dbi-forge-tabs" aria-label="Tryb Kowalstwa">
+    <button type="button" class="dbi-forge-tab ${dbiSmithView==='craft'?'is-active':''}" data-forge-tab="craft" aria-pressed="${dbiSmithView==='craft'}"><span aria-hidden="true">⚒</span> Kowalstwo</button>
+    <button type="button" class="dbi-forge-tab ${dbiSmithView==='quality'?'is-active':''}" data-forge-tab="quality" aria-pressed="${dbiSmithView==='quality'}"><span aria-hidden="true">◇</span> Podnoszenie jakości</button>
+  </nav>
+  <section class="dbi-smith-panel dbi-forge-progress" aria-label="Poziom Kowalstwa">
+   <div class="dbi-smith-level-line"><span class="dbi-smith-level">⚒ Poziom Kowalstwa: ${progress.level}</span>
+    <div class="dbi-smith-milestones">${DBI_SMITH_CHECKPOINTS.map(({level,label})=>{
+     const earned=progress.level>=level;
+     return `<button type="button" data-smith-checkpoint="${level}" class="${earned?'is-earned':''}" aria-label="Poziom ${level}. ${esc(label)}. ${earned?'Zdobyty':'Do zdobycia'}" aria-describedby="dbiSmithCheckpointTip">${level}</button>`;
+    }).join('')}</div></div>
+   <div class="dbi-smith-progress-line"><strong>Pasek postępu:</strong><div class="dbi-smith-progress" aria-label="Postęp Kowalstwa"><span style="width:${progressPercent}%"></span><small>${progress.needed?`${progress.exp} / ${progress.needed} (${progressPercent}%)`:'Maksymalny poziom'}</small></div></div>
+  </section>
+  <div class="dbi-smith-main dbi-forge-grid">
+   <div class="dbi-smith-work dbi-forge-work">
+    <section class="dbi-smith-panel dbi-forge-side" aria-label="Wybierz specyfikację lub podnoszenie jakości">
+     ${dbiSmithView==='craft'?`
+       <h3><span aria-hidden="true">⚙</span> Wybierz specyfikację</h3>
+       <div class="dbi-smith-selects dbi-forge-selects">
+        <label>Rodzaj przedmiotu${craftSelect('type','Rodzaj przedmiotu',Object.entries(DBI_CRAFT_RECIPES).map(([id,entry])=>[id,entry.label]))}</label>
+        <label>Poziom przedmiotu${craftSelect('level','Poziom przedmiotu',[1,100,250,500].map(n=>[n,n]))}</label>
+        <label>Dla kogo${craftSelect('race','Dla kogo',['Saiyan','Ziemianin','Demon Mrozu','Nameczanin','Majin'].map((name,i)=>[i+1,name]))}</label>
+       </div>
+       <div class="dbi-forge-bonus-prob"><span aria-hidden="true">✦</span> Szansa na większą ilość bonusów <strong>${craftMaterials.length?'0%':'—'}</strong></div>
+       <div class="dbi-forge-mode-note">${dbiCraftSelection.level&&dbiCraftSelection.level!=='1'?'Brak receptury dla tego poziomu.':'Wybierz istniejące opcje receptury, aby rozpocząć wytwarzanie.'}</div>
+      `:`
+       <h3><span aria-hidden="true">◇</span> Podnoszenie jakości</h3>
+       <div class="dbi-forge-quality-name">${selected?esc(selected.name):'Wybierz przedmiot z Ekwipunku'}</div>
+       <div class="dbi-forge-quality-steps"><b class="dbi-forge-tier-${selected?Math.max(0,QUALITY.indexOf(selected.quality||QUALITY[0])):'none'}">${selected?esc(selected.quality||QUALITY[0]):'—'}</b><span aria-hidden="true">»</span><b class="dbi-forge-tier-${recipe?recipe.tier:'none'}">${recipe?esc(QUALITY[recipe.tier]):selected?'MAX':'—'}</b></div>
+       <h4>Zmiana parametrów bazowych</h4>
+       <div class="dbi-forge-stat-header"><span>Parametr</span><span>Teraz</span><span>»</span><span>Po zmianie</span></div>
+       <div class="dbi-forge-stats">${dbiSmithQualityBaseView(selected,recipe)}</div>
+       <div class="dbi-forge-quality-note">Podnoszenie jakości dotyczy parametrów bazowych; bonusy specjalne z planów i czipów nie są tutaj doliczane.</div>
+      `}
+    </section>
+    <div class="dbi-forge-center">
+     <section class="dbi-forge-stage" aria-label="Kapsuła Kowalstwa">
+      <div class="dbi-forge-capsule" aria-hidden="true"></div>
+      ${smithFxSuccess?'<span class="dbi-forge-quality-aura" aria-hidden="true"></span>':''}
+      ${smithFxAttempt?'<span class="dbi-forge-hammer-impact" aria-hidden="true"></span><span class="dbi-forge-hammer" aria-hidden="true"></span>':''}
+      ${dbiSmithView==='craft'?`
+       <div id="dbiCraftPreview" class="dbi-smith-preview dbi-forge-item dbi-forge-item-craft">${crafted?
+        `<div class="dbi-forge-item-content">${dbiItemArt(crafted)}<span class="dbi-forge-item-caption">${esc(crafted.name)} +0</span></div>`:
+        `<span class="dbi-forge-placeholder">${craft&&dbiCraftSelection.level==='1'&&dbiCraftSelection.race?'Wynik pojawi się po udanym wytworzeniu':'Wybierz specyfikację przedmiotu'}</span>`}</div>
+       `:`
+       <div class="dbi-smith-quality-target dbi-forge-item" id="dbiSmithTarget" title="Dwuklik w ekwipunku lub przeciągnij przedmiot" aria-label="Okienko jakości">${selected?dbiItemArt(selected):'<span class="dbi-forge-placeholder">Włóż przedmiot do kapsuły</span>'}</div>
+       `}
+      <div class="dbi-forge-stage-footer">${dbiSmithView==='quality'&&selected?esc(selected.name):crafted?esc(crafted.name):dbiSmithView==='craft'?'Wynik wytwarzania':'Warsztat Kowalstwa'}</div>
+     </section>
+     <section class="dbi-forge-resources dbi-smith-panel" aria-label="Wymagane materiały i koszt">
+      <h3><span aria-hidden="true">⬡</span> Wymagane materiały</h3>
+      <div class="dbi-forge-resource-line">
+       <div class="dbi-smith-materials dbi-forge-materials">
+        ${(dbiSmithView==='craft'?[0,1,2].map(i=>{const id=craftMaterials[i];return id?{id,count:1,owned:dbiUpgradeMaterialCount(id),item:itemById(id)}:null}):[0,1,2].map(i=>materials[i]||null)).map(m=>`
+         <div class="dbi-forge-material ${m?(m.owned>=m.count?'is-ready':'is-missing'):'is-empty'}">
+          <div class="dbi-smith-slot">${m?.item?dbiItemArt(m.item):'<span class="dbi-forge-blank-slot" aria-hidden="true">+</span>'}</div>
+          <span class="dbi-forge-material-name">${m?esc(m.item?.name||m.id):'—'}</span>
+          <strong class="dbi-forge-material-count">${m?`${m.owned} / ${m.count}`:'—'}</strong>
+         </div>`).join('')}
+       </div>
+       <div class="dbi-forge-costs">
+        <div class="dbi-forge-cost"><span>Koszt złota</span><strong>${dbiSmithView==='craft'?(craftMaterials.length?DBI_CRAFT_GOLD.toLocaleString('pl-PL'):'—'):qualityCost}</strong></div>
+        <div class="dbi-forge-cost"><span>Szansa powodzenia</span><strong>${dbiSmithView==='craft'?(craftMaterials.length?DBI_CRAFT_CHANCE+'%':'—'):(recipe?recipe.chance+'%':'—')}</strong></div>
+       </div>
+      </div>
+     </section>
+     <div class="dbi-forge-actions">
+      ${dbiSmithView==='craft'?`
+       <button type="button" id="dbiCraftCreate" class="dbi-forge-primary ${craftReady?'gold-button':'dbi-smith-disabled'}" ${craftReady?'':'disabled'}>⚒ Wytwórz</button>
+       ${pending?`<div class="dbi-smith-preview-buttons dbi-forge-resolve"><button type="button" id="dbiCraftAccept" class="${crafted?'gold-button':'dbi-smith-disabled'}" ${crafted?'':'disabled'}>Akceptuj</button><button type="button" id="dbiCraftDiscard" class="ghost-button">Usuń</button></div>`:''}
+       <p class="dbi-smith-status" id="dbiSmithStatus" role="status">${esc(craftMessage||(dbiCraftSelection.level&&dbiCraftSelection.level!=='1'?'Brak receptury dla tego poziomu.':''))}</p>
+       `:`
+       <button type="button" id="dbiSmithUpgrade" class="dbi-forge-primary ${ready?'gold-button':'dbi-smith-disabled'}" ${ready?'':'disabled'}>◇ Podnieś jakość</button>
+       <p class="dbi-smith-status" id="dbiSmithStatus" role="status">${esc(message)}</p>
+       `}
+     </div>
+    </div>
+   </div>
+   <aside class="dbi-smith-inventory dbi-smith-panel dbi-forge-inventory"><h3>▣ Ekwipunek</h3>
+    <div class="inv-tabs">${['I','II','III','IV','V','VI'].map((n,i)=>`<button type="button" class="inv-tab ${inventoryTab===i?'active':''}" data-tab="${i}">${n}</button>`).join('')}</div>
+    <div class="inv-scroll"><div class="inv-grid">${renderInventoryGrid()}</div></div>
+    <div class="inv-actions"><button type="button" data-smith-action="Sortuj">Sortuj</button><button type="button" data-smith-action="Zaznacz">Zaznacz</button><button type="button" data-smith-action="Zablokuj">Zablokuj</button></div>
+   </aside>
+  </div>
+ </section>`;
  const host=document.querySelector('.dbi-smith-inventory');
  dbiBindSharedInventory(host,{
   refresh:msg=>renderBlacksmith(msg||'Inwentarz został odświeżony.'),
@@ -2877,24 +3269,26 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
   setMessage:msg=>{const el=document.querySelector('#dbiSmithStatus');if(el)el.textContent=msg}
  });
  const target=document.querySelector('#dbiSmithTarget');
- target.addEventListener('click',()=>{if(dbiSmithSelection){dbiSmithSelection=null;renderBlacksmith()}});
- if(selected){
-  target.addEventListener('mouseenter',e=>showTooltipItem(e,selected));
-  target.addEventListener('mousemove',e=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,e.clientX,e.clientY)});
-  target.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));
+ if(target){
+  target.addEventListener('click',()=>{if(dbiSmithSelection){dbiSmithSelection=null;renderBlacksmith()}});
+  if(selected){
+   target.addEventListener('mouseenter',e=>showTooltipItem(e,selected));
+   target.addEventListener('mousemove',e=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,e.clientX,e.clientY)});
+   target.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));
+  }
+  target.addEventListener('dragover',event=>{
+   if(dragIndex===null)return;
+   event.preventDefault();event.dataTransfer.dropEffect='move';target.classList.add('drop-target');
+  });
+  target.addEventListener('dragleave',()=>target.classList.remove('drop-target'));
+  target.addEventListener('drop',event=>{
+   if(dragIndex===null)return;
+   event.preventDefault();event.stopPropagation();target.classList.remove('drop-target');
+   const index=dragIndex;
+   dragCompleted=true;dragIndex=null;dragActive=false;dragSourceElement=null;
+   dbiSmithPick(index);
+  });
  }
- target.addEventListener('dragover',event=>{
-  if(dragIndex===null)return;
-  event.preventDefault();event.dataTransfer.dropEffect='move';target.classList.add('drop-target');
- });
- target.addEventListener('dragleave',()=>target.classList.remove('drop-target'));
- target.addEventListener('drop',event=>{
-  if(dragIndex===null)return;
-  event.preventDefault();event.stopPropagation();target.classList.remove('drop-target');
-  const index=dragIndex;
-  dragCompleted=true;dragIndex=null;dragActive=false;dragSourceElement=null;
-  dbiSmithPick(index);
- });
  const panel=document.querySelector('.dbi-smith');
  const checkpointTip=document.createElement('div');
  checkpointTip.id='dbiSmithCheckpointTip';
@@ -2918,22 +3312,31 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
   button.addEventListener('blur',hide);
   button.addEventListener('keydown',e=>{if(e.key==='Escape')hide()});
  });
+ panel.querySelectorAll('[data-forge-tab]').forEach(button=>button.addEventListener('click',()=>{
+  dbiSmithView=button.dataset.forgeTab;
+  renderBlacksmith();
+ }));
  panel.querySelectorAll('[data-craft-select]').forEach(select=>select.addEventListener('change',()=>{
   dbiCraftSelection[select.dataset.craftSelect]=select.value;
   renderBlacksmith();
   document.querySelector(`[data-craft-select="${select.dataset.craftSelect}"]`)?.focus();
  }));
- panel.querySelector('#dbiCraftCreate').addEventListener('click',dbiCraftAttempt);
- panel.querySelector('#dbiCraftAccept').addEventListener('click',()=>dbiCraftResolve(true));
- panel.querySelector('#dbiCraftDiscard').addEventListener('click',()=>dbiCraftResolve(false));
+ panel.querySelector('#dbiCraftCreate')?.addEventListener('click',dbiCraftAttempt);
+ panel.querySelector('#dbiCraftAccept')?.addEventListener('click',()=>dbiCraftResolve(true));
+ panel.querySelector('#dbiCraftDiscard')?.addEventListener('click',()=>dbiCraftResolve(false));
  if(crafted){
   const preview=panel.querySelector('#dbiCraftPreview');
-  preview.addEventListener('mouseenter',e=>showTooltipItem(e,crafted));
-  preview.addEventListener('mousemove',e=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,e.clientX,e.clientY)});
-  preview.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));
+  if(preview){
+   preview.addEventListener('mouseenter',e=>showTooltipItem(e,crafted));
+   preview.addEventListener('mousemove',e=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,e.clientX,e.clientY)});
+   preview.addEventListener('mouseleave',()=>document.querySelector('#itemTooltip')?.setAttribute('hidden',''));
+  }
  }
- document.querySelector('#dbiSmithUpgrade').addEventListener('click',dbiSmithAttempt);
- host.querySelectorAll('[data-smith-action]').forEach(btn=>btn.addEventListener('click',()=>{const el=document.querySelector('#dbiSmithStatus');if(el)el.textContent='Funkcja '+btn.dataset.smithAction+' pozostaje dostępna w głównym Ekwipunku.'}));
+ panel.querySelector('#dbiSmithUpgrade')?.addEventListener('click',dbiSmithAttempt);
+ host.querySelectorAll('[data-smith-action]').forEach(btn=>btn.addEventListener('click',()=>{
+  const el=document.querySelector('#dbiSmithStatus');
+  if(el)el.textContent='Funkcja '+btn.dataset.smithAction+' pozostaje dostępna w głównym Ekwipunku.';
+ }));
 }
 
 const DBI_PLAN_SUCCESS_CHANCES=[100,80,70,50];
@@ -3240,6 +3643,8 @@ const DBI_TEST_SAVE_PREFIXES = [
  "dboidle_forest_roshi_v1_",
  "dboidle_gold_v1_",
  "dboidle_high_tower_journey_v1_",
+ "dboidle_town_journey_v1_",
+ "dboidle_town_treasures_v1_",
  "dboidle_inventory_positions_v1_",
  "dboidle_inventory_v1_",
  "dboidle_mountain_roshi_v1_",
@@ -3321,7 +3726,7 @@ function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w te
  if(!dbiIsGameMaster())return;
  dbiRegisterBuiltInItems(DBI_ROYAL_500_CATALOG);
  document.querySelector('#breadcrumb').textContent='PANEL GM / KATALOG';
- document.querySelector('#pageBody').innerHTML=`<div class="gm-layout"><section class="eq-panel"><h2>PANEL GM · PRZEDMIOTY</h2><p><a href="gm.html">Poczta i zarządzanie innymi postaciami</a></p><p class="eq-caption">${catalog.length} definicji w katalogu · lokalny tryb developerski</p><div class="gm-actions"><button id="gmNew">+ Nowy przedmiot</button><button id="gmExport">Eksport JSON</button><button type="button" id="gmExportTestCharacters">Eksport postaci testowych</button><label class="gm-import">Import JSON<input id="gmImport" type="file" accept=".json,application/json" hidden></label></div><div class="dbi-gm-filters"><input id="gmSearch" type="search" placeholder="Szukaj przedmiotu po nazwie lub ID" aria-label="Szukaj przedmiotu"><select id="gmSlotFilter"><option value="">Wszystkie kategorie</option>${DBI_SLOTS.map(([label,id])=>`<option value="${esc(id)}">${esc(label)}</option>`).join('')}</select></div><div class="gm-list" id="gmCatalogList">${catalog.map(x=>`<div class="dbi-gm-catalog-row" data-gm-slot="${esc(x.slot)}" data-gm-query="${esc((x.name+' '+x.id).toLocaleLowerCase('pl'))}"><button type="button" class="gm-item" data-edit="${esc(x.id)}"><span>${dbiItemArt(x)} ${esc(x.name)}</span><small>${esc(x.id)} · ${esc(x.slot)} · ${Number(x.requiredLevel)||1} LVL${itemTall(x.id)?' · 2 kratki':''}</small></button><label class="dbi-gm-enhancement-label">+<select class="dbi-gm-enhancement" aria-label="Poziom ulepszenia">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField()}<button type="button" class="dbi-gm-quickgrant" data-grant-id="${esc(x.id)}" title="Dodaj do inwentarza">+ Dodaj</button></div>`).join('')}</div><p id="gmMessage" role="status">${esc(message)}</p></section><section class="eq-panel"><h2>EDYTOR PRZEDMIOTU</h2><form id="gmForm" class="gm-form"><label>ID (unikalne)<input name="id" required maxlength="60" pattern="[a-zA-Z0-9_-]+" placeholder="np. bron-002"></label><label>Nazwa<input name="name" required maxlength="80"></label><label>Slot<select name="slot">${slotOptions}</select></label><label>Jakość<select name="quality">${QUALITY.map(q=>`<option value="${q}">${q}</option>`).join('')}</select></label><label>Ikona / emoji<input name="icon" maxlength="12" value="⚔️"></label><label>Atak<input name="attack" type="number" min="0" max="999999" value="0"></label><label>Obrona<input name="defense" type="number" min="0" max="999999" value="0"></label><label>Ki<input name="ki" type="number" min="0" max="999999" value="0"></label><label class="gm-wide">Opis<textarea name="description" rows="3" maxlength="500"></textarea></label><div class="gm-actions gm-wide"><button type="submit">Zapisz przedmiot</button><label class="dbi-gm-enhancement-label">Ulepszenie +<select id="gmEditorEnhancement">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField('gmEditorQuantity')}<button type="button" id="gmGrant">Dodaj do inwentarza</button><button type="button" id="gmDelete" class="gm-danger">Usuń z katalogu</button></div></form></section></div>`;
+ document.querySelector('#pageBody').innerHTML=`<div class="gm-layout"><section class="eq-panel"><h2>PANEL GM · PRZEDMIOTY</h2><p><a href="gm.html">Poczta i zarządzanie innymi postaciami</a></p><p class="eq-caption">${catalog.length} definicji w katalogu · lokalny tryb developerski</p><div class="gm-actions"><button type="button" id="gmOpenWorldCreator">🗺 Kreator map i questów</button><button id="gmNew">+ Nowy przedmiot</button><button id="gmExport">Eksport JSON</button><button type="button" id="gmExportTestCharacters">Eksport postaci testowych</button><label class="gm-import">Import JSON<input id="gmImport" type="file" accept=".json,application/json" hidden></label></div><div class="dbi-gm-filters"><input id="gmSearch" type="search" placeholder="Szukaj przedmiotu po nazwie lub ID" aria-label="Szukaj przedmiotu"><select id="gmSlotFilter"><option value="">Wszystkie kategorie</option>${DBI_SLOTS.map(([label,id])=>`<option value="${esc(id)}">${esc(label)}</option>`).join('')}</select></div><div class="gm-list" id="gmCatalogList">${catalog.map(x=>`<div class="dbi-gm-catalog-row" data-gm-slot="${esc(x.slot)}" data-gm-query="${esc((x.name+' '+x.id).toLocaleLowerCase('pl'))}"><button type="button" class="gm-item" data-edit="${esc(x.id)}"><span>${dbiItemArt(x)} ${esc(x.name)}</span><small>${esc(x.id)} · ${esc(x.slot)} · ${Number(x.requiredLevel)||1} LVL${itemTall(x.id)?' · 2 kratki':''}</small></button><label class="dbi-gm-enhancement-label">+<select class="dbi-gm-enhancement" aria-label="Poziom ulepszenia">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField()}<button type="button" class="dbi-gm-quickgrant" data-grant-id="${esc(x.id)}" title="Dodaj do inwentarza">+ Dodaj</button></div>`).join('')}</div><p id="gmMessage" role="status">${esc(message)}</p></section><section class="eq-panel"><h2>EDYTOR PRZEDMIOTU</h2><form id="gmForm" class="gm-form"><label>ID (unikalne)<input name="id" required maxlength="60" pattern="[a-zA-Z0-9_-]+" placeholder="np. bron-002"></label><label>Nazwa<input name="name" required maxlength="80"></label><label>Slot<select name="slot">${slotOptions}</select></label><label>Jakość<select name="quality">${QUALITY.map(q=>`<option value="${q}">${q}</option>`).join('')}</select></label><label>Ikona / emoji<input name="icon" maxlength="12" value="⚔️"></label><label>Atak<input name="attack" type="number" min="0" max="999999" value="0"></label><label>Obrona<input name="defense" type="number" min="0" max="999999" value="0"></label><label>Ki<input name="ki" type="number" min="0" max="999999" value="0"></label><label class="gm-wide">Opis<textarea name="description" rows="3" maxlength="500"></textarea></label><div class="gm-actions gm-wide"><button type="submit">Zapisz przedmiot</button><label class="dbi-gm-enhancement-label">Ulepszenie +<select id="gmEditorEnhancement">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField('gmEditorQuantity')}<button type="button" id="gmGrant">Dodaj do inwentarza</button><button type="button" id="gmDelete" class="gm-danger">Usuń z katalogu</button></div></form></section></div>`;
 
  document.querySelector('#gmExportTestCharacters').onclick=dbiDownloadTestExport;
  // GM: dokładne wartości walut i bazowych statystyk aktywnej postaci.
@@ -3408,6 +3813,7 @@ function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w te
   saved[i]={...saved[i],stats};localStorage.setItem(key,JSON.stringify(saved));gmChar.stats=stats;
   document.querySelector('#gmStatInfo').textContent='Zapisano statystyki.';
  };
+ document.querySelector('#gmOpenWorldCreator')?.addEventListener('click',()=>window.DBIGMMapEditor?.open?.(document.querySelector('#pageBody'),()=>renderGM()));
  const gmSearch=document.querySelector('#gmSearch'),gmSlotFilter=document.querySelector('#gmSlotFilter');
  const gmFilter=()=>{const q=gmSearch.value.trim().toLocaleLowerCase('pl'),slot=gmSlotFilter.value;for(const row of document.querySelectorAll('.dbi-gm-catalog-row'))row.hidden=!!((q&&!row.dataset.gmQuery.includes(q))||(slot&&row.dataset.gmSlot!==slot))};
  gmSearch.addEventListener('input',gmFilter);gmSlotFilter.addEventListener('change',gmFilter);
@@ -3613,6 +4019,87 @@ for(const item of [
 // Uaktualnij również katalog zapisany wcześniej w przeglądarce.
 const dbiGloryBelt=catalog.find(item=>item.id==='quest-glory-belt');
 if(dbiGloryBelt){dbiGloryBelt.image='assets/items/pas-chwaly.png';dbiSaveCatalog(catalog)}
+// Miasto pod Górami: brakujące artefakty dla Poszukiwacza skarbów.
+// Przedmioty bez grafik używają wbudowanych ikon; ich obrazy dodamy później.
+// Nie przypisujemy im żadnych wymyślonych bonusów ani zawartości skrzyń.
+const DBI_TOWN_QUEST_ITEMS=[
+ {id:'quest-old-staff',name:'Stara Laska',icon:'🪄',slot:'quest'},
+ {id:'quest-golden-dragon-coin',name:'Złota Smocza Moneta',icon:'🪙',slot:'quest'},
+ {id:'quest-hermit-glasses',name:'Okulary Starego Pustelnika',icon:'👓',slot:'quest'},
+ {id:'quest-sayan-battle-outfit',name:'Ubranie Bojowe Sayan',icon:'🥋',slot:'quest'},
+ {id:'quest-babidi-mark',name:'Znak Babidiego',icon:'✴️',slot:'quest'},
+ {id:'quest-potara-earrings',name:'Kolczyki Potara',icon:'💎',slot:'quest'},
+ {id:'quest-ki-energy',name:'Energia KI',icon:'🔷',slot:'materiał'},
+ {id:'quest-material-chest',name:'Skrzynia Materiałów',icon:'📦',slot:'quest'}
+];
+for(const definition of DBI_TOWN_QUEST_ITEMS){
+ if(!catalog.some(item=>item.id===definition.id))catalog.push({...definition,requiredLevel:1,quality:'Pospolity',attack:0,defense:0,ki:0,description:'Przedmiot związany ze zleceniami w Mieście pod Górami.'});
+}
+dbiSaveCatalog(catalog);
+
+// Przekazanie premii i nagród jest transakcją na dotychczasowych zapisach.
+// Pozycje pozostałych sztuk w Ekwipunku są chronione przez dbiSaveInventoryTransaction().
+function dbiClaimTownJourneyPremium(){
+ if(!dbiActive?.id)return false;
+ const key='dboidle_town_journey_v1_'+dbiActive.id;
+ try{
+  const state=JSON.parse(localStorage.getItem(key)||'null');
+  if(state?.stage!==2)return false;
+  const walletKey='dboidle_premium_v1_'+dbiActive.id;
+  const amount=Number(localStorage.getItem(walletKey))||0;
+  if(!dbiSaveInventoryTransaction(inventory.slice(),inventoryPlacement.slice(),[
+   [walletKey,String(amount+10)],
+   [key,JSON.stringify({...state,stage:3})]
+  ]))return false;
+  dbiRefreshHeaderWallet();return true;
+ }catch(error){console.error('Nagroda Miasto pod Górami:',error);return false}
+}
+const DBI_TOWN_TREASURE_REWARDS={
+ 1:{take:'quest-old-staff',give:[['reinforcement-plans',10],['change-scroll',20]]},
+ 2:{take:'quest-golden-dragon-coin',premium:50},
+ 3:{take:'quest-hermit-glasses',techniqueDamageBonusPct:1},
+ 4:{take:'quest-sayan-battle-outfit',give:[['quest-ki-energy',1]]},
+ 5:{take:'quest-babidi-mark',give:[['addition-chip',10],['updating-chip',20]]},
+ 6:{take:'quest-potara-earrings',give:[['quest-material-chest',10]]}
+};
+function dbiClaimTownTreasure(stage){
+ const reward=DBI_TOWN_TREASURE_REWARDS[stage];if(!reward||!dbiActive?.id||dbiCharacterIndex<0)return false;
+ const questKey='dboidle_town_treasures_v1_'+dbiActive.id;
+ try{
+  const state=JSON.parse(localStorage.getItem(questKey)||'null');
+  if(state?.stage!==stage)return false;
+  const refs=inventory.slice(),positions=inventoryPlacement.slice();
+  const i=refs.findIndex(ref=>dbiDecodeItemRef(ref).id===reward.take);
+  if(i<0)return false;
+  refs.splice(i,1);positions.splice(i,1);
+  for(const [itemId,amount] of reward.give||[]){
+   if(!itemById(itemId))return false;
+   for(let k=0;k<amount;k++){refs.push(itemId);positions.push(null)}
+  }
+  if(new Set(refs.map(ref=>dbiDecodeItemRef(ref).id)).size>400)return false;
+  const writes=[[questKey,JSON.stringify({stage:stage+1})]];
+  if(reward.premium){
+   const walletKey='dboidle_premium_v1_'+dbiActive.id;
+   writes.push([walletKey,String((Number(localStorage.getItem(walletKey))||0)+reward.premium)]);
+  }
+  let index=-1,characterUpdate=null,chars=null;
+  if(reward.techniqueDamageBonusPct){
+   const charactersKey='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
+   chars=JSON.parse(localStorage.getItem(charactersKey)||'[]');
+   index=Array.isArray(chars)?chars.findIndex(c=>c.id===dbiActive.id):-1;
+   if(index<0)return false;
+   const original=chars[index];
+   const previous=Number(original.stats?.questTechniqueDamagePct)||0;
+   characterUpdate={...original,stats:{...original.stats,questTechniqueDamagePct:previous+reward.techniqueDamageBonusPct}};
+   chars[index]=characterUpdate;
+   writes.push([charactersKey,JSON.stringify(chars)]);
+  }
+  if(!dbiSaveInventoryTransaction(refs,positions,writes))return false;
+  if(characterUpdate)dbiCharacters[index]=characterUpdate;
+  if(reward.premium)dbiRefreshHeaderWallet();
+  return true;
+ }catch(error){console.error('Zlecenie Poszukiwacza skarbów:',error);return false}
+}
 // Most dla panelu ŚWIAT — korzysta z istniejącego katalogu i ekwipunku.
 // Jeden wspólny sposób identyfikacji zwykłego Białego Pasa, niezależnie od slotu.
 function dbiIsQuestWhiteBelt(id){
@@ -3842,6 +4329,8 @@ function dbiAutoUseRedZen(){
 }
 window.DBIWorldTechniques=()=>DBI_TECHNIQUES.filter(d=>dbiTechniqueUnlocked(d)).map(d=>({id:d.id,name:d.name,image:d.images[Math.max(0,Math.min(4,Number(dbiTechniqueState()[d.id]||1)-1))],mana:d.useMana,damage:dbiTechniquePower(d.baseDamage,'pvm'),damagePvp:dbiTechniquePower(d.baseDamage,'pvp'),baseDamage:d.baseDamage}));
 window.DBIWorldInventory={
+  claimTownJourneyPremium:dbiClaimTownJourneyPremium,
+  claimTownTreasure:dbiClaimTownTreasure,
   bonus:dbiMainBonus,
   skillBonuses:dbiSkillBonuses,
   smithDropBonus:()=>dbiSmithCheckpointBonus('drop')+dbiMainBonus('smithDropChancePct'),
@@ -3908,6 +4397,7 @@ window.DBIWorldInventory={
   grantExp:dbiGainExp,
   grantMobKills:dbiGrantMobKills,
   character:()=>{
+    const gb=dbiGuildBonus();
     const signStats=dbiEquippedAllStats(equipped['Główny']);
     const skills=dbiSkillBonuses();
     const character=dbiCharacters[dbiCharacterIndex]||{};
@@ -3925,7 +4415,7 @@ window.DBIWorldInventory={
     const techniqueFixed=techniqueBase('techniqueAttack','techniquePower')+bonus('techniqueAttack','techniquePower')+skills.techniqueAttack;
     const techniqueAttackPvm=techniqueBase('techniqueAttackMin')+bonus('techniqueAttackMin')+techniqueFixed;
     const techniqueAttackPvp=techniqueBase('techniqueAttackMax')+bonus('techniqueAttackMax')+techniqueFixed;
-    const techniqueDamageBonusPct=techniqueBase('techniqueDamageBonusPct')+bonus('techniqueDamageBonusPct');
+    const techniqueDamageBonusPct=techniqueBase('techniqueDamageBonusPct')+bonus('techniqueDamageBonusPct')+(Number(character.stats?.questTechniqueDamagePct)||0);
     const strength=dbiSpiritEffectiveStat(stat('strength','sila','siła','str')*dbiPlanAttributeMultiplier(worn,'strength'),signStats+skills.stats);
     const speed=dbiSpiritEffectiveStat(stat('speed','szybkosc','szybkość')*dbiPlanAttributeMultiplier(worn,'speed'),signStats+skills.stats);
     const endurance=dbiSpiritEffectiveStat(stat('endurance','wytrzymalosc','wytrzymałość','stamina')*dbiPlanAttributeMultiplier(worn,'endurance'),signStats+skills.stats);
@@ -3936,9 +4426,9 @@ window.DBIWorldInventory={
       techniqueAttackMin:techniqueAttackPvm,
       techniqueAttackMax:techniqueAttackPvp,
       techniqueAttackPvm,techniqueAttackPvp,techniqueDamageBonusPct,techniqueValuePct:bonus('techniqueValuePct'),
-      defense:Math.max(0,(endurance*.1+skills.defense+bonus('defense')+(Number(character.stats?.questDefenseBonus)||0))*(1+bonus('defensePct')/100)),
-      maxHp:Math.max(.01,(Number(character.stats?.gmMaxHp??(50+endurance*.01+bonus('hp','maxHp','health')))+(character.stats?.gmMaxHp!=null?dbiPlanRolledTotal(worn,'hp'):0)+skills.hp+(Number(character.stats?.questMaxHp)||0))*(1+bonus('maxHpPct')/100)),
-      maxKi:Math.max(0,(Number(character.stats?.gmMaxKi??(100+intelligence*.01+bonus('kiPoints','maxKi','maxMp','mana','ki')))+(character.stats?.gmMaxKi!=null?dbiPlanRolledTotal(worn,'maxKi'):0))*(1+bonus('maxKiPct')/100)),
+      defense:Math.max(0,(endurance*.1+skills.defense+bonus('defense')+(Number(character.stats?.questDefenseBonus)||0))*(1+bonus('defensePct')/100)*(1+gb.defensePct/100)),
+      maxHp:Math.max(.01,(Number(character.stats?.gmMaxHp??(50+endurance*.01+bonus('hp','maxHp','health')))+(character.stats?.gmMaxHp!=null?dbiPlanRolledTotal(worn,'hp'):0)+skills.hp+(Number(character.stats?.questMaxHp)||0))*(1+bonus('maxHpPct')/100)*(1+gb.hpPct/100)+gb.hp),
+      maxKi:Math.max(0,(Number(character.stats?.gmMaxKi??(100+intelligence*.01+bonus('kiPoints','maxKi','maxMp','mana','ki')))+(character.stats?.gmMaxKi!=null?dbiPlanRolledTotal(worn,'maxKi'):0))*(1+bonus('maxKiPct')/100)*(1+gb.kiPct/100)+gb.ki),
       moveSpeedPct:dbiCharacterBonus(character,worn,['moveSpeedPct','moveSpeed'])+(dbiZenActive('purple')?50:0),
       attackSpeedPct:dbiCharacterBonus(character,worn,['attackSpeedPct','attackSpeed'])+(Number(character.stats?.questAttackSpeedPct)||0)};
   }

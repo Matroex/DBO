@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 108" fill="none" preserveAspectRatio="none">
+<defs>
+ <linearGradient id="metal" x1="0" y1="8" x2="0" y2="97" gradientUnits="userSpaceOnUse"><stop stop-color="#331c1b"/><stop offset=".20" stop-color="#82401f"/><stop offset=".48" stop-color="#ab5e29"/><stop offset=".72" stop-color="#a15021"/><stop offset=".94" stop-color="#5d2a1d"/><stop offset="1" stop-color="#2d1a1b"/></linearGradient>
+ <linearGradient id="top" x1="55" y1="0" x2="435" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe4a2"/><stop offset=".24" stop-color="#ffb94f"/><stop offset=".55" stop-color="#e98736"/><stop offset=".95" stop-color="#ffc16b"/><stop offset="1" stop-color="#f6a74e"/></linearGradient>
+ <linearGradient id="side" x1="0" y1="0" x2="500" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#ffd58a"/><stop offset=".27" stop-color="#a45426"/><stop offset=".70" stop-color="#f4a44c"/><stop offset="1" stop-color="#ffe1aa"/></linearGradient>
+ <linearGradient id="light" x1="130" y1="23" x2="330" y2="102" gradientUnits="userSpaceOnUse">
+  <stop stop-color="#ffffff" stop-opacity=".12"/><stop offset=".35" stop-color="#b2e3ff" stop-opacity=".07"/><stop offset=".75" stop-color="#010916" stop-opacity="0"/><stop offset="1" stop-color="#00060b" stop-opacity=".38"/>
+ </linearGradient>
+ <linearGradient id="bottom" x1="0" y1="0" x2="500" y2="0" gradientUnits="userSpaceOnUse">
+  <stop stop-color="#ffbb57" stop-opacity="0"/><stop offset=".10" stop-color="#ffbb57" stop-opacity=".65"/>
+  <stop offset=".47" stop-color="#ffcf75" stop-opacity=".95"/><stop offset=".78" stop-color="#ffbb57" stop-opacity=".65"/><stop offset="1" stop-color="#ffbb57" stop-opacity="0"/>
+ </linearGradient>
+ <filter id="soft" x="-.3" y="-.7" width="1.6" height="2.4"><feGaussianBlur stdDeviation="3"/></filter>
+ <filter id="wide" x="-.4" y="-1" width="1.8" height="3"><feGaussianBlur stdDeviation="7"/></filter>
+ <radialGradient id="ember" cx="50%" cy="100%" r="72%" gradientTransform="translate(0 .30) scale(1 .70)">
+  <stop stop-color="#ffb65c" stop-opacity=".30"/>
+  <stop offset=".48" stop-color="#f77c29" stop-opacity=".27"/>
+  <stop offset="1" stop-color="#f77c29" stop-opacity="0"/>
+ </radialGradient>
+ <pattern id="brushed" width="15" height="15" patternUnits="userSpaceOnUse"><path d="M0 .5H15 M0 7.5H15 M0 12.5H15" stroke="#e8f7ff" stroke-opacity=".025" stroke-width=".6"/></pattern>
+</defs>
+<!-- outer soft light that remains visible around bevels -->
+<path d="M54 7H439L493 99H8Z" stroke="#ffac54" stroke-width="6" opacity="0.85" filter="url(#soft)" />
+<path d="M54 6H439L494 99H6Z" fill="#030e1b" stroke="#060d18" stroke-width="4"/>
+<path d="M56 10H436L489 95H13Z" fill="url(#side)" stroke="#ffac54" stroke-opacity="0.77" stroke-width="2"/>
+<path d="M61 14H432L484 92H18Z" fill="url(#metal)"/>
+<path d="M61 14H432L484 92H18Z" fill="url(#brushed)"/>
+<path d="M61 14H432L484 92H18Z" fill="url(#light)"/>
+<path d="M61 14H432L484 92H18Z" fill="url(#ember)"/>
+<!-- gloss on the upper beveled edge -->
+<path d="M56 10H436L433 15H60Z" fill="url(#top)" opacity=".72"/>
+<path d="M62 17H431" stroke="#ffcf75" stroke-opacity=".25" stroke-width="1.5"/>
+<path d="M55 10L12 96" stroke="#fff0bb" stroke-opacity=".38" stroke-width="2.5"/>
+<path d="M437 10L489 96" stroke="#fff0bb" stroke-opacity=".45" stroke-width="2.5"/>
+<!-- lower engraved bevel and light reflection -->
+<path d="M18 89L15 95H487L482 89Z" fill="#071223" fill-opacity=".45" />
+<path d="M17 94H486" stroke="url(#bottom)" stroke-width="4" stroke-linecap="round"/>
+<path d="M21 98H478" stroke="#ffa437" stroke-opacity=".5" stroke-width="4" filter="url(#soft)"/>
+<path d="M71 22L34 83" stroke="#ffcf75" stroke-opacity=".17" stroke-width="3"/>
+<path d="M426 22L468 82" stroke="#ffcf75" stroke-opacity=".18" stroke-width="3"/>
+<path d="M30 95H465" stroke="#ffb342" stroke-width="4" opacity=".95" filter="url(#soft)"/>
+      <path d="M64 19H438" stroke="#ffe6aa" stroke-width="3" opacity=".44" filter="url(#soft)"/>
+      <path d="M40 80Q250 125 460 80" fill="none" stroke="#ff8a30" stroke-width="9" opacity=".38" filter="url(#wide)"/>
+      <path d="M51 71H446" stroke="#eea84e" stroke-opacity=".17" stroke-width="1"/>
+</svg>

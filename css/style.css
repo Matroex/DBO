@@ -5435,3 +5435,2822 @@
   .game.atlas-app .atlas-view #pageBody .dbi-skill-scroll{border-width:9px}
   .game.atlas-app .atlas-view #pageBody .dbi-skill-foot{padding:9px 10px}
 }
+
+
+/* === ASTRALNI WOJOWNICY | ULEPSZANIE - EFEKT PREMIUM v2 ===
+   Układ pozostaje bez zmian. Zmieniona wyłącznie oprawa wizualna panelu Ulepszanie. */
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade,
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade *,
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade *::before,
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade *::after{box-sizing:border-box}
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade{
+  position:relative;
+  width:100%;max-width:none;min-width:0;min-height:0;
+  padding:12px clamp(12px,1.35vw,24px) 20px;margin:0;
+  border:16px solid transparent;border-image:url('../assets/ui/dojo-controls/planner-frame-clean.webp') 16 stretch;
+  border-radius:0;overflow:hidden;overflow-wrap:anywhere;
+  color:#eaf3ff;
+  background:
+    radial-gradient(ellipse at 50% -12%,rgba(39,134,255,.22),transparent 46%),
+    radial-gradient(circle at 28% 15%,rgba(42,119,255,.16),transparent 24%),
+    radial-gradient(circle at 74% 20%,rgba(0,217,255,.08),transparent 22%),
+    linear-gradient(180deg,#0b1630 0%,#081326 38%,#09101d 100%);
+  box-shadow:inset 0 0 0 1px rgba(105,178,255,.18), inset 0 34px 80px rgba(18,53,107,.18);
+}
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade::before{
+  content:"";position:absolute;left:18px;right:18px;top:74px;height:2px;
+  background:linear-gradient(90deg,rgba(0,0,0,0),rgba(70,200,255,.95) 14%,rgba(255,178,68,.92) 50%,rgba(70,200,255,.95) 86%,rgba(0,0,0,0));
+  filter:drop-shadow(0 0 8px rgba(71,210,255,.42));pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade>h2{
+  display:flex;justify-content:center;align-items:center;gap:12px;
+  margin:1px 0 18px;padding:0 56px 20px;position:relative;
+  color:#f3fbff;text-align:center;
+  font:700 clamp(25px,2.2vw,37px)/1.06 system-ui,sans-serif;
+  letter-spacing:.01em;text-shadow:0 0 18px rgba(107,206,255,.18),0 2px 0 rgba(3,12,24,.8);
+  background:none;
+}
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade>h2::before{
+ content:'✦';display:inline-block;flex:0 0 auto;font:700 24px/1 system-ui,sans-serif;
+ color:#62d5ff;text-shadow:0 0 18px rgba(98,213,255,.55);
+}
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade>hr{display:none}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-layout{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(390px,425px);gap:clamp(14px,1.4vw,24px);align-items:start;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-work{display:flex;flex-direction:column;align-items:stretch;gap:12px;min-width:0;margin:0;padding:0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-main{
+ display:grid;grid-template-columns:clamp(206px,18.5vw,270px) minmax(0,1fr);gap:clamp(14px,1.2vw,22px);align-items:start;
+ width:100%;min-width:0;margin:0;padding:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target{
+ position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+ width:100%;min-width:0;gap:8px;margin:0;padding:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot{
+ position:relative;isolation:isolate;display:block;flex:none;
+ width:100%;height:auto;min-width:0;min-height:0;aspect-ratio:320/450;
+ margin:0;padding:0;overflow:visible;cursor:default;border:0;border-radius:0;
+ background:transparent url('../assets/ui/upgrade/astral-capsule.svg') center/100% 100% no-repeat;
+ filter:drop-shadow(0 0 18px rgba(0,208,255,.14)) drop-shadow(0 18px 32px rgba(0,0,0,.34));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot.occupied{cursor:pointer}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot.drop-target{
+ outline:2px solid #7de5ff;outline-offset:-10px;border-radius:30%;
+ filter:drop-shadow(0 0 11px rgba(125,229,255,.56)) drop-shadow(0 0 18px rgba(255,171,56,.32));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot::before{
+ content:"";position:absolute;z-index:0;left:18%;right:18%;top:26%;bottom:17%;
+ background:
+  radial-gradient(ellipse at 50% 42%,rgba(102,223,255,.18) 0%,rgba(60,175,255,.10) 32%,rgba(255,180,69,.18) 60%,transparent 78%),
+  linear-gradient(90deg,rgba(173,238,255,.14),transparent 24%,transparent 74%,rgba(173,238,255,.14));
+ border-radius:42% 42% 18% 18% / 48% 48% 12% 12%;
+ opacity:.95;pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot::after{
+ content:"";position:absolute;z-index:2;left:18%;right:18%;top:18%;bottom:18%;
+ background:
+  radial-gradient(circle at 50% 52%,rgba(255,239,168,.55) 0%,rgba(255,176,56,.46) 16%,rgba(63,199,255,.25) 38%,transparent 68%);
+ transform:translate3d(0,0,0) scale(.72);opacity:0;pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-success .dbi-upgrade-slot::after{
+ animation:dbi-upgrade-success-burst 1.5s cubic-bezier(.16,.84,.23,1) both;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-success .dbi-upgrade-slot{
+ filter:drop-shadow(0 0 14px rgba(102,223,255,.28)) drop-shadow(0 0 24px rgba(255,173,72,.36)) drop-shadow(0 18px 32px rgba(0,0,0,.34));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-float{
+ position:absolute;z-index:1;inset:24% 24% 24%;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;
+ animation:dbi-upgrade-hover 4.1s cubic-bezier(.45,.02,.36,.99) infinite;will-change:transform;pointer-events:none;
+ font-size:clamp(42px,4vw,74px);filter:drop-shadow(0 10px 18px rgba(0,0,0,.44));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-float > :is(.dbi-item-image,.dbi-enhance-glow){
+ width:100%;height:100%;max-width:100%;max-height:100%;margin:0;flex:0 1 auto;object-fit:contain;display:flex;align-items:center;justify-content:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-float > img.dbi-item-image{display:block;padding:0;object-fit:contain}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-float .dbi-enhance-glow img.dbi-item-image{width:100%;height:100%;padding:0;object-fit:contain}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-empty{
+ position:absolute;z-index:1;left:23%;right:23%;top:42%;padding:6px 4px;text-align:center;
+ color:#c8dcf3;font:600 12px/1.45 system-ui,sans-serif;text-shadow:0 0 10px rgba(0,0,0,.66);
+ pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-rank{
+ position:absolute;z-index:3;left:18%;right:18%;bottom:8.3%;display:flex;align-items:center;justify-content:center;
+ min-height:24px;padding:0 8px;pointer-events:none;
+ color:#fff6d9;font:800 clamp(17px,1.55vw,24px)/1 system-ui,sans-serif;
+ text-shadow:0 0 12px rgba(255,153,58,.72),0 2px 4px rgba(0,0,0,.92);
+ white-space:nowrap;letter-spacing:.01em;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-item-name{
+ display:block;max-width:100%;min-width:0;margin:-3px 0 0;padding:7px 12px 8px;
+ text-align:center;color:#f4fbff;font:700 clamp(12px,.95vw,14px)/1.25 system-ui,sans-serif;
+ border:1px solid rgba(77,180,255,.42);border-radius:12px;
+ background:linear-gradient(180deg,rgba(25,53,97,.78),rgba(11,24,46,.82));
+ box-shadow:inset 0 1px 0 rgba(171,229,255,.14),0 0 18px rgba(27,137,255,.08);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-item-name-empty{color:#9bb4c9;font-weight:600}
+@keyframes dbi-upgrade-hover{0%,100%{transform:translate3d(0,-6px,0)}50%{transform:translate3d(0,7px,0)}}
+@keyframes dbi-upgrade-success-burst{0%{opacity:0;transform:scale(.62)}16%{opacity:1;transform:scale(1.06)}52%{opacity:.64;transform:scale(1.16)}100%{opacity:0;transform:scale(1.28)}}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-info{display:flex;flex-direction:column;min-width:0;gap:10px;margin:2px 0 0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card{
+ position:relative;width:100%;min-width:0;margin:0;padding:14px clamp(12px,1vw,17px) 14px;
+ border:1px solid rgba(84,185,255,.46);border-radius:18px;
+ background:linear-gradient(180deg,rgba(18,36,69,.92),rgba(10,21,41,.95));
+ box-shadow:inset 0 1px 0 rgba(187,236,255,.12), inset 0 0 0 1px rgba(30,58,100,.45),0 0 0 1px rgba(0,0,0,.28),0 8px 20px rgba(2,9,20,.34);
+ clip-path:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card::before,
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card::after{
+  content:"";position:absolute;width:14px;height:14px;border-top:2px solid rgba(96,208,255,.82);top:11px;pointer-events:none
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card::before{left:11px;border-left:2px solid rgba(96,208,255,.82);border-radius:8px 0 0 0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card::after{right:11px;border-right:2px solid rgba(96,208,255,.82);border-radius:0 8px 0 0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card h3{
+ display:flex;gap:8px;align-items:center;min-width:0;margin:0 0 12px;padding:0 0 10px;border:0;
+ background:linear-gradient(90deg,rgba(90,212,255,.66),rgba(255,180,69,.68) 55%,transparent) left bottom/100% 1px no-repeat;
+ color:#f6fbff;font:700 clamp(14px,1.08vw,17px)/1.1 system-ui,sans-serif;
+ text-shadow:0 0 12px rgba(88,204,255,.16);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card h3 span{flex:1;min-width:0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card h3 strong{flex:none;color:#ffce61;font:800 clamp(15px,1.4vw,18px)/1 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-levels{
+ display:grid;grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr);gap:7px;align-items:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-levels>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-levels small{font:600 clamp(10px,.78vw,12px)/1.2 system-ui,sans-serif;color:#96acc8}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-levels b{font:800 clamp(16px,1.3vw,21px)/1.05 system-ui,sans-serif;color:#f7fbff}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-levels>div:last-child b{color:#72ff83;text-shadow:0 0 14px rgba(114,255,131,.18)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-chevrons{display:block;color:#ffb250;font:900 30px/1 system-ui,sans-serif;text-align:center;text-shadow:0 0 10px rgba(255,178,80,.32)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-progress{
+ height:20px;max-width:none;overflow:hidden;margin:0;border:1px solid rgba(94,177,255,.48);border-radius:999px;
+ background:linear-gradient(180deg,#091425,#12233d);box-shadow:inset 0 2px 7px rgba(0,0,0,.52),0 0 0 1px rgba(0,0,0,.28);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-progress>span{
+ display:block;height:100%;border-radius:999px;
+ background:linear-gradient(180deg,#ffe98f 0%,#ffc946 24%,#ff9f1d 72%,#e96a11 100%);
+ box-shadow:inset 0 1px 0 rgba(255,248,215,.86),0 0 14px rgba(255,173,60,.34);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-cost-row{
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+ color:#d8e6f8;font:600 12px/1.35 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-cost-row>span{display:flex;align-items:center;gap:6px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-cost-row img{width:17px;height:17px;object-fit:contain}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-cost-row strong{font-weight:800;color:#72ff83;text-shadow:0 0 12px rgba(114,255,131,.14)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-material-list{display:flex;align-items:stretch;gap:10px;min-width:0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card{padding-bottom:13px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust{
+ display:flex;align-items:center;justify-content:flex-start;flex:1 1 150px;min-width:130px;max-width:none;gap:8px;
+ margin:0;padding:8px 9px;border:1px solid rgba(87,180,255,.38);border-radius:14px;
+ background:linear-gradient(180deg,rgba(21,42,74,.9),rgba(10,23,42,.95));text-align:left;color:#eaf4fb;
+ box-shadow:inset 0 1px 0 rgba(173,224,255,.11);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust img{width:34px;height:34px;min-width:34px;max-width:34px;margin:0;object-fit:contain}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust span{display:flex;flex-direction:column;gap:2px;min-width:0;color:#eaf4fb;font:600 11px/1.12 system-ui,sans-serif}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust b{font:700 11px/1.1 system-ui,sans-serif}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust small{color:#72ff83;font:800 13px/1.1 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials{display:flex;flex:0 0 auto;width:auto;max-width:none;justify-content:flex-end;align-items:center;gap:8px;margin:0;padding:0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials .dbi-material-slot{
+ flex:none;position:relative;display:grid;place-items:center;width:50px;height:50px;min-width:50px;
+ border:1px solid rgba(92,186,255,.52);border-radius:14px;background:linear-gradient(180deg,rgba(23,46,79,.92),rgba(10,23,41,.95));
+ box-shadow:inset 0 1px 0 rgba(179,231,255,.11),0 0 0 1px rgba(0,0,0,.22);overflow:hidden;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials .dbi-material-slot img{max-width:100%;max-height:100%;object-fit:contain}
+.game.atlas-app .atlas-view #pageBody .dbi-reforger-count{width:auto;margin:6px 0 0;text-align:left;font-size:11px;color:#adc5de}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action{
+ position:relative;align-self:center;flex:none;min-width:255px;max-width:100%;width:auto;min-height:58px;
+ margin:3px 0 0;padding:12px 30px;border:1px solid #ffb24b;border-radius:18px;
+ background:linear-gradient(180deg,#ffb546 0%,#ff9825 30%,#ef7314 70%,#b54f0e 100%);
+ box-shadow:inset 0 1px 0 rgba(255,245,205,.95),inset 0 -2px 0 rgba(122,41,0,.28),0 0 18px rgba(255,142,38,.44),0 12px 28px rgba(0,0,0,.24);
+ color:#fffdf7;font:800 clamp(22px,1.65vw,30px)/1 system-ui,sans-serif;letter-spacing:.01em;text-shadow:0 2px 0 rgba(103,35,7,.55);
+ cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action::before{
+  content:"";position:absolute;inset:4px;border-radius:14px;border:1px solid rgba(255,238,191,.45);pointer-events:none
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action span{margin-left:10px;color:#fff6d8;font:900 30px/.8 system-ui,sans-serif;vertical-align:-1px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action:enabled:hover{filter:brightness(1.06) saturate(1.04);transform:translateY(-1px)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action:enabled:active{transform:translateY(0)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action:disabled{
+ opacity:.52;cursor:not-allowed;filter:saturate(.6);box-shadow:inset 0 0 0 1px rgba(255,188,97,.32),0 4px 12px rgba(0,0,0,.24);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action:focus-visible,
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv :is(button,.inv-cell):focus-visible{outline:2px solid #9ae7ff;outline-offset:3px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-work #dbiUpgradeStatus{
+ align-self:center;max-width:100%;min-height:15px;margin:0;padding:0;text-align:center;
+ color:#a9c6e2;font:600 11px/1.45 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-success #dbiUpgradeStatus{color:#ffde95}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv{
+ width:100%;max-width:none;min-width:0;margin:0;padding:11px 12px 14px;
+ border:12px solid transparent;border-image:url('../assets/ui/dojo-controls/planner-frame-clean.webp') 16 stretch;border-radius:0;
+ background:linear-gradient(180deg,#122441,#0a172b 86%);box-shadow:inset 0 0 0 1px rgba(84,185,255,.14);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv h3{
+ margin:0 0 11px;padding:0 0 10px;color:#f5fbff;
+ border:0;background:linear-gradient(90deg,rgba(90,212,255,.72),rgba(255,180,69,.58) 55%,transparent) left bottom/100% 1px no-repeat;
+ font:700 clamp(20px,1.5vw,25px)/1.05 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv h3::before{content:'▣';display:inline-block;margin-right:9px;color:#66d6ff;font-size:19px;text-shadow:0 0 12px rgba(102,214,255,.36)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-tabs{display:flex;gap:5px;min-width:0;margin:0 0 10px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-tabs button{
+ min-width:0;flex:1 1 0;padding:8px 0;border:1px solid rgba(99,182,255,.36);border-radius:10px;
+ background:linear-gradient(180deg,rgba(32,58,93,.92),rgba(13,26,46,.96));color:#e6f2ff;font:800 12px/1 system-ui,sans-serif;cursor:pointer;
+ box-shadow:inset 0 1px 0 rgba(180,228,255,.08);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-tabs button.active{
+ border-color:#ffb24b;background:linear-gradient(180deg,#ffb34a,#c66518);color:#fff8e7;box-shadow:inset 0 0 0 1px rgba(255,239,188,.34),0 0 12px rgba(255,174,61,.22);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-scroll{width:100%;max-width:100%;height:550px;min-height:0;overflow:auto;padding:4px;background:linear-gradient(180deg,#0d1d34,#081628)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid{margin:0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid>.inv-cell{
+ border-color:#42688a;background:linear-gradient(160deg,#133253,#0b2036 73%,#09182b);
+ box-shadow:inset 0 1px 0 rgba(162,215,255,.07);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid>.inv-cell:hover{border-color:#ffb35e;box-shadow:inset 0 1px 0 rgba(255,243,210,.09),0 0 10px rgba(255,179,94,.14)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid>.inv-cell.selected-upgrade{outline:2px solid #6ee6ff;outline-offset:-2px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-actions{display:flex;gap:7px;margin:10px 0 0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-actions button{
+ flex:1;min-width:0;padding:8px 4px;border:1px solid rgba(99,182,255,.36);border-radius:11px;
+ background:linear-gradient(180deg,rgba(32,58,93,.92),rgba(13,26,46,.96));color:#edf6ff;font:700 12px/1.2 system-ui,sans-serif;
+ cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-actions button:hover{border-color:#ffb35e;filter:brightness(1.06)}
+@media(max-width:1260px){
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-layout{grid-template-columns:minmax(0,1fr);gap:13px}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv{max-width:520px;justify-self:center}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-main{grid-template-columns:clamp(200px,30%,270px) minmax(0,1fr)}
+}
+@media(max-width:710px){
+ .game.atlas-app .atlas-view #pageBody>.dbi-upgrade{padding:8px 8px 14px;border-width:12px;border-image-slice:16}
+ .game.atlas-app .atlas-view #pageBody>.dbi-upgrade::before{left:10px;right:10px;top:66px}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-main{grid-template-columns:minmax(0,1fr);gap:9px;justify-items:center}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-target{max-width:250px}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-info{width:100%;margin:0}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv{padding:8px 6px 12px}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-action{min-width:220px;font-size:20px}
+}
+@media(max-width:430px){
+ .game.atlas-app .atlas-view #pageBody > .dbi-upgrade>h2{padding:0 24px 18px;font-size:24px}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-material-list{flex-wrap:wrap}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials{flex:1 1 110px;justify-content:flex-start}
+}
+@media(prefers-reduced-motion:reduce){
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-float{animation:none;will-change:auto;transform:none}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-success .dbi-upgrade-slot::after{animation:none;opacity:.2;transform:none}
+}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-success .dbi-upgrade-slot::after{animation:none;opacity:.2;transform:none}
+}
+
+/* ============================================================================
+   ASTRALNI WOJOWNICY — ULEPSZANIE PREMIUM V3
+   Tylko warstwa wizualna .dbi-upgrade. Bez zmian logiki, eventów i tooltipów.
+   Układ main/inventory pozostaje taki sam jak w v2.
+   ============================================================================ */
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade{
+  background-image:
+    linear-gradient(180deg,rgba(3,11,27,.13) 0%,rgba(4,12,28,.32) 35%,rgba(2,10,22,.46) 100%),
+    url('../assets/ui/upgrade/upgrade-laboratory.webp');
+  background-position:center,center;
+  background-repeat:no-repeat;
+  background-size:cover;
+  border-image:url('../assets/ui/dojo-controls/planner-frame-clean.webp') 16 stretch;
+  box-shadow:inset 0 0 0 1px rgba(71,199,255,.18),inset 0 18px 32px rgba(0,0,0,.25);
+  overflow:visible;
+}
+/* thin luminous line below existing title, keeping same title location */
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade::before{
+  top:76px;height:3px;left:19px;right:19px;
+  background:linear-gradient(90deg,transparent 0%,#0094e7 10%,#73edff 26%,#ffa946 49%,#6fe8ff 73%,#078ce5 91%,transparent 100%);
+  box-shadow:0 0 10px rgba(19,194,255,.53),0 0 23px rgba(13,167,255,.2);
+  opacity:1;
+}
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade>h2{
+  color:#f4fcff;
+  font-weight:850;
+  letter-spacing:.035em;
+  text-shadow:0 1px 2px #02101f,0 0 18px rgba(67,194,255,.52),0 0 38px rgba(23,152,255,.16);
+}
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade>h2::before{
+  content:'✦';color:#5ad9ff;text-shadow:0 0 12px rgba(45,215,255,.88);
+}
+/* capsule: premium high fidelity asset, preserving original drop target and click bindings */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot{
+  background:transparent url('../assets/ui/upgrade/astral-capsule-premium.webp') center center/contain no-repeat;
+  filter:drop-shadow(0 0 17px rgba(5,192,255,.24)) drop-shadow(0 12px 20px rgba(0,0,0,.42));
+  transition:filter .22s ease;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot::before{
+  content:'';position:absolute;inset:26% 23% 26%;z-index:0;
+  border-radius:45%;
+  background:radial-gradient(ellipse at 50% 49%,rgba(27,195,255,.1),rgba(18,116,226,.08) 58%,transparent 77%);
+  opacity:.85;pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot::after{
+  content:'';position:absolute;inset:20% 14% 14%;z-index:2;
+  background:
+    radial-gradient(ellipse at 50% 57%,rgba(255,245,171,.78),rgba(255,177,52,.58) 23%,rgba(29,229,255,.35) 48%,transparent 72%),
+    linear-gradient(90deg,transparent 30%,rgba(255,245,189,.28) 50%,transparent 70%);
+  opacity:0;transform:translate3d(0,0,0) scale(.67);pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-success .dbi-upgrade-slot::after{
+  animation:dbi-upgrade-v3-success 1.45s cubic-bezier(.18,.78,.25,1) both;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-success .dbi-upgrade-slot{
+  filter:drop-shadow(0 0 19px rgba(5,207,255,.45)) drop-shadow(0 0 22px rgba(255,159,36,.38));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-slot.drop-target{
+  outline:2px solid #64eaff;
+  filter:drop-shadow(0 0 18px rgba(0,226,255,.65));
+}
+@keyframes dbi-upgrade-v3-success{
+  0%{opacity:0;transform:scale(.6)}
+  20%{opacity:.98;transform:scale(1.02)}
+  55%{opacity:.5;transform:scale(1.12)}
+  100%{opacity:0;transform:scale(1.22)}
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-float{
+  inset:25% 25% 27%;
+  animation:dbi-upgrade-v3-float 3.85s ease-in-out infinite;
+  filter:drop-shadow(0 10px 11px rgba(0,0,0,.5)) drop-shadow(0 0 11px rgba(105,207,255,.18));
+}
+@keyframes dbi-upgrade-v3-float{
+  0%,100%{transform:translate3d(0,-6px,0)}
+  50%{transform:translate3d(0,6px,0)}
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-rank{
+  bottom:7.5%;left:23%;right:23%;height:6%;
+  color:#fff1bd;font-size:clamp(13px,1.55vw,23px);
+  text-shadow:0 2px 4px #020b18,0 0 10px rgba(255,139,34,.95),0 0 25px rgba(255,148,26,.4);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-item-name{
+  max-width:95%;margin-top:0;padding:7px 12px 8px;
+  border:1px solid #2abfff;border-radius:5px;
+  background:linear-gradient(180deg,#0d3154,#09192f);
+  box-shadow:inset 0 0 0 1px rgba(147,226,255,.15),0 0 13px rgba(18,187,255,.2);
+  color:#e8faff;text-shadow:0 0 10px rgba(38,201,255,.2);
+  font-size:clamp(12px,.92vw,15px);
+}
+/* Technological panel frames – distinctly brighter, straight chamfered look */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card{
+  border:2px solid #20baff;
+  border-radius:5px;
+  background:
+    linear-gradient(115deg,rgba(33,124,190,.15),transparent 34%),
+    linear-gradient(180deg,rgba(18,55,94,.95) 0%,rgba(5,21,43,.96) 18%,rgba(2,12,30,.97) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(2,40,81,.95),inset 0 1px 0 rgba(198,248,255,.31),
+    inset 0 -2px 9px rgba(8,107,205,.17),
+    0 0 12px rgba(0,170,255,.25),0 7px 15px rgba(0,0,0,.45);
+  padding:11px clamp(12px,1vw,18px) 12px;
+  clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card::before{
+  content:'';position:absolute;top:2px;left:12px;width:38%;height:2px;
+  border:0;border-radius:0;
+  background:linear-gradient(90deg,rgba(120,241,255,.96),rgba(120,241,255,0));
+  box-shadow:0 0 8px rgba(57,211,255,.45);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card::after{
+  content:'';position:absolute;top:auto;right:12px;bottom:2px;width:30%;height:2px;
+  border:0;border-radius:0;
+  background:linear-gradient(270deg,rgba(120,241,255,.85),rgba(120,241,255,0));
+  box-shadow:0 0 8px rgba(57,211,255,.4);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card h3{
+  color:#f5fbff;
+  font-weight:800;letter-spacing:.012em;
+  background:linear-gradient(90deg,rgba(64,200,255,.83) 0,rgba(37,154,240,.64) 62%,transparent 100%) left bottom/100% 1px no-repeat;
+  text-shadow:0 0 8px rgba(80,185,255,.18);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card h3 strong{
+  color:#ffcf61;font-size:clamp(17px,1.45vw,23px);font-weight:900;
+  text-shadow:0 0 10px rgba(255,143,21,.4);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-levels b{
+  color:#f4faff;font-size:clamp(18px,1.4vw,23px);text-shadow:0 0 9px rgba(104,202,255,.18);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-levels>div:last-child b{
+  color:#5eff79;text-shadow:0 0 14px rgba(52,255,99,.35);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-chevrons{
+  color:#ffb331;font-size:35px;text-shadow:0 0 15px rgba(255,166,26,.68);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-progress{
+  height:19px;border:1px solid #4badff;border-radius:50px;
+  background:linear-gradient(180deg,#020c1e,#102e4a 52%,#051323);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.73),0 0 0 1px #08162b;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-progress>span{
+  background:
+    repeating-linear-gradient(120deg,transparent 0 15px,rgba(255,249,179,.18) 15px 20px),
+    linear-gradient(180deg,#fff7a0 0%,#ffdb43 34%,#ff9e00 74%,#ef6b00 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,234,.9),0 0 8px rgba(255,174,23,.62),0 0 17px rgba(255,143,23,.32);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-cost-row{
+  color:#ecf4ff;font-size:clamp(12px,.95vw,15px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-cost-row strong{
+  color:#6aff84;text-shadow:0 0 12px rgba(105,255,119,.31);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust{
+  border:1px solid rgba(50,174,255,.74);border-radius:5px;
+  background:linear-gradient(135deg,#103253,#07192f 80%);
+  box-shadow:inset 0 0 0 1px rgba(46,110,179,.25),inset 0 1px 0 rgba(142,224,255,.19);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust img{
+  width:40px;height:40px;min-width:40px;max-width:40px;
+  filter:drop-shadow(0 0 7px rgba(255,175,30,.22));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust small{
+  color:#61ff79;font-size:clamp(13px,1vw,17px);text-shadow:0 0 10px rgba(62,255,100,.28);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials .dbi-material-slot{
+  width:52px;height:52px;min-width:52px;
+  border:1px solid #39b6ff;border-radius:5px;
+  background:linear-gradient(135deg,#15395d,#06162c);
+  box-shadow:inset 0 0 0 1px rgba(130,222,255,.14),0 0 8px rgba(13,136,235,.15);
+}
+/* Jewel-like large action; original click listener/disabled state remain untouched */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action{
+  min-width:245px;min-height:61px;padding:12px 40px;border:2px solid #ffda64;border-radius:0;
+  background:
+    linear-gradient(90deg,rgba(255,237,142,.38) 0 1.5%,transparent 2%,transparent 98%,rgba(255,237,142,.38) 99%),
+    linear-gradient(180deg,#ffe36b 0%,#ffb524 10%,#ff8607 48%,#f77100 64%,#bd4100 100%);
+  clip-path:polygon(20px 0,calc(100% - 20px) 0,100% 50%,calc(100% - 20px) 100%,20px 100%,0 50%);
+  color:#fffdf6;font-size:clamp(23px,1.9vw,30px);
+  text-shadow:0 2px 2px #8e3c00,0 0 12px rgba(255,247,188,.28);
+  box-shadow:inset 0 2px 0 #fff7c7,inset 0 -3px 0 #943000,0 0 18px rgba(255,116,6,.43);
+  filter:drop-shadow(0 0 10px rgba(255,130,10,.45));
+  transition:filter .15s ease,transform .15s ease;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action::before{
+  content:'';position:absolute;inset:4px;
+  clip-path:polygon(17px 0,calc(100% - 17px) 0,100% 50%,calc(100% - 17px) 100%,17px 100%,0 50%);
+  border:1px solid rgba(255,231,160,.7);border-radius:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action:enabled:hover{
+  filter:brightness(1.08) drop-shadow(0 0 14px rgba(255,167,40,.73));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-action:disabled{
+  filter:saturate(.65) drop-shadow(0 2px 4px rgba(0,0,0,.2));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-work #dbiUpgradeStatus{
+  color:#b6dcf5;font-size:12px;text-shadow:0 1px 4px #031020;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-success #dbiUpgradeStatus{
+  color:#7fff8d;text-shadow:0 0 8px rgba(62,255,112,.3);
+}
+/* right panel stays the same inventory with real tabs, slots and tooltip hooks */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv{
+  background:linear-gradient(180deg,#112e50,#071b35 25%,#05152a 100%);
+  box-shadow:inset 0 0 0 2px rgba(22,155,241,.3),0 0 16px rgba(17,140,238,.18);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv h3{
+  color:#f5fcff;
+  background:linear-gradient(90deg,#39baff,rgba(61,176,255,.54) 48%,transparent) left bottom/100% 2px no-repeat;
+  text-shadow:0 0 11px rgba(45,196,255,.3);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv h3::before{color:#58ddff;text-shadow:0 0 12px rgba(85,219,255,.6)}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-tabs button{
+  border:1px solid #356fa7;border-radius:4px;
+  background:linear-gradient(180deg,#1b5081,#09213e);
+  box-shadow:inset 0 1px 0 rgba(190,239,255,.2);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-tabs button.active{
+  border:1px solid #ffd365;border-radius:4px;
+  background:linear-gradient(180deg,#ffd466,#f38a1c 50%,#b94b05);
+  box-shadow:inset 0 1px 0 rgba(255,253,214,.89),0 0 12px rgba(255,147,21,.34);
+  color:#fff8ea;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-scroll{
+  background:linear-gradient(180deg,#061629,#081c35);
+  border:1px solid rgba(29,127,209,.4);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid>.inv-cell{
+  border-color:#39739c;
+  background:linear-gradient(180deg,#0c3050,#071a2c);
+  box-shadow:inset 0 1px 0 rgba(117,194,244,.18);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid>.inv-cell:hover{
+  border-color:#49d9ff;box-shadow:inset 0 0 8px rgba(58,185,255,.12),0 0 9px rgba(41,179,255,.16);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-actions button{
+  border:1px solid #498dba;border-radius:4px;
+  background:linear-gradient(180deg,#1d5a8b,#082641);
+  box-shadow:inset 0 1px 0 rgba(176,237,255,.23);
+}
+@media (max-width:710px){
+  .game.atlas-app .atlas-view #pageBody > .dbi-upgrade::before{top:66px}
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-action{min-width:220px;max-width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-float{animation:none;transform:none;will-change:auto}
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-success .dbi-upgrade-slot::after{animation:none;opacity:.12}
+}
+/* readability polish at desktop density */
+.game.atlas-app .atlas-view #pageBody > .dbi-upgrade{
+  background-image:
+    linear-gradient(180deg,rgba(3,11,27,.10),rgba(4,12,28,.20) 40%,rgba(2,10,22,.31)),
+    url('../assets/ui/upgrade/upgrade-laboratory.webp');
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card h3{
+  font-size:clamp(16px,1.21vw,19px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-dust b{
+  font-size:clamp(11px,.85vw,13px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-levels small{
+  font-size:clamp(11px,.8vw,13px);
+}
+
+/* === ULEPSZANIE v3.1: trzy jednakowe kafelki materiałów ===
+   Wyłącznie wygląd; nie zmienia HTML, liczników, tooltipów ani działania ulepszania. */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-material-list{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:10px;
+  width:100%;
+  min-width:0;
+  flex-wrap:nowrap;
+}
+/* Dwa istniejące sloty zachowują swoje elementy i zdarzenia,
+   ale są rozkładane w tej samej siatce co smoczy pył. */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials{
+  display:contents;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust,
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  height:70px;
+  min-height:70px;
+  margin:0;
+  justify-self:stretch;
+  overflow:hidden;
+  border-radius:5px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust{
+  display:flex;
+  flex:initial;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  padding:7px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust img{
+  flex:0 0 auto;
+  width:38px;
+  height:38px;
+  min-width:38px;
+  max-width:38px;
+  object-fit:contain;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust span{
+  min-width:0;
+  overflow-wrap:anywhere;
+  text-align:left;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot{
+  display:grid;
+  flex:initial;
+  place-items:center;
+  padding:5px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot img{
+  display:block;
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+}
+@media(max-width:520px){
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-material-list{gap:6px}
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust,
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot{
+    height:82px;min-height:82px;
+  }
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust{
+    flex-direction:column;
+    gap:3px;
+    padding:5px 3px;
+    text-align:center;
+  }
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust img{
+    width:31px;height:31px;min-width:31px;max-width:31px;
+  }
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust span{
+    align-items:center;
+    text-align:center;
+    font-size:10px;
+  }
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust b{font-size:10px}
+}
+
+
+/* === ULEPSZANIE v3.2: poprawa 3 równych kafelków i ikon materiałów ===
+   Tylko style sekcji Ulepszanie. Żadnych zmian w JS, ekwipunku i tooltipach.
+   Uwaga: grafika kapsuły/tła są dołączone w tej paczce. */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-material-list{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:10px;
+  min-width:0;
+  width:100%;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials{
+  display:contents;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust,
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot{
+  box-sizing:border-box;
+  width:100%;min-width:0;max-width:100%;
+  height:76px;min-height:76px;max-height:76px;
+  margin:0;padding:7px;
+  border-radius:7px;
+  overflow:hidden;
+  justify-self:stretch;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust{
+  display:flex;flex:none;flex-direction:row;
+  align-items:center;justify-content:center;gap:8px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust img{
+  display:block;flex:0 0 auto;
+  width:38px;height:38px;min-width:38px;max-width:38px;
+  max-height:38px;object-fit:contain;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust span{
+  display:flex;min-width:0;flex-direction:column;gap:3px;
+  align-items:flex-start;justify-content:center;
+  overflow-wrap:anywhere;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot{
+  position:relative;display:flex;flex:none;
+  flex-direction:row;align-items:center;justify-content:center;
+  padding:8px 12px 15px;
+}
+/* W kodzie gry obrazy pozostałych materiałów mają style inline width/height:100%.
+   Ograniczamy WYŁĄCZNIE te obrazy do wielkości ikon, aby nie rozpychały kafelków. */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot > img{
+  display:block;
+  position:static;
+  flex:0 0 auto;
+  box-sizing:content-box;
+  width:46px !important;height:46px !important;
+  min-width:0 !important;min-height:0 !important;
+  max-width:46px !important;max-height:46px !important;
+  padding:0 !important;margin:0 !important;
+  object-fit:contain !important;
+  object-position:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot > span{
+  z-index:2;max-width:100%;overflow:hidden;
+  font:700 11px/1.1 system-ui,sans-serif !important;
+  border-radius:3px;padding:2px 5px !important;
+  white-space:nowrap;
+}
+@media(max-width:520px){
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-material-list{gap:6px}
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust,
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot{
+    height:86px;min-height:86px;max-height:86px;padding:5px 3px 15px;
+  }
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust{
+    flex-direction:column;gap:3px;padding:5px 3px;
+  }
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust img{
+    width:30px;height:30px;min-width:30px;max-width:30px;max-height:30px;
+  }
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-dust span{
+    align-items:center;text-align:center;font-size:10px;
+  }
+  .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-materials .dbi-material-slot > img{
+    width:38px !important;height:38px !important;
+    max-width:38px !important;max-height:38px !important;
+  }
+}
+
+
+/* === ULEPSZANIE v6 — dopracowanie wyłącznie warstwy prezentacji ===
+   Zachowane: szansa, materiały, ceny, wybór, przeciąganie i wszystkie tooltipy. */
+/* Tabliczka mechaniczna na przednim cokole kapsuły (poziom nadal podaje JS). */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-rank{
+ z-index:5;position:absolute;left:21%;right:21%;bottom:7.8%;
+ min-height:35px;height:auto;display:flex;justify-content:center;align-items:center;
+ padding:7px 19px;margin:0;border:1px solid #6ae7ff;
+ border-radius:7px;
+ background:linear-gradient(180deg,#426d88 0%,#112b48 15%,#05101f 54%,#112742 88%,#34739a 100%);
+ box-shadow:inset 0 0 0 2px #06162a,inset 0 1px 0 #ddf5ff8a,inset 0 -1px 0 #42c5ffa8,0 0 0 2px #071422e0,0 5px 12px #000c,0 0 15px #40b4ff45;
+ color:#fff0c9;font:900 clamp(15px,1.3vw,20px)/1 system-ui,sans-serif;
+ letter-spacing:.02em;white-space:nowrap;text-shadow:0 0 10px #ff9b35bd,0 1px 3px #000;
+ pointer-events:none;transform:translateZ(0);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-rank::before,
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-rank::after{
+ content:'';position:absolute;top:50%;width:5px;height:5px;margin-top:-3px;
+ border-radius:50%;background:#f9b866;border:1px solid #dbf7ff;
+ box-shadow:0 0 6px #ffa736aa,inset 0 1px 1px #fff6d1;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-rank::before{left:7px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-target .dbi-upgrade-rank::after{right:7px}
+
+/* Ikony sekcji jako prawdziwe grafiki wektorowe, nie emoji. */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card h3{gap:10px;align-items:center;min-height:28px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-card h3::before{
+ content:'';display:block;flex:0 0 27px;width:27px;height:27px;
+ background-position:center;background-size:contain;background-repeat:no-repeat;
+ filter:drop-shadow(0 0 5px #49cfff69);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params h3::before{background-image:url('../assets/ui/upgrade/icon-parameters.svg')}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-chance h3::before{background-image:url('../assets/ui/upgrade/icon-chance.svg')}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-cost h3::before{background-image:url('../assets/ui/upgrade/icon-cost.svg')}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card h3::before{background-image:url('../assets/ui/upgrade/icon-materials.svg')}
+
+/* Parametry wyłącznie źródłowego przedmiotu, porównanie +N do +N+1. */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-params-levels{
+ display:flex;justify-content:space-between;align-items:center;gap:10px;
+ padding:0 0 8px;margin:0 0 5px;border-bottom:1px solid #2672a35c;
+ color:#abc6dd;font:700 11px/1.3 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-params-levels strong{
+ color:#ffd07d;font:800 13px/1 system-ui,sans-serif;white-space:nowrap;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-list{
+ display:flex;flex-direction:column;gap:0;min-width:0;max-height:255px;overflow-y:auto;
+ scrollbar-width:thin;scrollbar-color:#386d96 #091529;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-row{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(40px,auto) 19px minmax(40px,auto);
+ align-items:center;gap:6px;min-height:30px;padding:5px 1px;
+ border-bottom:1px solid #31628b33;
+ font:700 clamp(11px,.8vw,13px)/1.22 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-row:last-child{border-bottom:0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-name{
+ min-width:0;color:#e8f1fc;font-weight:600;overflow-wrap:anywhere;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-before{
+ color:#c7dcf0;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-arrow{
+ color:#ffc25c;font:900 20px/1 system-ui,sans-serif;text-align:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-after{
+ color:#70ff8d;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;
+ text-shadow:0 0 8px #4bff8030;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-params-empty{
+ padding:12px 1px;color:#a5c1d9;font:600 12px/1.45 system-ui,sans-serif;
+}
+
+/* Trzy równe i kompletne karty — każda: ikona + nazwa + licznik. */
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-material-list{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;
+ align-items:stretch;width:100%;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile{
+ box-sizing:border-box;display:flex;flex:1 1 0;position:relative;isolation:isolate;
+ align-items:center;justify-content:flex-start;flex-direction:row;gap:10px;
+ width:100%;min-width:0;max-width:none;
+ height:80px;min-height:80px;max-height:none;
+ padding:9px 9px;overflow:hidden;
+ border:1px solid #34baff;border-radius:7px;
+ background:linear-gradient(135deg,#103253,#071a30 84%);
+ box-shadow:inset 0 1px 0 #9adeff2c,inset 0 0 0 1px #0a42644d,0 0 8px #138ad51b;
+ text-align:left;color:#e9f5ff;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile > img{
+ position:static;box-sizing:border-box;display:block;flex:0 0 48px;
+ width:48px !important;height:48px !important;min-width:48px !important;min-height:48px !important;
+ max-width:48px !important;max-height:48px !important;
+ padding:0 !important;margin:0 !important;object-fit:contain !important;
+ filter:drop-shadow(0 0 6px #ffbb4038);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile > .dbi-upgrade-mat-meta{
+ position:static!important;z-index:1;box-sizing:border-box;
+ display:flex;flex:1 1 auto;min-width:0;max-width:100%;flex-direction:column;
+ align-items:flex-start;justify-content:center;gap:5px;
+ width:auto;height:auto;padding:0!important;margin:0;
+ border:0;border-radius:0;background:none!important;box-shadow:none;
+ color:#e9f5ff;font:600 12px/1.2 system-ui,sans-serif!important;
+ white-space:normal;text-align:left;overflow:visible;overflow-wrap:anywhere;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile .dbi-upgrade-mat-meta b{
+ display:block;min-width:0;color:#f0f7ff;font:700 clamp(10px,.8vw,13px)/1.18 system-ui,sans-serif;
+ overflow-wrap:anywhere;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile .dbi-upgrade-mat-meta small{
+ display:block;color:#7dff8f;font:800 clamp(12px,.9vw,15px)/1 system-ui,sans-serif;
+ font-variant-numeric:tabular-nums;text-shadow:0 0 8px #52e87526;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile .dbi-upgrade-mat-meta small.is-missing{
+ color:#ffad96;text-shadow:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-no-icon{
+ display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;color:#5482a3;font-size:25px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-blank{
+ border-color:#28567a;color:#6c8ca8;opacity:.75;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-blank b,
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-blank small{color:#a7bfd0}
+@media(max-width:1420px){
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile{
+   flex-direction:column;align-items:center;justify-content:center;gap:3px;
+   height:103px;min-height:103px;padding:6px 4px;text-align:center;
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile>img{
+   flex-basis:40px;width:40px!important;height:40px!important;
+   min-width:40px!important;min-height:40px!important;max-width:40px!important;max-height:40px!important;
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile>.dbi-upgrade-mat-meta{
+   flex:0 0 auto;align-items:center;text-align:center;gap:3px;
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile .dbi-upgrade-mat-meta b{
+   font-size:clamp(10px,.9vw,12px);text-align:center;
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile .dbi-upgrade-mat-meta small{font-size:12px}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-no-icon{flex-basis:30px;height:30px;font-size:21px}
+}
+@media(max-width:520px){
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-material-list{gap:6px}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile{
+  height:110px;min-height:110px;max-height:none;padding:5px 3px;
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-mat-tile>img{
+  flex-basis:33px;width:33px!important;height:33px!important;
+  min-width:33px!important;min-height:33px!important;max-width:33px!important;max-height:33px!important;
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-row{grid-template-columns:minmax(0,1fr) auto 16px auto;gap:4px}
+ .game.atlas-app .atlas-view #pageBody .dbi-upgrade-params .dbi-upgrade-stat-row{font-size:10px}
+}
+
+/* =====================================================================
+   ASTRALNI WOJOWNICY — KOWALSTWO: NOWA SZATA GRAFICZNA v1
+   ONLY presentation. Scope: #pageBody > .dbi-smith.
+   Existing item tooltip, click/drop handlers, recipes, EXP and inventory
+   are not modified. Added after the existing v6 stylesheet.
+   ===================================================================== */
+.game.atlas-app .atlas-view #pageBody > .dbi-smith,
+.game.atlas-app .atlas-view #pageBody > .dbi-smith *,
+.game.atlas-app .atlas-view #pageBody > .dbi-smith *::before,
+.game.atlas-app .atlas-view #pageBody > .dbi-smith *::after{box-sizing:border-box}
+
+.game.atlas-app .atlas-view #pageBody > .dbi-smith{
+ --smith-gold:#ffbd68;
+ --smith-line:#4bbfff;
+ --smith-ink:#e9f3fc;
+ isolation:isolate;
+ position:relative;
+ width:100%;max-width:none;min-width:0;min-height:820px;
+ margin:0;padding:8px clamp(10px,1.35vw,22px) 22px;
+ border:16px solid transparent;
+ border-image:url('../assets/ui/dojo-controls/planner-frame-clean.webp') 16 stretch;
+ border-radius:0;
+ color:#e8f2fd;
+ background:
+  radial-gradient(ellipse at 45% 0%,rgba(24,111,189,.26) 0%,transparent 44%),
+  radial-gradient(ellipse at 8% 58%,rgba(20,98,149,.14),transparent 37%),
+  linear-gradient(145deg,#12253b,#09192d 60%,#081725);
+ box-shadow:inset 0 0 50px rgba(6,16,31,.4);
+ overflow:visible;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-header{
+ display:flex;align-items:center;justify-content:flex-start;gap:10px;
+ margin:0 0 14px;padding:3px 5px 12px;
+ border:0;
+ border-bottom:2px solid transparent;
+ background:linear-gradient(90deg,#f5a44e,#b87938 48%,transparent 88%) left bottom/100% 2px no-repeat;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-header .dbi-smith-anvil{
+ display:grid;place-items:center;flex:none;
+ width:39px;height:39px;font-size:25px;line-height:1;
+ border:1px solid #5b9dca;border-radius:7px;
+ background:linear-gradient(145deg,#1d476b,#0c233b);
+ box-shadow:inset 0 0 0 1px rgba(131,207,255,.16),0 0 15px rgba(43,141,217,.2);
+ filter:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-header h2{
+ margin:0;
+ color:#fff0d5;
+ font:700 clamp(24px,2.15vw,35px)/1.15 Georgia,serif;
+ text-shadow:0 1px 2px rgba(0,0,0,.65);
+ letter-spacing:.01em;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-main{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(350px,30%);
+ gap:clamp(12px,1.3vw,21px);align-items:start;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-work{
+ min-width:0;display:grid;align-content:start;gap:13px;
+}
+/* Preserve the genuine carved-corner frame used elsewhere in the game. */
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-panel{
+ position:relative;min-width:0;
+ margin:0;padding:9px clamp(9px,.95vw,15px) 13px;
+ border:11px solid transparent;
+ border-image:url('../assets/ui/dojo-controls/planner-frame-clean.webp') 16 stretch;
+ border-radius:0;
+ background:
+  radial-gradient(ellipse at 7% -45%,rgba(58,147,221,.19),transparent 65%),
+  linear-gradient(130deg,#162c44,#0b1b30 78%,#0c2438);
+ box-shadow:none;
+ overflow:visible;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-panel > h3{
+ display:flex;align-items:center;gap:10px;
+ margin:0 0 13px;padding:1px 3px 10px;
+ border:0;
+ background:linear-gradient(90deg,#e8a04f,#ad7133 52%,transparent) left bottom/100% 1px no-repeat;
+ color:#fff0d7;
+ font:700 clamp(18px,1.5vw,24px)/1.2 Georgia,serif;
+ text-shadow:none;
+}
+/* The title h3 contains an existing anvil emoji; leave it intact. */
+
+/* Level and milestone card. */
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-level-line{
+ display:flex;align-items:center;gap:clamp(10px,1vw,17px);
+ min-width:0;margin:0 0 16px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-level{
+ display:inline-flex;align-items:center;justify-content:center;flex:none;
+ min-height:44px;margin:0;padding:10px 14px;
+ border:1px solid #c49354;border-radius:6px;
+ background:linear-gradient(150deg,#4a3729,#261f26 70%,#152538);
+ color:#ffcf84;
+ font:700 clamp(12px,.94vw,15px)/1.25 Georgia,serif;
+ white-space:nowrap;
+ box-shadow:inset 0 0 0 1px rgba(241,173,83,.17),0 0 14px rgba(233,145,46,.12);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-milestones{
+ display:flex;gap:clamp(5px,.65vw,10px);
+ position:relative;align-items:center;justify-content:space-between;
+ flex:1;min-width:0;margin:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-milestones::before{
+ content:"";position:absolute;left:4%;right:4%;top:50%;
+ border-top:2px solid #b78b51;box-shadow:0 0 6px rgba(240,158,59,.2);
+ pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-milestones button{
+ position:relative;display:grid;place-items:center;flex:0 1 46px;
+ min-width:31px;min-height:35px;padding:6px 6px;
+ border:1px solid #628dae;border-radius:5px;
+ background:linear-gradient(170deg,#253e55,#10263b);
+ box-shadow:inset 0 0 0 1px rgba(9,27,44,.86),0 2px 6px #0006;
+ color:#ead7b8;
+ font:700 clamp(11px,.9vw,14px)/1 Georgia,serif;
+ text-align:center;cursor:help;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-milestones button.is-earned{
+ border-color:#f1b86c;
+ background:linear-gradient(180deg,#d9913b,#824516 82%);
+ color:#fff7e8;
+ box-shadow:inset 0 0 0 1px rgba(255,222,147,.53),0 0 12px rgba(245,173,70,.28);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-milestones button:focus-visible{outline:2px solid #ffe2ab;outline-offset:3px}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-progress-line{
+ display:flex;align-items:center;gap:12px;
+ margin:0;color:#cbddec;font:700 clamp(11px,.9vw,13px)/1.25 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-progress-line>strong{
+ flex:none;color:#c9dceb;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-progress{
+ position:relative;flex:1;min-width:0;height:21px;
+ border:1px solid #6289a6;border-radius:8px;
+ background:linear-gradient(#061426,#102a43);
+ box-shadow:inset 0 2px 6px #0009;
+ overflow:hidden;text-align:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-progress>span{
+ height:100%;border-radius:7px;
+ background:linear-gradient(180deg,#fff2af,#fbbf56 48%,#d97719);
+ box-shadow:inset 0 1px 0 rgba(255,254,211,.65),0 0 12px rgba(245,161,54,.34);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-progress>small{
+ display:grid;place-items:center;color:#fff6e5;font:700 11px/1 system-ui,sans-serif;
+ text-shadow:0 1px 3px #000;
+}
+
+/* Crafting: controls > three material cards > working preview. */
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-create{
+ display:grid;
+ grid-template-columns:minmax(145px,.78fr) minmax(210px,1.1fr) minmax(165px,.88fr);
+ gap:clamp(10px,1vw,17px);align-items:start;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-selects{
+ display:grid;gap:10px;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-selects select{
+ display:block;width:100%;min-width:0;min-height:44px;
+ padding:9px 32px 9px 12px;
+ border:1px solid #6b8da8;border-radius:6px;
+ background:linear-gradient(180deg,#243e59,#10283e);
+ color:#f4e7d2;font:700 12px/1.2 system-ui,sans-serif;
+ box-shadow:inset 0 0 0 1px rgba(12,30,49,.85);
+ cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-selects option{background:#14283a;color:#f4e7d2}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-selects select:focus-visible{outline:2px solid #ffc980;outline-offset:2px}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-materials{
+ display:flex;align-items:stretch;justify-content:space-between;
+ flex-wrap:nowrap;gap:8px;min-width:0;width:100%;margin:0 0 12px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-materials>div{
+ flex:1 1 0;min-width:0;max-width:none;
+ display:flex;flex-direction:column;align-items:center;gap:6px;
+ padding:7px 5px 6px;
+ border:1px solid #607f99;border-radius:5px;
+ background:linear-gradient(180deg,#1f3751,#0f2237 85%);
+ box-shadow:inset 0 0 0 1px rgba(10,25,42,.6);
+ text-align:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-slot{
+ display:grid;place-items:center;flex:none;
+ width:min(100%,63px);height:63px;min-width:0;min-height:0;
+ padding:3px;margin:0;
+ border:1px solid #6d93b1;border-radius:5px;
+ background:radial-gradient(ellipse at 50% 40%,rgba(73,136,192,.2),transparent 75%),linear-gradient(#112c47,#071b30);
+ box-shadow:inset 0 0 0 1px rgba(9,24,39,.78);
+ overflow:hidden;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-slot .dbi-item-image,
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-slot img{
+ display:block;max-width:100%;max-height:100%;width:auto;height:auto;
+ object-fit:contain;min-width:0;min-height:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-slot .dbi-enhance-glow{
+ display:grid;place-items:center;min-width:0;min-height:0;width:100%;height:100%;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-muted{
+ min-width:0;margin:0;
+ color:#bed0e1;
+ font:500 clamp(10px,.77vw,12px)/1.4 system-ui,sans-serif;
+ overflow-wrap:anywhere;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-create .dbi-smith-materials>div .dbi-smith-muted,
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-work .dbi-smith-materials>div .dbi-smith-muted{
+ display:block;width:100%;text-align:center!important;
+ color:#e9e8d9;font-weight:600;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-create>div:nth-child(2) > .dbi-smith-muted{
+ margin:9px 0;line-height:1.75;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-create .dbi-gold-icon,
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-work .dbi-gold-icon{
+ width:16px;height:16px;vertical-align:middle;margin-right:4px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-disabled,
+.game.atlas-app .atlas-view #pageBody .dbi-smith .gold-button,
+.game.atlas-app .atlas-view #pageBody .dbi-smith .ghost-button{
+ min-height:39px;
+ padding:9px 14px;
+ border:1px solid #e7ad5c;border-radius:6px;
+ background:linear-gradient(180deg,#eda64a,#bd6119 72%,#8e410f);
+ box-shadow:inset 0 0 0 1px rgba(250,207,134,.56),0 3px 11px rgba(0,0,0,.35);
+ color:#fff3de;
+ font:700 13px/1.2 Georgia,serif;
+ text-shadow:0 1px 2px #44240d;
+ cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-disabled:disabled,
+.game.atlas-app .atlas-view #pageBody .dbi-smith button:disabled{
+ opacity:.5;filter:saturate(.55);cursor:not-allowed;box-shadow:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .gold-button:not(:disabled):hover,
+.game.atlas-app .atlas-view #pageBody .dbi-smith .ghost-button:not(:disabled):hover{filter:brightness(1.09)}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .ghost-button{
+ border-color:#668ba8;background:linear-gradient(180deg,#24425d,#12283c);
+ box-shadow:inset 0 0 0 1px rgba(114,171,206,.16),0 3px 9px rgba(0,0,0,.3);
+ color:#e9f0f4;text-shadow:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview-area{
+ min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview{
+ display:grid;place-items:center;
+ min-width:0;min-height:190px;
+ padding:13px;border:1px solid #6d91ad;border-radius:6px;
+ background:radial-gradient(ellipse at 50% 60%,rgba(53,145,200,.2),transparent 55%),linear-gradient(145deg,#1b3349,#071827 83%);
+ color:#bccede;
+ box-shadow:inset 0 0 0 1px rgba(10,30,49,.76);
+ text-align:center;font:600 12px/1.5 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview .dbi-item-image,
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview img{
+ max-height:115px;max-width:100%;object-fit:contain;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview-buttons{
+ display:flex;gap:7px;min-width:0;margin-top:9px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview-buttons button{
+ flex:1;min-width:0;padding-inline:4px;
+}
+
+/* Quality upgrades; selected item, materials and upgrade action. */
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality{
+ display:flex;flex-wrap:nowrap;align-items:stretch;gap:clamp(12px,1vw,18px);min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-target{
+ display:grid;place-items:center;flex:0 0 clamp(145px,14vw,190px);
+ width:clamp(145px,14vw,190px);min-height:190px;
+ padding:15px;
+ border:1px solid #b18b53;border-radius:7px;
+ background:
+  radial-gradient(ellipse at 50% 64%,rgba(230,158,65,.25),transparent 58%),
+  radial-gradient(ellipse at 50% 26%,rgba(55,139,215,.15),transparent 75%),
+  linear-gradient(180deg,#162d43,#081729 82%);
+ box-shadow:inset 0 0 0 2px rgba(8,24,39,.86),0 0 13px rgba(231,148,59,.14);
+ color:#c9d8e3;
+ text-align:center;cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-target.drop-target{
+ outline:2px solid #ffc971;outline-offset:2px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-target .dbi-item-image,
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-target img{
+ max-width:100%;max-height:136px;object-fit:contain;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-work{
+ flex:1 1 auto;min-width:0;align-self:stretch;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-work .dbi-smith-materials{
+ gap:8px;justify-content:flex-start;margin:0 0 12px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-work .dbi-smith-materials>div{
+ min-height:123px;justify-content:flex-start;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-work>.dbi-smith-muted{
+ display:block;margin:0 0 13px;line-height:1.8;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith #dbiSmithUpgrade{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:min(100%,245px)!important;min-height:43px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-status{
+ min-height:18px;margin:12px 0 0;
+ color:#b6cedf;font:500 12px/1.45 system-ui,sans-serif;
+}
+
+/* Inventory: keep original grid, drag, tabs and event bindings untouched. */
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory{
+ width:100%;max-width:none;min-width:0;
+ padding:9px 10px 13px;
+ border-width:12px;
+ background:linear-gradient(155deg,#172d43,#0b1d30 81%,#122638);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory h3{
+ margin:0 0 10px;padding:2px 4px 9px;
+ color:#fff0d6;
+ font:700 clamp(19px,1.45vw,24px)/1.1 Georgia,serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-tabs{
+ display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:0 0 9px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-tab{
+ display:grid;place-items:center;min-width:0;min-height:33px;padding:7px 0;
+ border:1px solid #607f99;border-radius:5px;
+ background:linear-gradient(180deg,#253f57,#10263b);
+ color:#e8eff6;font:700 12px/1 Georgia,serif;
+ box-shadow:inset 0 0 0 1px rgba(6,18,29,.6);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-tab.active{
+ border-color:#ffb669;
+ background:linear-gradient(180deg,#e6a04a,#9f511d);
+ color:#fff5da;box-shadow:inset 0 0 0 1px rgba(255,230,164,.34);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-scroll{
+ min-width:0;min-height:0;width:100%;height:auto!important;max-height:none!important;
+ overflow:visible!important;
+ background:linear-gradient(#102239,#0a192a);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-grid{
+ --dbi-gap:4px;
+ display:grid;
+ grid-template-columns:repeat(6,minmax(0,1fr));
+ gap:var(--dbi-gap);
+ margin:0;width:100%;max-width:100%;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-cell{
+ border-color:#4f6f88;
+ background:linear-gradient(160deg,#15304a,#0d2337 76%,#091b2e);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-cell:hover{border-color:#eba75d}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-actions{
+ display:flex;gap:6px;min-width:0;margin:9px 0 0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-actions button{
+ flex:1;min-width:0;min-height:34px;padding:7px 3px;
+ border:1px solid #6a8da5;border-radius:5px;
+ background:linear-gradient(180deg,#26455c,#10283f);
+ color:#e5ecf4;font:700 12px/1 Georgia,serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory .inv-actions button:hover{border-color:#edb56a}
+
+@media(max-width:1470px){
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-create{
+   grid-template-columns:minmax(145px,.85fr) minmax(210px,1.15fr);
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview-area{grid-column:1/-1}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview{min-height:130px}
+}
+@media(max-width:1180px){
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-main{grid-template-columns:minmax(0,1fr)}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-create{
+  grid-template-columns:minmax(165px,.75fr) minmax(210px,1.2fr) minmax(170px,.8fr)
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview-area{grid-column:auto}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory{
+  justify-self:center;width:min(100%,530px)
+ }
+}
+@media(max-width:830px){
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-create{
+   grid-template-columns:minmax(145px,.85fr) minmax(210px,1.15fr)
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview-area{grid-column:1/-1}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-level-line{flex-wrap:wrap}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-milestones{flex-basis:100%}
+}
+@media(max-width:620px){
+ .game.atlas-app .atlas-view #pageBody > .dbi-smith{padding:7px 8px 14px;border-width:12px;border-image-slice:16;min-height:0}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-panel{border-width:9px;border-image-slice:16;padding:7px 7px 10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-header h2{font-size:26px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-level-line{gap:10px;margin-bottom:12px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-milestones{gap:3px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-milestones button{min-width:27px;min-height:33px;padding:4px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-progress-line{flex-wrap:wrap;gap:7px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-progress{flex-basis:100%}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-create{grid-template-columns:minmax(0,1fr);gap:12px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-preview-area{grid-column:auto}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality{flex-wrap:wrap}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-target{width:100%;flex-basis:100%;min-height:165px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-work{flex-basis:100%}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-slot{height:56px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-quality-work .dbi-smith-materials>div{min-height:113px}
+ .game.atlas-app .atlas-view #pageBody .dbi-smith .dbi-smith-inventory{padding:7px 6px 10px}
+}
+
+
+/* === KOWALSTWO V2: wyłącznie oprawa nowego widoku; wszystkie mechaniki zachowane. === */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 *,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 *::before,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 *::after{box-sizing:border-box}
+.game.atlas-app .atlas-view #pageBody>.dbi-forge-v2{
+ --forge-red:#ff4c4f;--forge-blue:#45d7ff;--forge-amber:#ffd17d;
+ position:relative;isolation:isolate;min-height:0;width:100%;max-width:none;
+ margin:0;padding:7px clamp(9px,1vw,18px) 20px;
+ border:15px solid transparent;border-image:url('../assets/ui/dojo-controls/planner-frame-clean.webp') 16 stretch;
+ border-radius:0;overflow:visible;color:#edf4ff;
+ background:
+  linear-gradient(180deg,#07132391 5%,#06101bf0 100%),
+  url('../assets/ui/forge/forge-laboratory.webp') center top / cover no-repeat,
+  linear-gradient(150deg,#090f1f,#0b1a33 55%,#180b18);
+ box-shadow:inset 0 0 0 1px #3c6e9a4a;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-header{
+ display:flex;align-items:center;gap:12px;min-width:0;
+ margin:0 0 9px;padding:5px 13px 10px;
+ background:linear-gradient(90deg,#ff40429e,#ff3d3d36 41%,transparent 92%) left bottom/100% 2px no-repeat;
+ border:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-header .dbi-smith-anvil{
+ display:grid;place-items:center;flex:none;width:47px;height:47px;
+ border:1px solid #ffa86a;border-radius:10px;
+ background:linear-gradient(145deg,#80202b,#250f1f);
+ color:#ffe3ac;font:900 28px/1 Georgia,serif;text-shadow:0 0 12px #ff9d599f;
+ box-shadow:inset 0 0 0 1px #ffd09f38,0 0 17px #ef4c5752;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-header h2{
+ margin:0 0 3px;text-align:left;color:#fff1e5;
+ font:800 clamp(25px,2vw,32px)/1 system-ui,sans-serif;
+ text-shadow:0 0 18px #ff5e6d4c,0 2px 2px #080812;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-header p{
+ margin:0;color:#b9cce4;font:600 clamp(10px,.8vw,13px)/1.3 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tabs{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+ width:100%;margin:0 0 13px;padding:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tab{
+ min-width:0;min-height:52px;display:flex;justify-content:center;align-items:center;gap:12px;
+ padding:8px 14px;border:1px solid #76a7d7;border-radius:5px;
+ background:linear-gradient(180deg,#1e3550,#0e1c32 57%,#0a1223);
+ box-shadow:inset 0 1px 0 #d1f4ff55,inset 0 0 0 2px #071526,0 3px 11px #020a16cf;
+ color:#e5edfd;font:800 clamp(13px,1.22vw,19px)/1.1 system-ui,sans-serif;
+ text-shadow:0 1px 3px #071421;cursor:pointer;transition:filter .16s,border-color .16s;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tab>span{font:700 29px/1 Georgia,serif;color:#7be2ff;text-shadow:0 0 10px #00bfff73}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tab.is-active{
+ border-color:#ff8d7c;background:linear-gradient(180deg,#a2212f,#6c1826 52%,#2c1022);
+ box-shadow:inset 0 1px 0 #fff4c1aa,inset 0 0 0 2px #230e1b,0 0 17px #ff40476b,0 3px 12px #000b;
+ color:#fff8eb;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tab.is-active>span{color:#ffe4a4;text-shadow:0 0 10px #ffac5e8a}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tab:not(.is-active):hover{filter:brightness(1.17);border-color:#bce7ff}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tab:focus-visible{outline:2px solid #ffe1b0;outline-offset:3px}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-progress{
+ position:relative;margin:0 0 13px;padding:11px 15px 12px;
+ border:1px solid #63afe9;border-radius:5px;
+ background:linear-gradient(130deg,#0b223bfa,#09162beb 55%,#0b1629fa);
+ box-shadow:inset 0 0 0 1px #2c78a960,0 0 17px #258fdc21,0 6px 13px #0008;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-progress::before{
+ content:"";position:absolute;left:10px;right:10px;top:-2px;height:2px;
+ background:linear-gradient(90deg,transparent,#4fe4ff 17%,#ff5c5d 75%,transparent);pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-level-line{
+ display:flex;align-items:center;gap:18px;margin:0 0 10px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-level{
+ padding:7px 12px;flex:none;white-space:nowrap;
+ border:1px solid #f0b65c;border-radius:5px;
+ background:linear-gradient(180deg,#243d53,#102136);color:#ffce78;
+ font:800 13px/1.1 system-ui,sans-serif;box-shadow:0 0 7px #e3ac4651;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-milestones{
+ flex:1;gap:clamp(2px,.6vw,8px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-milestones::before{
+ border-top:2px solid #f9bb64;top:50%;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-milestones button{
+ min-width:33px;min-height:27px;padding:3px 6px;
+ border:1px solid #ffc26b;border-radius:4px;background:#11253b;color:#ffe1a0;
+ box-shadow:inset 0 0 0 1px #ffe4a318,0 0 9px #ffac4a5e;
+ font:800 12px/1 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-milestones button.is-earned{
+ color:#261208;background:#ffc35c;border-color:#fff2cb;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-progress-line{gap:10px;font:600 11px/1.2 system-ui,sans-serif}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-progress-line>strong{white-space:nowrap;color:#ddeeff}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-progress{
+ height:18px;border:1px solid #64cef1;border-radius:5px;
+ background:linear-gradient(#071524,#102842);box-shadow:inset 0 2px 4px #000a;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-progress>span{
+ background:linear-gradient(180deg,#a6ffff,#41dcff 65%,#138cce);box-shadow:0 0 9px #2de1ff8c;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-progress>small{font:700 11px/1 system-ui,sans-serif;color:#ecf5ff}
+/* Right inventory stays in the right column, and only the left single panel is mode-dependent. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-grid{
+ display:grid;grid-template-columns:minmax(0,1fr) clamp(315px,29%,395px);
+ gap:clamp(10px,1.15vw,18px);align-items:start;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-work{
+ display:grid;grid-template-columns:minmax(240px,.42fr) minmax(0,.9fr);
+ align-items:start;gap:clamp(10px,1vw,17px);min-width:0;padding:0;margin:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-side{
+ min-width:0;min-height:570px;margin:0;padding:9px 11px 14px;
+ border:1px solid #ff535e;border-radius:5px;
+ background:linear-gradient(170deg,#0e2035f7,#09172bec 66%,#121425f7);
+ box-shadow:inset 0 0 0 1px #fc63633d,0 0 17px #ff415037,0 8px 23px #0009;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-side h3,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-resources h3{
+ display:flex;align-items:center;gap:7px;min-width:0;
+ margin:0 0 12px;padding:5px 6px 11px;
+ border:0;background:linear-gradient(90deg,#ff4e57ed,#ac1c3488 45%,transparent 92%) left bottom/100% 2px no-repeat;
+ color:#fff5ed;font:800 clamp(13px,1.01vw,16px)/1.18 system-ui,sans-serif;
+ text-shadow:0 1px 4px #000;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-side h3>span,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-resources h3>span{
+ color:#ffc47d;font:700 22px/1 Georgia,serif;text-shadow:0 0 8px #ffa24a8b;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-selects{
+ display:flex;flex-direction:column;gap:15px;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-selects>label{
+ display:flex;flex-direction:column;gap:7px;min-width:0;
+ color:#f1e4de;font:700 12px/1.1 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-selects select{
+ width:100%;min-height:40px;padding:8px 30px 8px 10px;
+ border:1px solid #6498c7;border-radius:4px;
+ background:linear-gradient(180deg,#1c3551,#0b1d33);
+ color:#ecf6ff;font:700 12px/1.15 system-ui,sans-serif;
+ box-shadow:inset 0 1px 0 #ffffff20,0 3px 8px #0007;
+ cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-selects select:focus-visible{outline:2px solid #ffa869;outline-offset:2px}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-bonus-prob{
+ display:flex;justify-content:space-between;align-items:center;gap:6px;
+ margin:19px 0 10px;padding:11px 8px;
+ border:1px solid #d59a65;border-radius:5px;
+ background:linear-gradient(110deg,#233753,#0a213a);
+ color:#e7f2ff;font:600 11px/1.35 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-bonus-prob>span{font:700 23px/1 serif;color:#ffbc5e}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-bonus-prob strong{color:#ffcf64;font:900 19px/1 system-ui,sans-serif}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-mode-note{padding:10px 4px;color:#9bb5cc;font:500 11px/1.5 system-ui,sans-serif}
+/* Quality mode: THE SAME left panel; no additional panel below. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-name{
+ margin:0 0 12px;text-align:center;font:700 12px/1.3 system-ui,sans-serif;color:#f2d9dc;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps{
+ display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);
+ gap:5px;align-items:center;margin:0 0 18px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b{
+ min-width:0;padding:9px 3px;border:1px solid #d58fe5;border-radius:5px;
+ background:linear-gradient(135deg,#59265b,#240e40);color:#fbe1ff;
+ text-align:center;font:800 clamp(11px,.9vw,14px)/1 system-ui,sans-serif;
+ box-shadow:0 0 11px #d450f13a;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b:last-child{
+ border-color:#ffba54;background:linear-gradient(#955022,#532211);color:#ffe18c;box-shadow:0 0 11px #ffa3424f;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps span{
+ text-align:center;color:#ffb54d;font:900 27px/1 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-side h4{
+ margin:0 0 0;padding:8px;border:1px solid #5479a0;border-bottom:none;
+ background:linear-gradient(180deg,#233c56,#14283e);color:#f4f6ff;
+ font:700 12px/1.15 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stat-header,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stat{
+ display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.66fr) 14px minmax(0,.66fr);gap:3px;align-items:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stat-header{
+ background:#142d46;color:#a8bfd7;border-left:1px solid #5479a0;border-right:1px solid #5479a0;
+ padding:7px 5px;font:700 9px/1.1 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stats{
+ border:1px solid #5479a0;min-height:215px;max-height:312px;overflow-y:auto;
+ background:linear-gradient(180deg,#06162b,#0b1f33);scrollbar-color:#436b8d #0a182a;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stat{
+ padding:9px 5px;border-bottom:1px solid #27445c;
+ color:#d4e8f7;font:600 10px/1.24 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stat b{
+ color:#e3f0fa;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stat i{
+ color:#ffb956;font:900 18px/1 system-ui,sans-serif;text-align:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stat strong{
+ color:#77ee93;text-align:right;font-variant-numeric:tabular-nums;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-no-params{
+ padding:14px 8px;color:#9cbdd9;font:500 11px/1.4 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-note{
+ padding:12px 7px;margin:10px 0 0;border:1px solid #516e89;border-radius:5px;
+ background:#14283cbd;color:#c6d9e8;font:600 11px/1.35 system-ui,sans-serif;
+}
+/* Forge capsule stage and material row are centered; the item is an actual HTML image. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-center{
+ display:flex;flex-direction:column;gap:10px;min-width:0;margin:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stage{
+ position:relative;isolation:isolate;display:flex;justify-content:center;
+ align-items:center;min-width:0;min-height:350px;height:clamp(350px,31vw,460px);
+ margin:0;overflow:hidden;
+ background:
+   radial-gradient(ellipse at 50% 55%,#ff2f2824,transparent 57%),
+   linear-gradient(180deg,transparent 74%,#03102172);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stage::before{
+ content:"";z-index:-1;position:absolute;inset:0;
+ background:
+  linear-gradient(90deg,transparent 0%,#e725193c 2%,transparent 6%,transparent 94%,#e725193c 98%,transparent 100%),
+  repeating-linear-gradient(0deg,transparent,transparent 26px,#ff534f0b 27px,#ff534f0b 28px);
+ opacity:.5;pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-capsule{
+ position:absolute;z-index:0;top:0;left:50%;transform:translateX(-50%);
+ width:min(90%,clamp(230px,21vw,365px));height:calc(100% - 17px);
+ background:url('../assets/ui/forge/forge-capsule.webp') center/contain no-repeat;
+ filter:drop-shadow(0 0 17px #ff41464f) drop-shadow(0 12px 23px #0008);
+ pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-item{
+ position:absolute;z-index:1;top:29%;left:50%;transform:translate(-50%,0);
+ display:grid;place-items:center;width:37%;max-width:165px;height:41%;min-height:0;
+ margin:0;padding:0;border:0;border-radius:0;background:none;
+ color:#ffe4d1;text-align:center;overflow:visible;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-item-craft{
+ min-height:0;box-shadow:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-item .dbi-forge-item-content{
+ display:grid;justify-items:center;gap:6px;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-item .dbi-item-image,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-item img{
+ display:block;max-width:100%;max-height:145px;width:auto;height:auto;object-fit:contain;
+ filter:drop-shadow(0 6px 13px #0008) drop-shadow(0 0 7px #ed3b5979);
+ animation:dbi-forge-float 3.6s ease-in-out infinite;
+}
+@keyframes dbi-forge-float{0%,100%{translate:0 -5px}50%{translate:0 7px}}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-item .dbi-forge-placeholder{
+ display:block;max-width:100%;padding:5px 7px;background:#081b30b8;border:1px solid #d65d688f;
+ color:#c6ddec;font:700 11px/1.3 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-item-caption{
+ display:block;padding:3px 6px;border-radius:5px;background:#090e1caa;
+ color:#f9dee2;font:600 11px/1.18 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stage-footer{
+ position:absolute;z-index:2;left:15%;right:15%;bottom:0;
+ padding:9px 5px 8px;
+ background:linear-gradient(120deg,#331326,#0a1828 39%,#451324);
+ border:1px solid #ff6c73;border-radius:7px;
+ color:#fff2e2;text-align:center;text-shadow:0 1px 4px #000;
+ font:800 clamp(10px,.93vw,14px)/1.2 system-ui,sans-serif;
+ box-shadow:inset 0 0 0 1px #ffc9b128,0 0 9px #ff525560;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-resources{
+ min-width:0;margin:0;padding:8px 10px 10px;
+ border:1px solid #ff5b63;border-radius:5px;
+ background:linear-gradient(180deg,#12233ae8,#071324f4);
+ box-shadow:inset 0 0 0 1px #ffaf6d25,0 0 16px #fb4a5333;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-resources h3{
+ margin-bottom:8px;padding:3px 2px 6px;
+ background:linear-gradient(90deg,#63cbff,#ff616a 52%,transparent) left bottom/100% 1px no-repeat;
+ font-size:14px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-resource-line{
+ display:grid;grid-template-columns:minmax(0,1fr) clamp(105px,24%,145px);
+ gap:8px;align-items:stretch;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-materials{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;
+ min-width:0;width:100%;margin:0;padding:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-materials>.dbi-forge-material{
+ display:flex;flex-direction:column;justify-content:center;align-items:center;
+ gap:4px;min-width:0;min-height:110px;padding:8px 4px 7px;
+ border:1px solid #628aaa;border-radius:5px;
+ background:linear-gradient(150deg,#1c3451,#0b2036 70%,#111629);
+ box-shadow:inset 0 1px 0 #b9f1ff15,0 3px 7px #0005;
+ text-align:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-materials>.dbi-forge-material.is-ready{border-color:#76b8e4}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-materials>.dbi-forge-material.is-missing{border-color:#d77b77}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-material .dbi-smith-slot{
+ display:grid;place-items:center;flex:0 0 auto;width:50px;height:50px;
+ padding:3px;margin:0;border:1px solid #ff83a3;border-radius:6px;
+ background:radial-gradient(circle,#60304766,#0a1834 75%);
+ box-shadow:inset 0 0 0 1px #ecb7ff1d,0 0 10px #eb4a7524;
+ overflow:hidden;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-material .dbi-smith-slot img,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-material .dbi-smith-slot .dbi-item-image{
+ display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-material-name{
+ display:block;max-width:100%;font:700 clamp(9px,.71vw,11px)/1.2 system-ui,sans-serif;
+ color:#f0f4fb;overflow-wrap:anywhere;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-material-count{
+ color:#7dff96;font:800 clamp(11px,.88vw,15px)/1.15 system-ui,sans-serif;
+ font-variant-numeric:tabular-nums;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-material.is-missing .dbi-forge-material-count{color:#ff9ca7}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-blank-slot{font:700 22px/1 system-ui,sans-serif;color:#406078}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-costs{display:flex;flex-direction:column;gap:7px;min-width:0}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-cost{
+ display:flex;flex-direction:column;justify-content:center;gap:5px;
+ flex:1 1 0;min-width:0;padding:9px 7px;
+ border:1px solid #537e9f;border-radius:5px;
+ background:linear-gradient(150deg,#1b344e,#0b192b);
+ text-align:center;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-cost span{
+ color:#c3d6e6;font:700 clamp(10px,.72vw,12px)/1.2 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-cost strong{
+ color:#ffe16c;font:800 clamp(13px,.99vw,18px)/1.15 system-ui,sans-serif;
+ font-variant-numeric:tabular-nums;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-cost:last-child strong{color:#70ff8a}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions{
+ display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 button.dbi-forge-primary{
+ display:flex;align-items:center;justify-content:center;
+ min-height:58px;min-width:min(90%,275px);width:min(88%,330px);max-width:100%;
+ padding:12px 22px;margin:0;border:2px solid #ffc36d;border-radius:8px;
+ clip-path:polygon(13% 0,87% 0,100% 50%,87% 100%,13% 100%,0 50%);
+ background:linear-gradient(180deg,#ffb146,#f28217 55%,#a94712);
+ color:#fff7dc;font:900 clamp(17px,1.25vw,22px)/1.05 system-ui,sans-serif;
+ text-shadow:0 1px 3px #50250d;
+ box-shadow:inset 0 0 0 1px #fff1b266,0 0 20px #ffa02f75,0 7px 14px #0007;
+ cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 button.dbi-forge-primary:not(:disabled):hover{filter:brightness(1.08)}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 button.dbi-forge-primary:disabled{opacity:.53;cursor:not-allowed;filter:saturate(.52)}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-resolve{
+ display:flex;justify-content:center;gap:6px;width:100%;max-width:330px;margin:2px 0 0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-resolve button{min-width:0;flex:1;padding:7px 6px;font:700 11px/1.1 system-ui,sans-serif}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions .dbi-smith-status{
+ max-width:100%;min-height:14px;margin:0;text-align:center;color:#a6bfce;
+ font:500 11px/1.3 system-ui,sans-serif;
+}
+/* Existing inventory grid, tab selection and drag/drop events are kept intact. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory{
+ min-width:0;width:100%;margin:0;padding:9px 10px 12px;
+ border:1px solid #ff535e;border-radius:5px;
+ background:linear-gradient(160deg,#0e2137f7,#071526f6);
+ box-shadow:inset 0 0 0 1px #ff91934d,0 0 17px #fd495537,0 8px 21px #000a;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory h3{
+ margin:0 0 10px;padding:5px 6px 12px;
+ border:0;background:linear-gradient(90deg,#ff4e59,#a8223177 65%,transparent) left bottom/100% 2px no-repeat;
+ color:#fff5ed;font:800 clamp(19px,1.3vw,23px)/1 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-tabs{
+ display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:0 0 10px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-tab{
+ min-height:34px;padding:7px 0;border:1px solid #4c87b0;border-radius:4px;
+ background:linear-gradient(#1b3550,#0d2139);color:#ebf4ff;font:800 12px/1 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-tab.active{
+ border-color:#ffca64;background:linear-gradient(#ffbd62,#d76f19 72%,#8c340d);
+ color:#fff8e8;box-shadow:0 0 14px #ff8b357d;
+}
+/* Kowalstwo: pełna siatka 6 × 10 bez przewijania wewnątrz panelu. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-scroll{
+ width:100%;min-width:0;min-height:0;max-height:none!important;height:auto!important;
+ overflow:visible!important;
+ background:linear-gradient(180deg,#0b1930,#071323);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-grid{
+ --dbi-gap:4px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+ gap:var(--dbi-gap);width:100%;min-width:0;max-width:100%;margin:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-cell{
+ border-color:#4678a3;background:linear-gradient(160deg,#112944,#09182b);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-cell:hover{border-color:#ff9655}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-actions{
+ display:flex;gap:6px;margin:9px 0 0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-actions button{
+ min-height:33px;min-width:0;flex:1;padding:7px 3px;border:1px solid #4e87ad;border-radius:4px;
+ background:linear-gradient(#204664,#0a253d);color:#f1f6ff;
+ font:700 11px/1 system-ui,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory .inv-actions button:hover{border-color:#ffb47c}
+@media(max-width:1250px){
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-grid{grid-template-columns:minmax(0,1fr) minmax(280px,29%)}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-work{grid-template-columns:minmax(210px,.42fr) minmax(0,.92fr)}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-side{min-height:540px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stage{height:360px;min-height:320px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-capsule{width:min(97%,325px)}
+}
+@media(max-width:1080px){
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-grid{grid-template-columns:minmax(0,1fr)}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-inventory{width:min(100%,620px);justify-self:center}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-work{grid-template-columns:minmax(215px,.42fr) minmax(0,.9fr)}
+}
+@media(max-width:660px){
+ .game.atlas-app .atlas-view #pageBody>.dbi-forge-v2{border-width:12px;border-image-slice:16;padding:5px 7px 13px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-header{padding:5px 2px 11px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-header .dbi-smith-anvil{width:35px;height:35px;font-size:20px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-header h2{font-size:25px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tabs{gap:6px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tab{font-size:11px;min-height:48px;padding:7px 5px;gap:5px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-tab>span{font-size:20px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-level-line{flex-wrap:wrap;gap:9px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-smith-milestones{flex-basis:100%}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-work{grid-template-columns:minmax(0,1fr)}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-side{min-height:0}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stage{height:390px;min-height:350px}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-capsule{width:min(86%,300px)}
+}
+@media(max-width:385px){
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-resource-line{grid-template-columns:minmax(0,1fr)}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-costs{flex-direction:row}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-material .dbi-smith-slot{width:43px;height:43px}
+}
+@media(prefers-reduced-motion:reduce){
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-item img{animation:none;translate:none}
+}
+
+/* Krótki błysk odczytywany wyłącznie z istniejącego komunikatu o sukcesie. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-stage::after{
+ content:"";position:absolute;inset:9% 16% 7%;z-index:3;pointer-events:none;
+ background:radial-gradient(ellipse at 50% 56%,#fff4d5b5 0,#ffa95c70 23%,#ff3a3640 47%,transparent 73%);
+ opacity:0;transform:scale(.72);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-success .dbi-forge-stage::after{
+ animation:dbi-forge-success-flash 1.45s ease-out both;
+}
+@keyframes dbi-forge-success-flash{0%{opacity:0;transform:scale(.72)}21%{opacity:.88;transform:scale(1.04)}60%{opacity:.32;transform:scale(1.16)}100%{opacity:0;transform:scale(1.25)}}
+@media(prefers-reduced-motion:reduce){.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-success .dbi-forge-stage::after{animation:none;opacity:.16;transform:none}}
+
+
+/* Kowalstwo v2.1 — barwy jakości z istniejącej skali QUALITY / quality-text-0..4.
+   Zmienia tylko wygląd dwóch oznaczeń w trybie Podnoszenie jakości. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b.dbi-forge-tier-0{
+ --forge-quality-text:#9fadb7;--forge-quality-border:#8395a3;--forge-quality-top:#374653;--forge-quality-bottom:#172431;--forge-quality-glow:rgba(159,173,183,.32);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b.dbi-forge-tier-1{
+ --forge-quality-text:#e6dfd0;--forge-quality-border:#d2c9ae;--forge-quality-top:#5a554b;--forge-quality-bottom:#26241e;--forge-quality-glow:rgba(230,223,208,.28);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b.dbi-forge-tier-2{
+ --forge-quality-text:#58baff;--forge-quality-border:#3fa9f5;--forge-quality-top:#154d82;--forge-quality-bottom:#0b2445;--forge-quality-glow:rgba(63,169,245,.48);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b.dbi-forge-tier-3{
+ --forge-quality-text:#bf8aff;--forge-quality-border:#ad6bf4;--forge-quality-top:#59265b;--forge-quality-bottom:#240e40;--forge-quality-glow:rgba(173,107,244,.46);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b.dbi-forge-tier-4{
+ --forge-quality-text:#ffcd66;--forge-quality-border:#ffbe54;--forge-quality-top:#955022;--forge-quality-bottom:#532211;--forge-quality-glow:rgba(255,190,84,.52);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b.dbi-forge-tier-none{
+ --forge-quality-text:#9db0c3;--forge-quality-border:#526e87;--forge-quality-top:#213448;--forge-quality-bottom:#102134;--forge-quality-glow:rgba(79,107,133,.12);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps > b[class*="dbi-forge-tier-"]{
+ border-color:var(--forge-quality-border);
+ color:var(--forge-quality-text);
+ background:linear-gradient(160deg,var(--forge-quality-top),var(--forge-quality-bottom));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 12px var(--forge-quality-glow),0 0 0 1px rgba(0,0,0,.36);
+ text-shadow:0 0 9px var(--forge-quality-glow),0 1px 2px rgba(0,0,0,.84);
+}
+
+
+/* === KOWALSTWO v2.2: WYŁĄCZNIE WYGLĄD PRZYCISKÓW WYTWÓRZ / PODNIEŚ JAKOŚĆ ===
+   Tylko selektory tych dwóch oryginalnych przycisków. Bez zmian w logice, tooltipach i pozostałych ekranach. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button.dbi-forge-primary:is(#dbiCraftCreate,#dbiSmithUpgrade){
+  box-sizing:border-box;
+  width:385px;
+  min-width:0;
+  max-width:100%;
+  min-height:78px;
+  margin:0;
+  padding:13px 50px;
+  border:0;
+  border-radius:0;
+  clip-path:none;
+  box-shadow:none;
+  background-color:transparent;
+  background-repeat:no-repeat;
+  background-size:100% 100%;
+  background-position:center;
+  color:#f5fdff;
+  font:900 clamp(18px,1.65vw,26px)/1.1 system-ui,sans-serif;
+  text-shadow:0 2px 3px #020b1bd9,0 0 10px #7aefff6e;
+  letter-spacing:.01em;
+  filter:drop-shadow(0 2px 2px #02050ae0);
+  transition:filter .18s ease,transform .18s ease;
+}
+/* Niebiesko-turkusowa kuźnia: istniejące id, bez nowych funkcji */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button#dbiCraftCreate.dbi-forge-primary{
+  background-image:url('../assets/ui/forge/button-craft-premium.svg');
+  text-shadow:0 2px 4px #001421,0 0 9px #14eafa94;
+}
+/* Czerwono-złote podnoszenie jakości */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button#dbiSmithUpgrade.dbi-forge-primary{
+  background-image:url('../assets/ui/forge/button-quality-premium.svg');
+  width:385px !important; /* override width:245px!important from older Kowalstwo CSS */
+  text-shadow:0 2px 3px #26050d,0 0 9px #ffa4518f;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button.dbi-forge-primary:is(#dbiCraftCreate,#dbiSmithUpgrade):not(:disabled):hover{
+  filter:brightness(1.17) drop-shadow(0 0 9px #67cbef8c);
+  transform:translateY(-1px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button#dbiSmithUpgrade.dbi-forge-primary:not(:disabled):hover{
+  filter:brightness(1.17) drop-shadow(0 0 9px #ff615fa3);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button.dbi-forge-primary:is(#dbiCraftCreate,#dbiSmithUpgrade):not(:disabled):active{
+  transform:translateY(1px);
+  filter:brightness(.97);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button.dbi-forge-primary:is(#dbiCraftCreate,#dbiSmithUpgrade):disabled{
+  opacity:.64;
+  filter:grayscale(.32) brightness(.8);
+  cursor:not-allowed;
+  transform:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button.dbi-forge-primary:is(#dbiCraftCreate,#dbiSmithUpgrade):focus-visible{
+  outline:2px solid #fff1bd;
+  outline-offset:0;
+}
+@media(max-width:660px){
+  .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button.dbi-forge-primary:is(#dbiCraftCreate,#dbiSmithUpgrade){
+    width:min(100%,335px) !important;
+    min-width:0;
+    min-height:72px;
+    padding:12px 35px;
+    font-size:clamp(17px,4.4vw,22px);
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-actions > button.dbi-forge-primary:is(#dbiCraftCreate,#dbiSmithUpgrade){transition:none}
+}
+
+
+/* Kowalstwo v2.4 — tylko Podnoszenie jakości: bez ciemnej ramki za
+   przedmiotem w kapsule. Nie dotyczy przyciskow ani ikon w ekwipunku. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] #dbiSmithTarget{
+  background:transparent!important;
+  background-image:none!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  outline:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] #dbiSmithTarget > .dbi-item-image,
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] #dbiSmithTarget > .dbi-enhance-glow > .dbi-item-image{
+  /* Neutralizuje czarne tlo niektorych plikow PNG bez zmiany samych ikon. */
+  mix-blend-mode:screen;
+  -webkit-mask-image:radial-gradient(ellipse 55% 55% at 50% 50%,#000 54%,rgba(0,0,0,.86) 65%,transparent 94%);
+  mask-image:radial-gradient(ellipse 55% 55% at 50% 50%,#000 54%,rgba(0,0,0,.86) 65%,transparent 94%);
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+
+
+/* === KOWALSTWO v2.5 | Animacja PODNOSZENIA JAKOŚCI (TYLKO WIZUALNA) ===
+   Odtwarza 3 uderzenia po zakończonej próbie; barwa sukcesu to barwa
+   NOWEJ jakości z istniejących quality-text-0..4 w tej samej grze.
+   Hammer i świetlne nakładki nie przechwytują myszy ani tooltipów. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] .dbi-forge-hammer{
+ position:absolute;z-index:6;left:calc(50% - 29px);top:31%;
+ width:clamp(110px,13vw,170px);height:clamp(110px,13vw,170px);
+ background:url('../assets/ui/forge/quality-hammer.webp') center/contain no-repeat;
+ pointer-events:none;opacity:0;transform-origin:81% 87%;
+ animation:dbi-forge-hammer-triple 1.82s cubic-bezier(.36,.05,.64,.96) both;
+ will-change:transform,opacity;
+ filter:drop-shadow(0 5px 11px rgba(0,0,0,.68)) drop-shadow(0 0 7px rgba(255,95,61,.46));
+}
+@keyframes dbi-forge-hammer-triple{
+ 0%   {opacity:0;transform:translate3d(82px,-120px,0) rotate(52deg) scale(.82)}
+ 5%   {opacity:1;transform:translate3d(52px,-68px,0) rotate(45deg) scale(.98)}
+ 13%  {opacity:1;transform:translate3d(34px,-40px,0) rotate(36deg) scale(1)}
+ 20%  {opacity:1;transform:translate3d(-25px,39px,0) rotate(-29deg) scale(1)}
+ 24%  {opacity:1;transform:translate3d(24px,-34px,0) rotate(30deg) scale(1)}
+ 33%  {opacity:1;transform:translate3d(40px,-62px,0) rotate(42deg) scale(1)}
+ 40%  {opacity:1;transform:translate3d(29px,-41px,0) rotate(34deg) scale(1)}
+ 49%  {opacity:1;transform:translate3d(-26px,38px,0) rotate(-30deg) scale(1)}
+ 53%  {opacity:1;transform:translate3d(25px,-34px,0) rotate(30deg) scale(1)}
+ 62%  {opacity:1;transform:translate3d(43px,-64px,0) rotate(43deg) scale(1)}
+ 70%  {opacity:1;transform:translate3d(31px,-43px,0) rotate(36deg) scale(1)}
+ 79%  {opacity:1;transform:translate3d(-27px,38px,0) rotate(-30deg) scale(1)}
+ 85%  {opacity:.94;transform:translate3d(29px,-45px,0) rotate(37deg) scale(1)}
+ 100% {opacity:0;transform:translate3d(95px,-128px,0) rotate(56deg) scale(.82)}
+}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] .dbi-forge-hammer-impact{
+ position:absolute;z-index:5;pointer-events:none;
+ width:clamp(125px,14vw,190px);height:clamp(125px,14vw,190px);
+ top:49%;left:50%;border-radius:50%;opacity:0;
+ background:radial-gradient(circle,rgba(255,253,230,.96) 0%,rgba(255,201,90,.78) 11%,rgba(255,80,48,.30) 32%,transparent 64%);
+ transform:translate(-50%,-50%) scale(.4);
+ animation:dbi-forge-hammer-spark .53s ease-out .23s 3 both;
+}
+@keyframes dbi-forge-hammer-spark{
+ 0%,13%{opacity:0;transform:translate(-50%,-50%) scale(.23)}
+ 22%{opacity:.96;transform:translate(-50%,-50%) scale(.70)}
+ 50%{opacity:.35;transform:translate(-50%,-50%) scale(.92)}
+ 100%{opacity:0;transform:translate(-50%,-50%) scale(1.25)}
+}
+/* Kolory EXACT z .quality-text-0..4; przy sukcesie wybrano już nową jakość. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-0{--forge-win-color:#9fadb7;--forge-win-rgb:159,173,183}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-1{--forge-win-color:#e6dfd0;--forge-win-rgb:230,223,208}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-2{--forge-win-color:#58baff;--forge-win-rgb:88,186,255}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-3{--forge-win-color:#bf8aff;--forge-win-rgb:191,138,255}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-4{--forge-win-color:#ffcd66;--forge-win-rgb:255,205,102}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] .dbi-forge-quality-aura{
+ position:absolute;left:50%;top:49%;z-index:1;
+ width:clamp(138px,20vw,240px);height:clamp(155px,24vw,267px);
+ border-radius:50%;pointer-events:none;opacity:0;
+ background:radial-gradient(ellipse,rgba(var(--forge-win-rgb),.80) 0%,rgba(var(--forge-win-rgb),.45) 27%,rgba(var(--forge-win-rgb),.18) 47%,transparent 75%);
+ border:3px solid rgba(var(--forge-win-rgb),.82);
+ box-shadow:0 0 34px 9px rgba(var(--forge-win-rgb),.63),inset 0 0 28px 7px rgba(var(--forge-win-rgb),.52);
+ transform:translate(-50%,-50%) scale(.62);
+ animation:dbi-forge-quality-bloom 2.7s ease-out 1.83s both;
+ mix-blend-mode:screen;
+}
+@keyframes dbi-forge-quality-bloom{
+ 0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}
+ 13%{opacity:1;transform:translate(-50%,-50%) scale(1.03)}
+ 32%{opacity:.85;transform:translate(-50%,-50%) scale(1.07)}
+ 71%{opacity:.64;transform:translate(-50%,-50%) scale(1.02)}
+ 100%{opacity:0;transform:translate(-50%,-50%) scale(1.24)}
+}
+/* Zastąpienie starego natychmiastowego pomarańczowego błysku: nowy
+   zaczyna się DOPIERO po trzecim uderzeniu i ma kolor uzyskanej jakości. */
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"].dbi-forge-quality-success .dbi-forge-stage::after{
+ content:"";z-index:2;pointer-events:none;inset:22% 21% 17%;
+ background:radial-gradient(ellipse,rgba(var(--forge-win-rgb),.37),rgba(var(--forge-win-rgb),.12) 35%,transparent 70%);
+ opacity:0;transform:scale(.7);
+ animation:dbi-forge-quality-sheen 1.9s ease-out 1.84s both;
+}
+@keyframes dbi-forge-quality-sheen{
+ 0%{opacity:0;transform:scale(.7)}
+ 19%{opacity:.9;transform:scale(1.0)}
+ 56%{opacity:.55;transform:scale(1.1)}
+ 100%{opacity:0;transform:scale(1.24)}
+}
+@media(max-width:710px){
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] .dbi-forge-hammer{width:130px;height:130px;left:calc(50% - 27px);top:31%}
+}
+@media(prefers-reduced-motion:reduce){
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] .dbi-forge-hammer,
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] .dbi-forge-hammer-impact{display:none;animation:none}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] .dbi-forge-quality-aura{animation:none;opacity:.5;transform:translate(-50%,-50%) scale(1)}
+ .game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"].dbi-forge-quality-success .dbi-forge-stage::after{animation:none;opacity:0}
+}
+
+
+/* === MENU BOCZNE v2: wysuwane podmenu z prawej, bez przesuwania kategorii ===
+   Panel jest umieszczony przy <body>, poza przewijanym menu i ramką świata.
+   Zmiany wyłącznie dla menu nawigacji; inne panele, tooltipy i mechaniki bez zmian. */
+#dbiNavFlyout.dbi-nav-flyout{
+ position:fixed;z-index:2800;display:flex;flex-direction:column;gap:5px;
+ box-sizing:border-box;min-width:0;padding:10px;
+ border:2px solid #9a784b;border-radius:5px;
+ background:linear-gradient(150deg,#20364a 0%,#0a192c 42%,#091626 100%);
+ box-shadow:inset 0 0 0 1px rgba(201,223,245,.14),0 16px 36px rgba(0,0,0,.74),0 0 19px rgba(45,138,201,.21);
+ overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+ scrollbar-color:#7c93a5 #0b1b2d;
+ animation:dbiNavRightSlide .19s cubic-bezier(.2,.8,.2,1) both;
+}
+#dbiNavFlyout[hidden]{display:none!important}
+#dbiNavFlyout.dbi-nav-flyout::before{
+ content:"";position:absolute;inset:2px;border:1px solid rgba(90,134,175,.48);border-radius:2px;pointer-events:none;
+}
+#dbiNavFlyout.dbi-nav-flyout button{
+ position:relative;z-index:1;width:100%;min-height:42px;min-width:0;
+ padding:10px 12px 10px 18px;text-align:left;
+ border:1px solid #536783;border-radius:3px;
+ background:linear-gradient(110deg,#1b3047,#101f32);
+ box-shadow:inset 1px 1px 0 #ffffff10;
+ color:#f1ebdf;font:700 clamp(12px,.9vw,15px)/1.2 Georgia,serif;
+ overflow-wrap:anywhere;cursor:pointer;
+}
+#dbiNavFlyout.dbi-nav-flyout button::before{
+ content:"◆";position:absolute;top:50%;left:7px;transform:translateY(-50%);
+ color:#d9aa68;font-size:7px;
+}
+#dbiNavFlyout.dbi-nav-flyout button:is(:hover,:focus-visible,[aria-current="page"]){
+ color:#ffe5b3;border-color:#ffbd69;
+ background:linear-gradient(90deg,#77411e,#35241d);
+ box-shadow:inset 3px 0 #ffb45b,0 0 11px #ffac5137;
+}
+#dbiNavFlyout.dbi-nav-flyout button:focus-visible{outline:2px solid #ffe0a0;outline-offset:2px}
+body .game.atlas-app .atlas-rail #nav >button[aria-expanded]::after{
+ content:"›";font:bold 22px/.8 Georgia,serif;transform:none;position:static;
+ width:auto;height:auto;border:0;margin-left:auto;
+}
+body .game.atlas-app .atlas-rail #nav >button[aria-expanded="true"]::after{content:"›";color:#ffe0a0}
+@keyframes dbiNavRightSlide{
+ from{opacity:0;transform:translate3d(-12px,0,0)}
+ to{opacity:1;transform:translate3d(0,0,0)}
+}
+@media(max-width:680px){
+ #dbiNavFlyout.dbi-nav-flyout{padding:7px;gap:4px}
+ #dbiNavFlyout.dbi-nav-flyout button{min-height:40px;padding:9px 10px 9px 17px;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){
+ #dbiNavFlyout.dbi-nav-flyout{animation:none}
+}
+
+
+/* === MENU BOCZNE v2.1: lifting szaty graficznej wysuwanego panelu ===
+   Zmiana dotyczy WYŁĄCZNIE wyglądu podkategorii. Mechanika otwierania/zamykania bez zmian. */
+#dbiNavFlyout.dbi-nav-flyout{
+ position:fixed;z-index:2800;display:flex;flex-direction:column;gap:6px;
+ box-sizing:border-box;min-width:0;padding:12px 10px 10px;
+ border:1px solid rgba(96,160,217,.55);
+ border-radius:0 14px 14px 14px;
+ background:
+  linear-gradient(180deg,rgba(21,43,69,.98) 0%,rgba(9,20,35,.98) 100%),
+  radial-gradient(circle at 12% 10%,rgba(86,194,255,.12) 0%,transparent 32%),
+  radial-gradient(circle at 88% 92%,rgba(255,174,74,.08) 0%,transparent 28%);
+ box-shadow:
+  0 22px 48px rgba(0,0,0,.60),
+  0 0 0 1px rgba(8,23,40,.95),
+  0 0 26px rgba(61,153,221,.20),
+  inset 0 1px 0 rgba(255,255,255,.08),
+  inset 0 0 0 1px rgba(183,222,255,.08);
+ overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+ scrollbar-color:#6d8eaa #0b1a2c;
+ animation:dbiNavFlyoutPolish .2s cubic-bezier(.2,.85,.2,1) both;
+ backdrop-filter:blur(8px);
+}
+#dbiNavFlyout[hidden]{display:none!important}
+#dbiNavFlyout.dbi-nav-flyout::before{
+ content:"";position:absolute;inset:3px;border-radius:0 11px 11px 11px;
+ border:1px solid rgba(118,173,224,.26);pointer-events:none;
+}
+#dbiNavFlyout.dbi-nav-flyout::after{
+ content:"";position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:999px;
+ background:linear-gradient(90deg,rgba(73,188,255,0),rgba(73,188,255,.95) 18%,rgba(255,194,105,.9) 52%,rgba(73,188,255,.95) 82%,rgba(73,188,255,0));
+ box-shadow:0 0 12px rgba(104,194,255,.42),0 0 8px rgba(255,187,88,.18);
+ pointer-events:none;
+}
+#dbiNavFlyout.dbi-nav-flyout button{
+ position:relative;z-index:1;width:100%;min-height:44px;min-width:0;
+ padding:11px 14px 11px 30px;text-align:left;
+ border:1px solid rgba(80,124,164,.78);border-radius:10px;
+ background:
+  linear-gradient(180deg,rgba(24,47,75,.95) 0%,rgba(14,31,50,.96) 100%),
+  linear-gradient(90deg,rgba(76,191,255,.08),transparent 28%);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.25);
+ color:#eaf4ff;font:700 14px/1.22 "Segoe UI",Tahoma,Arial,sans-serif;
+ letter-spacing:.2px;overflow-wrap:anywhere;cursor:pointer;
+ transition:transform .14s ease,border-color .14s ease,background .14s ease,box-shadow .14s ease,color .14s ease;
+}
+#dbiNavFlyout.dbi-nav-flyout button::before{
+ content:"";position:absolute;left:12px;top:50%;transform:translateY(-50%) rotate(45deg);
+ width:7px;height:7px;border-radius:1px;
+ background:linear-gradient(135deg,#ffd28e,#d79945);
+ box-shadow:0 0 8px rgba(255,196,112,.28);
+}
+#dbiNavFlyout.dbi-nav-flyout button::after{
+ content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;
+ background:linear-gradient(180deg,rgba(83,190,255,0),rgba(83,190,255,.86) 30%,rgba(255,189,90,.78) 100%);
+ opacity:.14;transition:opacity .14s ease,box-shadow .14s ease;
+}
+#dbiNavFlyout.dbi-nav-flyout button:is(:hover,:focus-visible,[aria-current="page"]){
+ color:#fff7ea;border-color:#e3b165;
+ background:
+  linear-gradient(180deg,rgba(88,58,29,.96) 0%,rgba(39,28,24,.98) 100%),
+  linear-gradient(90deg,rgba(255,191,103,.12),rgba(100,194,255,.06));
+ box-shadow:
+  inset 3px 0 0 rgba(255,187,89,.92),
+  0 0 0 1px rgba(255,191,106,.16),
+  0 0 16px rgba(255,178,85,.12),
+  inset 0 1px 0 rgba(255,255,255,.06);
+ transform:translateX(1px);
+}
+#dbiNavFlyout.dbi-nav-flyout button:is(:hover,:focus-visible,[aria-current="page"])::after{opacity:.95;box-shadow:0 0 8px rgba(255,185,91,.34)}
+#dbiNavFlyout.dbi-nav-flyout button[aria-current="page"]{
+ border-color:#ffca77;
+ background:
+  linear-gradient(180deg,rgba(103,66,31,.98) 0%,rgba(43,31,24,.99) 100%),
+  linear-gradient(90deg,rgba(255,198,102,.14),rgba(101,195,255,.08));
+}
+#dbiNavFlyout.dbi-nav-flyout button:focus-visible{outline:2px solid rgba(255,219,157,.95);outline-offset:2px}
+#dbiNavFlyout.dbi-nav-flyout button:active{transform:translateX(1px) scale(.995)}
+#dbiNavFlyout.dbi-nav-flyout.dbi-nav-flyout-below{
+ border-radius:14px 14px 14px 0;
+}
+#dbiNavFlyout.dbi-nav-flyout.dbi-nav-flyout-below::before{border-radius:11px 11px 11px 0}
+@keyframes dbiNavFlyoutPolish{
+ from{opacity:0;transform:translate3d(-10px,0,0) scale(.985)}
+ to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@media(max-width:680px){
+ #dbiNavFlyout.dbi-nav-flyout{padding:10px 8px 8px;gap:5px;border-radius:12px}
+ #dbiNavFlyout.dbi-nav-flyout::before{border-radius:9px}
+ #dbiNavFlyout.dbi-nav-flyout button{min-height:41px;padding:10px 11px 10px 26px;font-size:13px;border-radius:8px}
+ #dbiNavFlyout.dbi-nav-flyout button::before{left:10px;width:6px;height:6px}
+}
+@media(prefers-reduced-motion:reduce){
+ #dbiNavFlyout.dbi-nav-flyout,#dbiNavFlyout.dbi-nav-flyout button{transition:none;animation:none}
+}
+/* === ASTRALNI WOJOWNICY | GILDIA: oprawa kosmicznego centrum v1 ===
+   Wyłącznie .dbi-guild; brak zmian logiki, walut, członkostwa i pozostałych ekranów. */
+.game.atlas-app .atlas-view #pageBody>.dbi-guild,
+.game.atlas-app .atlas-view #pageBody>.dbi-guild *,
+.game.atlas-app .atlas-view #pageBody>.dbi-guild *::before,
+.game.atlas-app .atlas-view #pageBody>.dbi-guild *::after{box-sizing:border-box}
+.game.atlas-app .atlas-view #pageBody>.dbi-guild{
+ --guild-cyan:#62cfff;--guild-gold:#ffc56b;--guild-ink:#07172a;
+ position:relative;width:100%;max-width:none;min-width:0;min-height:685px;
+ padding:7px clamp(8px,1vw,17px) 16px;margin:0;
+ color:#e6effd;border:14px solid transparent;
+ border-image:url('../assets/ui/dojo-controls/planner-frame-clean.webp') 16 stretch;
+ border-radius:0;background:
+ radial-gradient(circle at 61% -8%,rgba(54,126,197,.18),transparent 44%),
+ linear-gradient(145deg,#0e2137 0%,#081629 55%,#071322 100%);
+ box-shadow:none;isolation:isolate;
+}
+/* Nagłówek na ekranie zakładania gildii. */
+.game.atlas-app .atlas-view #pageBody .dbi-guild-title{
+ position:relative;margin:0 0 15px;padding:6px 10px 15px;
+ color:#ffe7c1;text-align:center;font:800 clamp(26px,2.1vw,34px)/1.15 'Segoe UI',Arial,sans-serif;
+ text-shadow:0 0 18px rgba(255,167,57,.25),0 2px 2px #030a15;
+ border:0;background:linear-gradient(90deg,transparent,#f8bd6b 22%,#67cef5 72%,transparent) left bottom/100% 2px no-repeat;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild:has(.dbi-guild-top)>.dbi-guild-title{display:none}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-top{
+ position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;
+ min-height:204px;padding:26px clamp(12px,2.25vw,34px);
+ margin:0 0 0;border:1px solid rgba(85,142,185,.7);border-radius:11px 11px 0 0;
+ background:
+ linear-gradient(90deg,rgba(5,17,36,.97) 0%,rgba(7,25,48,.96) 23%,rgba(7,23,44,.7) 48%,rgba(5,17,32,.13) 100%),
+ url('../assets/ui/guild/orbital-guild-banner.webp') 60% 51%/cover no-repeat;
+ box-shadow:inset 0 1px 0 rgba(170,225,255,.18),inset 0 -25px 35px rgba(4,14,30,.19);
+ overflow:hidden;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-top:after{
+ content:'';position:absolute;left:0;bottom:0;right:0;height:3px;
+ background:linear-gradient(90deg,transparent 0,#e99a42 11%,#ffce76 30%,#5dc6f9 65%,transparent);
+ box-shadow:0 0 13px rgba(87,184,255,.44);pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-hero-identity{
+ position:relative;z-index:1;display:flex;align-items:center;gap:22px;min-width:0;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-emblem{
+ position:relative;display:grid;place-items:center;flex:none;width:116px;height:142px;
+ clip-path:polygon(50% 1%,93% 18%,91% 66%,50% 98%,9% 66%,7% 18%);
+ background:linear-gradient(135deg,#f6daa4 4%,#8da8b9 21%,#152b43 33%,#6d93ad 57%,#ffbf69 80%,#6b471f 100%);
+ filter:drop-shadow(0 2px 8px rgba(8,14,26,.92));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-emblem:before{
+ content:'';position:absolute;inset:5px;clip-path:inherit;
+ background:radial-gradient(ellipse at 45% 35%,#1d3958,#08182d 68%);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-emblem:after{
+ content:'✦';position:absolute;top:23%;left:0;right:0;text-align:center;
+ color:#ffcb74;text-shadow:0 0 22px rgba(255,175,74,.8);font-size:44px;font-weight:700;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-emblem span{
+ position:absolute;z-index:1;bottom:24%;font:800 15px/1 'Segoe UI',sans-serif;
+ color:#ffc771;letter-spacing:1px;text-shadow:0 1px 2px #000;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-hero-text{min-width:0}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-hero-text small{
+ display:block;color:#ffac48;font:800 13px/1.2 'Segoe UI',sans-serif;letter-spacing:.12em;text-transform:uppercase;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-top h2{
+ margin:6px 0 15px;max-width:600px;font:800 clamp(28px,3vw,48px)/1.1 'Segoe UI',Arial,sans-serif;
+ color:#fff4e7;letter-spacing:-.025em;text-shadow:0 2px 5px #010714,0 0 28px #0c274f;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-top h2 span{font:700 clamp(12px,1vw,16px)/1.2 'Segoe UI',sans-serif;color:#ffd085;vertical-align:middle;letter-spacing:0}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-hero-facts{
+ display:flex;gap:14px;flex-wrap:wrap;color:#d7e4f5;font:600 12px/1.3 'Segoe UI',sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-hero-facts>span{
+ padding:7px 12px;border:1px solid rgba(100,170,211,.32);border-radius:4px;background:rgba(6,19,39,.59);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-hero-facts b{color:#ffe2ad}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-top #dbiGuildLeave{
+ position:relative;z-index:2;align-self:flex-end;flex:none;padding:9px 12px;min-width:110px;
+ color:#fff4ed;background:linear-gradient(#623124,#321c20);border:1px solid #9d5b51;
+ font-size:12px;text-shadow:0 1px 2px #000c;box-shadow:inset 0 1px #fff2;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-top #dbiGuildLeave:hover{border-color:#ffac83;background:linear-gradient(#985038,#54201d)}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs{
+ display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px;
+ margin:0 0 14px;padding:6px 5px;border:1px solid rgba(74,131,178,.62);border-top:none;border-radius:0 0 8px 8px;
+ background:linear-gradient(180deg,#192e49,#0c1f35);box-shadow:inset 0 1px rgba(255,255,255,.12);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button{
+ min-width:0;min-height:45px;padding:9px 3px;font:800 clamp(10px,.78vw,13px)/1.16 'Segoe UI',sans-serif;
+ color:#dcebf8;border:1px solid rgba(78,121,158,.66);border-radius:5px;
+ background:linear-gradient(#1d3956,#0c1c33);box-shadow:inset 0 1px 0 rgba(203,236,255,.12);
+ transition:border-color .15s ease,filter .15s ease,box-shadow .15s ease;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button.active,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button:hover{
+ color:#fff6e6;border-color:#ffc064;
+ background:linear-gradient(180deg,#b66627,#783315 68%,#3c2018);
+ box-shadow:inset 0 1px #ffe3aa9a,0 0 13px #ffa64f44;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabcontent{min-height:400px;min-width:0}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home{
+ display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);
+ grid-template-rows:auto auto;gap:14px;align-items:stretch;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-message,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-journal,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-roster{
+ min-width:0;border:1px solid #4c7393;border-radius:8px;
+ background:linear-gradient(180deg,#172c46,#0a1a30 95%);
+ box-shadow:inset 0 1px rgba(204,231,255,.14),0 5px 14px rgba(0,0,0,.19);
+ overflow:hidden;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild h3{
+ display:flex;align-items:center;gap:9px;min-width:0;min-height:46px;
+ margin:0;padding:12px 17px;font:800 clamp(16px,1.16vw,20px)/1.15 'Segoe UI',Arial,sans-serif;
+ color:#eef7ff;text-shadow:0 1px #060e20;border-bottom:1px solid rgba(113,166,207,.32);
+ background:linear-gradient(180deg,rgba(33,63,96,.94),rgba(13,28,49,.85));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild h3>span{color:#ffb75f;font-size:21px;text-shadow:0 0 15px #ffb35e33}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature-body{
+ display:grid;grid-template-columns:minmax(0,43%) minmax(0,57%);gap:15px;align-items:stretch;
+ padding:14px;min-height:318px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-world-image{
+ min-height:290px;border:2px solid #7fb1d4;border-radius:7px;
+ background:url('../assets/ui/guild/guild-world.webp') center/cover no-repeat;
+ box-shadow:inset 0 0 0 2px #09182d,0 0 12px rgba(74,155,215,.22);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature-info{min-width:0;align-self:center;padding:4px 3px 6px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature-info>small{color:#ffb95f;font:800 11px/1.3 'Segoe UI',sans-serif;letter-spacing:.12em}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature-info h4{
+ margin:7px 0 8px;font:800 clamp(20px,1.8vw,29px)/1.12 'Segoe UI',sans-serif;color:#fbe7c3;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature-info p{margin:0 0 16px;font-size:13px;line-height:1.6;color:#c2d4e6}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature-facts{display:grid;gap:7px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature-facts>span{
+ display:flex;align-items:center;gap:10px;padding:9px 11px;
+ border:1px solid #416685;border-radius:5px;background:linear-gradient(90deg,#152e49,#0c2137);
+ font-size:12px;color:#cbdbea;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-feature-facts b{color:#ffcb7b;font-size:14px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home-aside{display:flex;min-width:0;flex-direction:column;gap:14px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-message{min-height:163px;padding:0}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-message p{
+ margin:0;padding:18px;color:#e1efff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.65;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-journal{
+ flex:1;min-height:0;padding:0;max-height:295px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-journal-entries{
+ max-height:239px;overflow:auto;padding:6px 14px 10px;scrollbar-color:#5b839e #0b1b2e;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-journal p{
+ display:flex;flex-direction:column;gap:4px;margin:0;padding:9px 1px;
+ border-top:0;border-bottom:1px solid rgba(100,149,180,.24);
+ font-size:12px;line-height:1.45;color:#d7e8f6;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-journal small{font:700 10px/1.2 'Segoe UI',sans-serif;color:#88a9c2}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-roster{grid-column:1/-1;min-height:126px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-roster h3 strong{color:#ffbc63;font:800 16px/1 'Segoe UI',sans-serif}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-roster-items{
+ display:flex;align-items:center;gap:13px;padding:12px 14px;
+ max-width:100%;overflow:auto;scrollbar-color:#5a8ab0 #0d1f34;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-roster-person{
+ display:flex;align-items:center;gap:9px;flex:none;min-width:132px;
+ color:#e4f0fb;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-roster-avatar{
+ display:grid;place-items:center;flex:none;width:43px;height:43px;
+ background:linear-gradient(135deg,#1c456f,#112340 68%,#472f2e);border:1px solid #82add5;border-radius:6px;
+ box-shadow:inset 0 1px 0 #d5eeff33,0 0 10px #4ca1fa22;
+ font:800 23px/1 'Segoe UI',sans-serif;color:#ffdd9e;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-roster-person b{display:block;font:800 12px/1.2 'Segoe UI',sans-serif;color:#f4f7ff}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-roster-person small{display:block;margin-top:5px;color:#97bbd2;font-size:11px}
+/* Pozostałe, już istniejące zakładki: dokładnie te same kontrolki i treści. */
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabcontent:not(:has(.dbi-guild-home)){
+ padding:18px;border:1px solid #557b99;border-radius:7px;
+ background:linear-gradient(150deg,#172d48,#0a1a2d 78%);box-shadow:inset 0 1px #f1fbff15;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabcontent:not(:has(.dbi-guild-home))>h3{
+ margin:-18px -18px 15px;padding:14px 18px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild button:not([data-guild-tab]):not(#dbiGuildLeave){
+ border:1px solid #d7a057;border-radius:6px;
+ background:linear-gradient(180deg,#b77530,#774016 74%,#51280f);
+ color:#fff4dc;box-shadow:inset 0 1px 0 #ffe2ad6b,0 3px 10px #0004;
+ font:800 13px/1.2 'Segoe UI',sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild button:not([data-guild-tab]):not(#dbiGuildLeave):hover{
+ border-color:#ffcc80;filter:brightness(1.08)
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild input,
+.game.atlas-app .atlas-view #pageBody .dbi-guild textarea,
+.game.atlas-app .atlas-view #pageBody .dbi-guild select{
+ padding:11px 12px;border:1px solid #527fa1;border-radius:6px;
+ color:#eff8ff;background:linear-gradient(#0d223b,#071b2f);box-shadow:inset 0 2px 6px #0005;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild :is(input,select,textarea):focus-visible{outline:2px solid #74d9ff;outline-offset:2px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild label{font-size:12px;font-weight:700;color:#b8d0e4}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-list>div,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-pending>div{
+ display:flex;align-items:center;gap:9px;margin:0 0 8px;padding:12px 13px;
+ border:1px solid #41647e;border-radius:5px;background:linear-gradient(110deg,#172e46,#0b1c2f);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-list span{color:#a7c2d9}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-create-area{
+ position:relative;display:flex;align-items:stretch;gap:20px;flex-wrap:wrap;
+ min-height:460px;padding:clamp(12px,2vw,24px);
+ border:1px solid #46708f;border-radius:9px;
+ background:
+  linear-gradient(90deg,rgba(7,20,38,.97) 0%,rgba(7,21,40,.87) 46%,rgba(7,22,43,.34) 100%),
+  url('../assets/ui/guild/orbital-guild-banner.webp') 61% center/cover no-repeat;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-create{
+ position:relative;z-index:1;width:min(430px,100%);margin:0;padding:21px;
+ border:1px solid #557f9d;border-radius:8px;
+ background:linear-gradient(160deg,#162e49ed,#081a2dee);
+ box-shadow:inset 0 1px 0 #fff2,0 14px 32px #0006;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-create h2{
+ margin:0 0 21px;color:#ffe3ab;font:800 25px/1.15 'Segoe UI',sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-create>button{width:100%;min-height:48px;font-size:16px!important}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-pending{
+ position:relative;z-index:1;min-width:min(270px,100%);flex:1;padding:0;
+ border:1px solid #50799a;border-radius:7px;background:#0b2035e8;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-pending h3{margin:0 0 8px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-alert{
+ padding:10px 13px;border:1px solid #4a9974;border-radius:6px;
+ background:#133e32;color:#9affc8;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-alert.error{border-color:#ae6466;background:#472632;color:#ffc8cc}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-dialog{
+ z-index:10;position:absolute;inset:0;border-radius:5px;
+ background:rgba(4,12,24,.88);backdrop-filter:blur(7px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-dialog>div{
+ width:min(430px,calc(100% - 30px));max-width:none;padding:24px;
+ background:linear-gradient(#1d3752,#0c1b30);border:1px solid #e2aa64;border-radius:8px;
+ box-shadow:0 15px 30px #0009;
+}
+@media(max-width:1340px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-home{grid-template-columns:minmax(0,1fr) minmax(270px,.85fr)}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-feature-body{grid-template-columns:minmax(0,43%) minmax(0,57%);gap:10px;padding:10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-world-image{min-height:260px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button{font-size:11px}
+}
+@media(max-width:1050px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-home{grid-template-columns:1fr}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-home-aside{display:grid;grid-template-columns:1fr 1fr}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-roster{grid-column:1}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media(max-width:670px){
+ .game.atlas-app .atlas-view #pageBody>.dbi-guild{padding:5px 6px 12px;border-width:10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-top{min-height:194px;padding:16px 13px;align-items:flex-start}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-hero-identity{gap:10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-emblem{width:62px;height:77px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-emblem:after{font-size:25px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-emblem span{font-size:9px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-hero-text small{font-size:10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-top h2{font-size:clamp(20px,5.7vw,30px);margin:5px 0 10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-hero-facts{gap:4px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-hero-facts>span{font-size:10px;padding:5px 7px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-top #dbiGuildLeave{position:absolute;right:10px;bottom:9px;padding:7px;font-size:11px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button{min-height:40px;font-size:11px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-feature-body{grid-template-columns:1fr}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-world-image{min-height:230px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-home-aside{grid-template-columns:1fr}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-roster{grid-column:1}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild h3{font-size:15px;min-height:42px;padding:10px 12px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabcontent:not(:has(.dbi-guild-home)){padding:12px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabcontent:not(:has(.dbi-guild-home))>h3{margin:-12px -12px 12px}
+}
+/* === GILDIA v2 | metaliczne, skośne zakładki inspirowane referencją ===
+   Wyłącznie dekoracja już istniejących przycisków data-guild-tab.
+   Zachowane: nazwy, zdarzenia kliknięć, aktywna karta i dotychczasowe sekcje. */
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs {
+ display:flex;
+ flex-wrap:nowrap;
+ align-items:stretch;
+ gap:0;
+ padding:7px 8px 8px;
+ margin:0 0 15px;
+ min-width:0;
+ border:1px solid #4b7597;
+ border-top:0;
+ border-radius:0 0 7px 7px;
+ background:
+   linear-gradient(180deg,rgba(107,175,222,.24) 0,rgba(24,46,74,.68) 10px,rgba(5,16,31,.94) 100%),
+   linear-gradient(90deg,#0d1d33,#192e4c 50%,#0a1a31);
+ box-shadow:inset 0 1px 0 rgba(176,219,255,.20),inset 0 -1px 0 rgba(81,154,207,.34);
+ overflow-x:auto;
+ overflow-y:hidden;
+ scrollbar-width:thin;
+ scrollbar-color:#648dac #091729;
+ scroll-snap-type:x proximity;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab] {
+ --guild-tab-shine:rgba(139,194,239,.54);
+ position:relative;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:7px;
+ flex:1 0 128px;
+ min-width:0;
+ min-height:56px;
+ margin:0 -2px 0 0;
+ padding:9px 10px 9px 29px;
+ border:1px solid #4f7697;
+ border-radius:0;
+ clip-path:polygon(14px 0,calc(100% - 13px) 0,100% 100%,0 100%);
+ color:#f2f7ff;
+ text-align:center;
+ white-space:nowrap;
+ font:800 clamp(11px,.81vw,15px)/1.15 'Segoe UI',Arial,sans-serif;
+ letter-spacing:-.01em;
+ text-shadow:0 1px 2px #000,0 0 7px rgba(169,217,255,.12);
+ background:
+  linear-gradient(180deg,rgba(242,249,255,.18) 0,rgba(71,119,165,.12) 2px,transparent 13px),
+  linear-gradient(180deg,#1d3d60 0%,#19304e 19%,#0b2139 55%,#091628 94%,#254d75 100%);
+ box-shadow:inset 0 2px 0 rgba(176,219,255,.32),inset 0 -2px 0 rgba(12,33,56,.9),inset 0 0 0 1px rgba(3,14,29,.6);
+ cursor:pointer;
+ scroll-snap-align:start;
+ transition:color .17s ease,filter .17s ease,background .17s ease;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]::before {
+ content:'✦';
+ position:absolute;
+ left:clamp(13px,1.2vw,21px);
+ top:50%;
+ transform:translateY(-52%);
+ color:#bfd6ee;
+ font:700 20px/1 'Segoe UI Symbol','Segoe UI',sans-serif;
+ text-shadow:0 1px 2px #001426,0 0 10px rgba(132,203,255,.17);
+ pointer-events:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]::after {
+ content:'';
+ position:absolute;
+ left:14px;
+ right:14px;
+ bottom:1px;
+ height:2px;
+ background:linear-gradient(90deg,transparent,var(--guild-tab-shine),transparent);
+ opacity:.64;
+ pointer-events:none;
+}
+/* Ikony pasują do już istniejących dziewięciu zakładek. */
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Główna']::before {content:'✧'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Członkowie']::before {content:'♟'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Wojny']::before {content:'⚔'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Zaproszenia']::before {content:'✉'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Depozyt']::before {content:'▤'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Grupowa']::before {content:'♣'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Notatki']::before {content:'✎'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Ekonomia']::before {content:'◈'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Ustawienia']::before {content:'⚙'}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]:hover:not(.active) {
+ border-color:#81add4;
+ background:
+  linear-gradient(180deg,rgba(244,251,255,.24) 0,transparent 12px),
+  linear-gradient(180deg,#315879 0%,#1c3c5e 40%,#122b4a 86%,#32678f 100%);
+ filter:brightness(1.12);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab].active,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab].active:hover {
+ --guild-tab-shine:rgba(255,230,149,.97);
+ z-index:2;
+ color:#fff6ed;
+ border-color:#ffb35b;
+ background:
+  linear-gradient(180deg,rgba(255,244,195,.45) 0,transparent 12px),
+  radial-gradient(ellipse at 50% 115%,rgba(255,146,27,.34),transparent 67%),
+  linear-gradient(180deg,#a65324 0%,#d27c32 22%,#a74b1e 53%,#81331c 81%,#5e271c 96%,#ffac47 100%);
+ text-shadow:0 1px 3px #3b180e,0 0 11px rgba(255,184,91,.42);
+ box-shadow:inset 0 2px 0 rgba(255,235,190,.75),inset 0 -2px 0 rgba(255,177,65,.85),0 0 19px rgba(255,143,43,.30);
+ filter:drop-shadow(0 0 4px rgba(255,128,41,.45));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab].active::before {
+ color:#ffe1a0;
+ text-shadow:0 0 9px rgba(255,220,117,.8),0 1px 2px #4e1b0e;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]:focus-visible {
+ outline:2px solid #ffe2a0;
+ outline-offset:-5px;
+}
+@media(max-width:760px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs{gap:0;padding:5px 3px 8px;flex-wrap:wrap;overflow:visible;scroll-snap-type:none}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]{flex:1 0 31%;min-height:49px;min-width:0;margin:0 -1px 2px 0;padding:9px 7px 9px 26px;font-size:clamp(10px,2.8vw,12px);clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 100%,0 100%);white-space:normal;overflow-wrap:anywhere}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]::before{left:12px;font-size:17px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]::after{left:10px;right:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]{transition:none}
+}
+
+
+
+
+/* Guild overview panels. Measurements are taken at the reference width. */
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home :is(.dbi-guild-feature,.dbi-guild-message,.dbi-guild-journal,.dbi-guild-roster) {
+ box-sizing:border-box;
+ border:1px solid #4c7393;
+ background:linear-gradient(to bottom,#162a43 50px,#0a1a30);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home h3 {
+ box-sizing:border-box;
+ min-height:49px;
+ background:linear-gradient(to bottom,#223f60,#0f1f35);
+ border-bottom:1px solid #3a5e83;
+}
+@media(min-width:1180px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-feature-body{
+  grid-template-columns:minmax(0,43%) minmax(0,1fr);
+ }
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-feature{min-height:401px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-message{min-height:163px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-journal{display:flex;flex-direction:column;max-height:224px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-journal-entries{min-height:0;overflow:auto}
+}
+/* Guild navigation uses the two metal faces from the supplied artwork. */
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs {
+ display:flex; flex-wrap:nowrap; align-items:end; gap:0; justify-content:flex-start;
+ overflow-x:auto; min-width:0; max-width:100%; padding:0; margin:0;
+ background:#0b1829; border:0; border-bottom:1px solid #7694b0;
+ scrollbar-width:thin; scrollbar-color:#44617a #0b1829;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab],
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]:hover:not(.active),
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab].active,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab].active:hover {
+ position:relative; isolation:isolate; display:inline-flex; align-items:center; justify-content:center;
+ flex:1 0 auto; gap:10px; height:58px; min-height:58px; margin:0 -17px 0 0;
+ padding:0 28px; min-width:max-content; border:0; border-radius:0;
+ background:transparent url('../assets/ui/guild/tabs/plate-metal.png') center / 100% 100% no-repeat;
+ clip-path:polygon(0 100%,8% 12%,10% 0,90% 0,92% 12%,100% 100%);
+ color:#f6f7fb; font:700 clamp(15px,1.15vw,20px)/1.1 'Arial Narrow','Liberation Sans Narrow',Arial,sans-serif;
+ white-space:nowrap; letter-spacing:0; box-shadow:none; filter:none; transform:none;
+ text-shadow:0 2px 2px #030913; cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]:last-child {margin-right:0}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]::before {
+ content:''; display:block; position:static; flex:none; width:27px; height:27px;
+ transform:none; background:linear-gradient(#e0efff,#85a9ca);
+ mask:center/contain no-repeat; border:0; box-shadow:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]::after {content:none}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]:hover:not(.active){filter:brightness(1.18)}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab].active,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab].active:hover {z-index:2;background-image:url('../assets/ui/guild/tabs/plate-active.png')}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab].active::before {background:linear-gradient(#fff0ac,#ffa13e)}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab]:focus-visible {outline:2px solid #ffe4a3;outline-offset:-7px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Główna']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-home.svg');mask-image:url('../assets/ui/guild/tabs/icon-home.svg');}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Członkowie']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-members.svg');mask-image:url('../assets/ui/guild/tabs/icon-members.svg');}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Wojny']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-war.svg');mask-image:url('../assets/ui/guild/tabs/icon-war.svg');}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Zaproszenia']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-invites.svg');mask-image:url('../assets/ui/guild/tabs/icon-invites.svg');}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Depozyt']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-deposit.svg');mask-image:url('../assets/ui/guild/tabs/icon-deposit.svg');}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Grupowa']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-group.svg');mask-image:url('../assets/ui/guild/tabs/icon-group.svg');}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Notatki']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-notes.svg');mask-image:url('../assets/ui/guild/tabs/icon-notes.svg');}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Ekonomia']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-economy.svg');mask-image:url('../assets/ui/guild/tabs/icon-economy.svg');}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab='Ustawienia']::before{
+ -webkit-mask-image:url('../assets/ui/guild/tabs/icon-settings.svg');mask-image:url('../assets/ui/guild/tabs/icon-settings.svg');}
+
+
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home :is(.dbi-guild-feature,.dbi-guild-message,.dbi-guild-journal,.dbi-guild-roster){
+ position:relative; isolation:isolate; border:0; border-radius:0; padding:3px;
+ background:radial-gradient(ellipse at 42% 2%,#273c51 0%,#192d42 50%,#101e2d 100%);
+ clip-path:polygon(10px 0,calc(100% - 11px) 0,100% 11px,100% calc(100% - 11px),calc(100% - 11px) 100%,11px 100%,0 calc(100% - 11px),0 11px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home :is(.dbi-guild-feature,.dbi-guild-message,.dbi-guild-journal,.dbi-guild-roster)::after{
+ content:'';position:absolute;inset:0;pointer-events:none;z-index:2;
+ border:13px solid transparent;border-image:url('../assets/ui/guild/panel-rim.png') 13 stretch;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home h3{
+ min-height:53px;padding:8px 20px;gap:14px;color:#f6f7fc;
+ font:700 clamp(19px,1.58vw,26px)/1.12 'Liberation Sans Narrow','Arial Narrow','Segoe UI',sans-serif;
+ background:#172a3d url('../assets/ui/guild/panel-heading.webp') center/100% 100% no-repeat;
+ border-bottom:1px solid #3d5971;text-shadow:0 2px 3px #030a16;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-feature h3>span,.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-message h3>span{
+ width:38px;height:33px;font-size:0;background:center/contain no-repeat;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-feature h3>span{background-image:url('../assets/ui/guild/planet-badge.png')}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-message h3>span{font-size:25px;width:auto}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-feature-body{padding:9px 13px 15px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-world-image{
+ border-radius:0;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);
+ border:2px solid #648aa9;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-feature-facts,.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-journal-entries{
+ margin:6px 9px 9px;padding:8px 12px;gap:0;position:relative;
+ border:0;border-radius:0;background:linear-gradient(115deg,#192c41,#0d1b2b);
+ clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-feature-facts{margin-inline:0;border:8px solid transparent;border-image:url('../assets/ui/guild/inset-rim.png') 8 stretch;padding:0 5px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-feature-facts>span{border:0;border-radius:0;border-bottom:1px solid #31495f;box-shadow:none;background:transparent}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-home .dbi-guild-feature-facts>span:last-child{border-bottom:0}
+
+
+/* === ASTRALNI WOJOWNICY | GILDIA - DEPOZYT v1 ===
+   Wylacznie wyglad depozytu; nie dotyka mechanik wplat, planet, zakladek i tooltipow. */
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabcontent:has(>.dbi-guild-deposit){
+ padding:0;overflow:visible;min-width:0;
+ border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit *,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit *::before,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit *::after{box-sizing:border-box}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit{
+ display:grid;grid-template-columns:minmax(155px,205px) minmax(0,1fr);
+ gap:13px;align-items:stretch;width:100%;min-width:0;min-height:570px;
+ font-family:'Segoe UI',Arial,sans-serif;color:#eaf5ff;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-sidebar{
+ position:relative;display:flex;flex-direction:column;align-self:stretch;
+ min-height:510px;padding:12px 7px;
+ border:1px solid #597f9e;border-radius:8px;
+ background:linear-gradient(160deg,#182d49 0%,#0a192d 66%,#071526 100%);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 3px rgba(7,19,36,.7),0 4px 14px rgba(0,0,0,.23);
+ overflow:hidden;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-sidebar::before{
+ content:'';position:absolute;inset:0 0 auto;height:3px;
+ background:linear-gradient(90deg,transparent,#6fc8ff 30%,#e9a557 62%,transparent);opacity:.8;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-side-title,
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-side-current{
+ position:relative;display:flex;align-items:center;gap:10px;
+ min-width:0;min-height:54px;padding:10px 9px;
+ font-size:clamp(12px,.95vw,15px);font-weight:800;line-height:1.15;
+ color:#e0eeff;text-shadow:0 2px 2px #020a16;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-side-title{
+ border-bottom:1px solid rgba(121,162,199,.35);
+ background:linear-gradient(180deg,rgba(35,61,91,.50),rgba(14,31,50,.08));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-side-current{
+ margin:5px -6px 0;padding:13px 14px;
+ border:1px solid #f6b765;border-radius:3px;
+ background:linear-gradient(100deg,#8a4218 0%,#b86721 47%,#512414 100%);
+ box-shadow:inset 0 1px 0 #ffe2a088,inset 0 -3px 0 #8d3a0c,0 0 18px #ffa52b5b;
+ clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%);
+ color:#fff6e8;font-size:clamp(12px,.9vw,14px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-sidebar img{flex:0 0 28px;width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 3px #0005)}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-main{
+ position:relative;display:flex;flex-direction:column;min-width:0;gap:11px;
+ padding:0 0 13px;
+ border:1px solid #4d779c;border-radius:8px;
+ background:linear-gradient(180deg,#122941 0%,#071b30 100%);
+ box-shadow:inset 0 0 0 2px #061627,inset 0 2px 0 #a4d5f229,0 8px 20px #0005;
+ overflow:hidden;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-main::after{
+ content:'';position:absolute;inset:auto 6px 4px;height:2px;pointer-events:none;
+ background:linear-gradient(90deg,transparent,#4b95c5 18%,#f8b561 50%,#4b95c5 82%,transparent);opacity:.7;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit h3.dbi-guild-deposit-title{
+ display:flex;align-items:center;gap:13px;flex:none;
+ min-height:57px;margin:0;padding:12px clamp(12px,1.4vw,23px);
+ border:0;border-bottom:1px solid #668dab;background:linear-gradient(180deg,#203b59,#122a43);
+ color:#f5f8ff;font:800 clamp(18px,1.6vw,26px)/1.12 'Segoe UI',Arial,sans-serif;
+ text-shadow:0 2px 3px #06101d;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-title img{
+ width:37px;height:33px;object-fit:contain;filter:drop-shadow(0 2px 7px #f8a63977);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-scene{
+ position:relative;display:flex;align-items:flex-start;min-width:0;min-height:270px;
+ padding:15px clamp(10px,1.2vw,22px);
+ background:
+  linear-gradient(90deg,rgba(8,23,43,.66) 0%,rgba(8,23,43,.28) 50%,rgba(8,23,43,.02) 100%),
+  url('../assets/ui/guild/deposit/deposit-vault.webp') center center/cover no-repeat;
+ border-bottom:1px solid #4979a4;
+ box-shadow:inset 0 -38px 36px -38px #061324;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger{
+ position:relative;z-index:1;display:flex;flex-direction:column;
+ width:min(660px,66%);min-width:300px;margin:0;padding:11px 19px;
+ border:1px solid #f2bb76;border-radius:2px;
+ background:linear-gradient(100deg,rgba(10,24,43,.93),rgba(18,33,54,.88) 85%,rgba(25,39,58,.74));
+ box-shadow:inset 0 1px 0 #fff2,0 0 18px #f5a64b33,0 11px 24px #01091688;
+ clip-path:polygon(0 12px,12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px));
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger::before{
+ content:'';position:absolute;left:2px;bottom:2px;width:50%;height:2px;
+ background:linear-gradient(90deg,#ffbc64,transparent);box-shadow:0 0 10px #ffae48;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger-row{
+ display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-height:65px;
+ padding:10px 3px;border-bottom:1px solid #7190b06b;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger-row:last-child{border-bottom:0}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger-label{
+ color:#ecf4ff;flex:0 1 auto;font:800 clamp(12px,1.08vw,16px)/1.2 'Segoe UI',Arial,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-amount{
+ display:inline-flex;align-items:center;gap:8px;margin-left:auto;white-space:nowrap;
+ color:#ffc263;font:800 clamp(18px,1.65vw,28px)/1.12 'Segoe UI',Arial,sans-serif;
+ text-shadow:0 2px 3px #010612,0 0 18px #e8a04438;
+ font-variant-numeric:tabular-nums;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-amount img{
+ width:35px;height:35px;max-width:none;object-fit:contain;filter:drop-shadow(0 0 7px #764bff77);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger-row>small{
+ color:#c9daeb;font:600 11px/1.2 'Segoe UI',sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal{
+ position:relative;display:flex;flex-direction:column;gap:6px;
+ min-width:0;margin:0 13px;padding:12px 18px 12px 26px;
+ border:1px solid #517b9d;border-radius:6px;
+ background:linear-gradient(100deg,#152f4b,#0a2038 85%);
+ box-shadow:inset 0 1px 0 #e7f8ff18;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal::before{
+ content:'';position:absolute;top:12px;bottom:12px;left:13px;width:3px;border-radius:5px;
+ background:linear-gradient(#ffe89a,#ed9132);box-shadow:0 0 9px #ffa63a88;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal h4{
+ margin:0 0 2px;color:#f9f5e9;font:800 16px/1.1 'Segoe UI',sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal-rows{display:flex;flex-direction:column;gap:5px}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal-rows>div{
+ display:flex;align-items:center;gap:15px;flex-wrap:wrap;font:600 13px/1.2 'Segoe UI',sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal-rows span{
+ display:inline-flex;align-items:center;gap:9px;min-width:185px;color:#ecf4ff;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal-rows img{
+ width:25px;height:25px;object-fit:contain;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal-rows strong{
+ color:#ffd076;font-size:17px;font-variant-numeric:tabular-nums;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal>small{
+ color:#a4bdd0;font:500 11px/1.35 'Segoe UI',sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-contributions{
+ display:flex;flex-direction:column;gap:9px;min-width:0;margin:0 13px;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-form{
+ display:grid;grid-template-columns:minmax(200px,1.1fr) minmax(150px,1fr) minmax(130px,.64fr);
+ gap:14px;align-items:center;min-width:0;min-height:72px;margin:0;padding:9px 13px;
+ border:1px solid #507d9f;border-radius:6px;
+ background:linear-gradient(180deg,#17344f,#10233d);
+ box-shadow:inset 0 1px 0 #c8edff22,0 1px 7px #0005;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit label.dbi-guild-deposit-form-label{
+ display:flex;align-items:center;gap:8px;min-width:0;margin:0;
+ color:#f0f4ff;font:800 clamp(12px,1.07vw,17px)/1.2 'Segoe UI',Arial,sans-serif;
+ white-space:normal;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-form-label img{
+ flex:none;width:34px;height:34px;max-width:34px;object-fit:contain;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit .dbi-guild-deposit-form input[name="amount"]{
+ width:100%;min-width:0;max-width:none;height:42px;margin:0;padding:9px 13px;
+ border:1px solid #709ab8;border-radius:6px;
+ background:linear-gradient(180deg,#08192f,#0c2742);
+ box-shadow:inset 0 2px 5px #0008;color:#eef9ff;
+ font:600 14px/1.1 'Segoe UI',Arial,sans-serif;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit .dbi-guild-deposit-form input[name="amount"]::placeholder{color:#adc4d6;opacity:.94}
+.game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-deposit .dbi-guild-deposit-form button[type="submit"]:not(#dbiGuildLeave){
+ display:flex;align-items:center;justify-content:center;gap:12px;
+ min-height:46px;min-width:0;padding:8px 12px;margin:0;
+ border:1px solid #ffe197;border-radius:8px;
+ background:linear-gradient(180deg,#ffce7a,#ff9b31 46%,#db660e 94%);
+ box-shadow:inset 0 2px 0 #fff2c7a3,inset 0 -2px 0 #9d490b,0 0 14px #ff9b2870,0 5px 8px #0007;
+ color:#fff8ef;font:800 17px/1.2 'Segoe UI',Arial,sans-serif;
+ text-shadow:0 1px 2px #6d2d03;
+ white-space:nowrap;cursor:pointer;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-form button[type="submit"] img{
+ width:29px;height:29px;max-width:29px;object-fit:contain;filter:brightness(1.7);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-deposit .dbi-guild-deposit-form button[type="submit"]:not(#dbiGuildLeave):hover{filter:brightness(1.08)}
+.game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-deposit .dbi-guild-deposit-form button[type="submit"]:not(#dbiGuildLeave):active{transform:translateY(1px)}
+@media(max-width:1230px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-form{grid-template-columns:minmax(135px,.85fr) minmax(140px,1fr) minmax(115px,.62fr);gap:8px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit label.dbi-guild-deposit-form-label{font-size:12px;gap:5px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-form-label img{width:27px;height:27px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger{width:min(610px,76%);min-width:0}
+}
+@media(max-width:880px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit{grid-template-columns:1fr;gap:10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-sidebar{min-height:0;flex-direction:row;gap:6px;align-items:stretch;padding:6px 9px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-side-title,
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-side-current{min-height:40px;flex:1;margin:0;padding:6px 12px;border-bottom:0}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-sidebar img{width:24px;height:24px;flex-basis:24px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-main{min-height:0}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-scene{min-height:250px}
+}
+@media(max-width:620px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit h3.dbi-guild-deposit-title{font-size:17px;min-height:49px;padding:8px 10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-title img{width:28px;height:27px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-scene{padding:12px;min-height:265px;background-position:62% center}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger{width:100%;min-width:0;padding:7px 10px;background:linear-gradient(90deg,#0c223cED,#0a1d34CC)}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger-row{min-height:52px;gap:6px;padding:8px 3px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-ledger-label{font-size:12px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-amount{font-size:17px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-amount img{width:27px;height:27px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal{margin:0 8px;padding:11px 12px 12px 24px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal h4{font-size:14px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-personal-rows span{min-width:0}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-contributions{margin:0 8px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-form{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;padding:10px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit label.dbi-guild-deposit-form-label{grid-column:1/-1;font-size:13px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit .dbi-guild-deposit-form input[name="amount"]{height:40px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-deposit .dbi-guild-deposit-form button[type="submit"]:not(#dbiGuildLeave){min-height:40px;font-size:14px;gap:5px}
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit-form button[type="submit"] img{width:22px;height:22px}
+}
+@media(prefers-reduced-motion:reduce){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit button{transition:none}
+}

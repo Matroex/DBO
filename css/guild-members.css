@@ -1,0 +1,67 @@
+#pageBody .guild-member-scroll{overflow-x:auto}
+#pageBody .guild-member-table{width:100%;border-collapse:collapse;font:14px/1.45 'Segoe UI',sans-serif;color:#e5eff9}
+.guild-member-table th,.guild-member-table td{text-align:left;padding:10px 12px;border-bottom:1px solid #354c62;white-space:nowrap}
+.guild-member-table th{color:#ffc57c;background:#142739}
+.guild-member-table td{background:linear-gradient(125deg,#20364c,#122235)}
+.guild-member-name,.guild-right-count{display:inline-flex;align-items:center;gap:8px}
+.guild-member-avatar{width:36px;height:36px;border:1px solid #72a1be;display:grid;place-items:center;background:#101e31;color:#ffc57c;border-radius:4px;overflow:hidden}
+.guild-member-avatar img{width:100%;height:100%;object-fit:cover}
+.guild-right-count{gap:3px}.guild-right-count i{display:block;width:4px;height:19px;background:#48da85;transform:skew(-17deg)}
+.guild-right-count small{margin-left:5px;color:#bdcfe0}
+.guild-status-dot{display:inline-block;width:14px;height:14px;border:1px solid #b1c2d2;border-radius:50%;background:#df5151}
+.guild-status-dot[data-state=online]{background:#36d376}.guild-status-dot[data-state=away]{background:#08090b}.guild-status-dot[data-state=ban]{background:#9199a2}
+.guild-right-form fieldset{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 10px;padding:12px;border:1px solid #45647b}
+.guild-right-form legend{color:#ffd39d}.guild-right-form input[type=checkbox]{width:auto;accent-color:#e89942}
+#pageBody .guild-right-form .guild-kick{background:#713136;color:white}
+#pageBody .guild-member-count{margin:8px 0;color:#fff;font-weight:600}
+#pageBody dialog.guild-member-dialog{
+ position:fixed;inset:0;margin:auto;box-sizing:border-box;width:min(480px,94vw);max-height:88vh;overflow:auto;
+ padding:20px;border:1px solid #6c8fa9;border-radius:8px;background:linear-gradient(135deg,#203950,#0d1d30);
+ color:#f1f5fb;text-align:left;white-space:normal;box-shadow:0 12px 54px #000b
+}
+#pageBody .guild-member-dialog:not([open]){display:none}
+.guild-member-dialog::backdrop{background:#030b17ba}
+#pageBody .guild-dialog-close{float:right;margin-bottom:8px;font-size:19px}
+#pageBody .guild-member-dialog fieldset{clear:both;display:grid;gap:8px}
+#pageBody .guild-member-dialog label{display:flex;align-items:center;gap:8px}
+#pageBody .guild-member-dialog form>div{display:flex;flex-wrap:wrap;gap:6px}
+
+.game.atlas-app .atlas-view #pageBody .dbi-guild-tabs button[data-guild-tab="Planeta"]::before {
+ content: "";
+ mask-image: url("../assets/ui/guild/planet-badge.png");
+ -webkit-mask-image: url("../assets/ui/guild/planet-badge.png");
+}
+
+/* Size the navigation against the guild panel, including when the sidebar is open. */
+.game.atlas-app .atlas-view #pageBody .dbi-guild {container-type:inline-size}
+.game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-tabs {
+ display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:0;
+ --guild-tab-lip:clamp(7px,.8cqi,12px);
+ width:100%;min-width:0;box-sizing:border-box;overflow:visible;
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-tabs button[data-guild-tab]:is(:enabled,:disabled) {
+ width:calc(100% + var(--guild-tab-lip));min-width:0;max-width:none;box-sizing:border-box;
+ margin:0 0 0 calc(-1 * var(--guild-tab-lip));
+ padding:0 6px;gap:4px;height:46px;min-height:46px;
+ font-size:clamp(12px,1.05cqi,16px);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-tabs button[data-guild-tab]::before {
+ width:clamp(14px,1.45cqi,21px);height:clamp(14px,1.45cqi,21px);
+}
+@container(width < 1100px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-tabs {grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@container(width < 560px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-tabs {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* Keep the first plate flush at the start of each row. */
+@container(min-width:1100px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-tabs button[data-guild-tab]:is(:enabled,:disabled):nth-child(10n+1){width:100%;margin-left:0}
+}
+@container(560px <= width < 1100px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-tabs button[data-guild-tab]:is(:enabled,:disabled):nth-child(5n+1){width:100%;margin-left:0}
+}
+@container(width < 560px){
+ .game.atlas-app .atlas-view #pageBody .dbi-guild .dbi-guild-tabs button[data-guild-tab]:is(:enabled,:disabled):nth-child(2n+1){width:100%;margin-left:0}
+}

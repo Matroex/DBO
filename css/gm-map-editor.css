@@ -1,0 +1,133 @@
+/* Astralni Wojownicy — Kreator Map i Questów GM: tylko klasy dbi-gme */
+.dbi-gme{--gm-gold:#f2bd68;--gm-border:#557995;--gm-bg:#08182b;color:#edf4ff;font-family:system-ui,'Segoe UI',Arial,sans-serif;width:100%;min-width:0;max-width:100%;padding:5px 0 30px}
+.dbi-gme,.dbi-gme *{box-sizing:border-box}
+.dbi-gme button,.dbi-gme input,.dbi-gme select,.dbi-gme textarea{font:inherit}
+.dbi-gme button{cursor:pointer;color:#e8f4ff;background:linear-gradient(180deg,#233e5d,#112940);border:1px solid #5684ab;border-radius:7px;padding:9px 13px;min-width:0;transition:border-color .14s,filter .14s,box-shadow .14s}
+.dbi-gme button:hover{border-color:#ffca76;filter:brightness(1.14)}
+.dbi-gme button:focus-visible,.dbi-gme :is(input,select,textarea):focus-visible{outline:2px solid #ffcb78;outline-offset:2px}
+.dbi-gme button:disabled{opacity:.48;cursor:not-allowed;filter:none}
+.dbi-gme button.active{background:linear-gradient(180deg,#8b4b20,#4b2b1b);color:#ffe9c1;border-color:#ffb14d;box-shadow:inset 0 1px #ffd69c55,0 0 15px #e98b3737}
+.dbi-gme button.danger{border-color:#9d5359;background:linear-gradient(#512f42,#351c29);color:#ffd6d6}
+.dbi-gme-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:17px 22px 22px;border:12px solid transparent;border-image:url('../assets/ui/dojo-controls/planner-frame-clean.webp') 16 stretch;background:linear-gradient(120deg,#132845,#08172e);box-shadow:inset 0 1px #a5cffa25}
+.dbi-gme-header>div{flex:1;min-width:250px}
+.dbi-gme .dbi-gme-tag{display:block;margin-bottom:5px;font-size:11px;letter-spacing:1.8px;color:#eab875;font-weight:800}
+.dbi-gme-header h2{color:#fff0d0;font-size:clamp(20px,2.4vw,32px);margin:0 0 6px;line-height:1.1;text-shadow:0 1px 9px #ffc15b55}
+.dbi-gme-header p{font-size:12px;color:#b4c9db;margin:0;line-height:1.4}
+.dbi-gme-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:13px 0 15px}
+.dbi-gme-tabs button{font-weight:800;padding:13px 5px;border:1px solid #536f8b;clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 100%,0 100%);border-radius:0;background:linear-gradient(180deg,#304761,#091c33 80%)}
+.dbi-gme-tabs button.active{background:linear-gradient(180deg,#9b5c26,#60321b 65%,#301f1d);border-color:#ffce76;box-shadow:inset 0 -3px #ffac4b}
+.dbi-gme-content{min-width:0;display:grid;grid-template-columns:180px minmax(0,1fr);gap:13px;align-items:start}
+.dbi-gme-sidebar,.dbi-gme-projects,.dbi-gme-work,.dbi-gme-quest-edit,.dbi-gme-publish{background:linear-gradient(180deg,rgba(18,38,62,.96),rgba(7,19,36,.97));border:1px solid #466986;border-radius:11px;box-shadow:inset 0 1px #9ec5e11e,0 13px 32px #0005;min-width:0}
+.dbi-gme-sidebar{padding:8px}
+.dbi-gme-projects{display:flex;flex-direction:column;gap:6px;padding:12px 10px;border:none;background:none;box-shadow:none}
+.dbi-gme-projects strong{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:#ffcd7c;margin:0 0 5px}
+.dbi-gme-projects button{text-align:left;font-size:12px;overflow-wrap:anywhere;padding:10px}
+.dbi-gme-work{padding:15px}
+.dbi-gme-map-settings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;align-items:end;margin:0 0 12px}
+.dbi-gme-map-settings>.dbi-gme-field:nth-child(5){grid-column:span 2}
+.dbi-gme-map-settings>.dbi-gme-inline{grid-column:span 2;align-self:end}
+.dbi-gme-map-settings>p{margin:0;grid-column:1/-1;font-size:11px;color:#aec2d7}
+.dbi-gme-field{display:flex;flex-direction:column;min-width:0;gap:5px;font-size:12px;color:#e0e8f2}
+.dbi-gme-field>span{font-weight:700;font-size:11px;color:#c4d6e8}
+.dbi-gme-field :is(input,textarea,select){width:100%;min-width:0;background:linear-gradient(#0b1a31,#071627);border:1px solid #567896;border-radius:5px;color:#eef6ff;padding:9px;font-size:12px;line-height:1.4;min-height:38px}
+.dbi-gme-field textarea{resize:vertical;min-height:100px}
+.dbi-gme-field option{background:#102b42;color:#edf3fb}
+.dbi-gme-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dbi-gme-tools{display:flex;flex-wrap:wrap;gap:5px;padding:9px;border:1px solid #3a5976;background:#0a192d;border-radius:7px;margin-bottom:11px}
+.dbi-gme-tools button{font-size:11px;padding:7px 10px}
+.dbi-gme-map-wrap{position:relative;width:100%;max-height:700px;overflow:auto;border:2px solid #6790a6;background:#081526;box-shadow:0 0 18px #3292b022,0 8px 26px #0007;padding:0}
+.dbi-gme-map-stage{position:relative;width:100%;min-height:220px;overflow:hidden;touch-action:none;background-position:center;background-repeat:no-repeat;background-color:#376048;cursor:crosshair;isolation:isolate}
+.dbi-gme-map-stage .dbi-gme-pin{position:absolute;z-index:5;display:grid;place-items:center;transform:translate(-50%,-85%);width:33px;height:33px;padding:1px;border:2px solid #eac374;border-radius:50%;background:rgba(12,29,48,.9);box-shadow:0 2px 11px #000a,0 0 8px #47c7e950;font-size:19px;line-height:1;touch-action:none;user-select:none}
+.dbi-gme-map-stage .dbi-gme-pin.is-selected{border-color:#f9e5ad;box-shadow:0 0 0 3px #fbad4950,0 0 17px #f0b44f}
+.dbi-gme-map-stage .dbi-gme-pin span{pointer-events:none}
+.dbi-gme-map-stage .dbi-gme-block{position:absolute;z-index:2;padding:0;border:2px solid #e54549;background:repeating-linear-gradient(45deg,#eb303043 0,#eb303043 9px,#ffb54338 9px,#ffb54338 15px);border-radius:0;touch-action:none}
+.dbi-gme-map-stage .dbi-gme-block.is-selected{border-color:#ffd97f;background:#ef5f5566}
+.dbi-gme-map-stage .dbi-gme-drawing{position:absolute;z-index:6;border:2px dashed #ffe08a;background:#eb404c64;pointer-events:none}
+.dbi-gme-help{font-size:12px;color:#a9c8db;line-height:1.55;margin:10px 0 14px}
+.dbi-gme-inspector{padding:12px;border:1px solid #4b7799;border-radius:8px;background:linear-gradient(180deg,#102f4c,#0b1b31)}
+.dbi-gme-inspector h3,.dbi-gme-publish h3{font-size:17px;color:#ffcf83;margin:0 0 10px}
+.dbi-gme-inspector>p{font-size:12px;color:#bdd0e1;margin:0}
+.dbi-gme-inspector>.dbi-gme-fields{margin-bottom:10px}
+.dbi-gme-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 13px;min-width:0}
+.dbi-gme-quest-layout{grid-column:1/-1;display:grid;grid-template-columns:195px minmax(0,1fr);gap:13px;min-width:0}
+.dbi-gme-quest-layout>.dbi-gme-projects{border:1px solid #486b89;padding:13px}
+.dbi-gme-quest-edit{padding:17px}
+.dbi-gme-quest-edit>p{font-size:12px;color:#bdd2e3;line-height:1.5;margin:12px 0}
+.dbi-gme-step{background:linear-gradient(180deg,#122d48,#0b1b31);border:1px solid #557c9b;border-radius:9px;padding:12px;margin-top:13px}
+.dbi-gme-step-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px;color:#ffca79}
+.dbi-gme-step-title button{font-size:11px;padding:6px 10px}
+.dbi-gme-publish{grid-column:1/-1;padding:24px;max-width:100%}
+.dbi-gme-publish>p,.dbi-gme-instructions p{font-size:13px;color:#c5d8e8;line-height:1.6;margin:9px 0}
+.dbi-gme-publish-actions{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0}
+.dbi-gme-publish-actions button{font-size:12px;padding:12px 14px}
+.dbi-gme-publish-actions button:nth-child(4),.dbi-gme-publish-actions button:nth-child(5){border-color:#ffaa4b;background:linear-gradient(180deg,#a96221,#4b2e1b);color:#fff8de}
+.dbi-gme-errors{border:1px solid #e58c6c;background:#3a1f22;padding:10px;color:#ffe1dc;border-radius:7px}
+.dbi-gme-errors li{font-size:12px;margin-bottom:5px}
+.dbi-gme-valid{color:#83e6a9!important}
+.dbi-gme-instructions{margin-top:20px;padding:14px;border-left:3px solid #ffbd65;background:#0c263c}
+.dbi-gme-instructions>strong{color:#f8d390}
+.dbi-gme-footer{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 5px;margin-top:12px;font-size:12px;color:#bed5e7}
+.dbi-gme-footer button{border-color:#dbad6e}
+.dbi-gme-empty{grid-column:1/-1;border:1px dashed #5e7f9f;padding:40px;text-align:center;color:#bad6e9}
+.dbi-gme code{color:#ffd08b;font-size:11px;overflow-wrap:anywhere}
+@media(max-width:1050px){.dbi-gme-content{grid-template-columns:145px minmax(0,1fr)}.dbi-gme-map-settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.dbi-gme-header{padding:12px}.dbi-gme-tabs button{font-size:12px}.dbi-gme-content,.dbi-gme-quest-layout{grid-template-columns:1fr}.dbi-gme-sidebar .dbi-gme-projects{flex-direction:row;flex-wrap:wrap;align-items:center}.dbi-gme-sidebar .dbi-gme-projects button{width:auto;flex:0 1 auto}.dbi-gme-work{padding:8px}.dbi-gme-map-settings{gap:8px}.dbi-gme-map-settings>.dbi-gme-inline{grid-column:1/-1}.dbi-gme-map-stage{min-height:190px}.dbi-gme-fields{grid-template-columns:1fr}.dbi-gme-quest-edit{padding:10px}}
+@media(max-width:440px){.dbi-gme-map-settings{grid-template-columns:1fr}.dbi-gme-map-settings>.dbi-gme-field:nth-child(5){grid-column:1/-1}.dbi-gme-tabs{gap:2px}.dbi-gme-tabs button{padding:11px 2px;font-size:10px}.dbi-gme-map-stage .dbi-gme-pin{width:28px;height:28px;font-size:15px}}
+@media(prefers-reduced-motion:reduce){.dbi-gme button{transition:none}}
+
+.dbi-gme-entry{grid-column:1/-1;padding:11px 14px;border:1px solid #456a88;border-radius:9px;background:linear-gradient(100deg,#092339,#081a2b);margin-top:6px}
+.dbi-gme-entry>strong{color:#f0c47c;font-size:12px}
+.dbi-gme-entry>p{font-size:11px;color:#b3cddd;line-height:1.5;margin:6px 0 10px}
+.dbi-gme-entry>.dbi-gme-fields{grid-template-columns:minmax(140px,1.6fr) minmax(100px,1fr) minmax(100px,1fr)}
+@media(max-width:600px){.dbi-gme-entry>.dbi-gme-fields{grid-template-columns:1fr}}
+
+
+/* GM Kreator v2: podgląd istniejących map i fabularnych questów — tylko klasy edytora */
+.dbi-gme-legacy-option{border-left:3px solid #5f9ec8!important}
+.dbi-gme-projects strong:not(:first-child){padding-top:13px;margin-top:9px;border-top:1px solid #335676}
+.dbi-gme-legacy-view{min-width:0}
+.dbi-gme-legacy-banner{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px;padding:12px 14px;border:1px solid #5686ab;border-radius:9px;background:linear-gradient(115deg,#102c4a,#071b31)}
+.dbi-gme-legacy-banner h3{font-size:clamp(18px,1.7vw,24px);margin:3px 0 5px;color:#fbe0a8}
+.dbi-gme-legacy-banner p{font-size:11px;color:#bdd1e4;margin:0;word-break:break-word}
+.dbi-gme-legacy-banner .dbi-gme-inline button{font-size:11px}
+.dbi-gme-legacy-warning{font-size:12px;line-height:1.55;padding:10px 13px;border-left:3px solid #f3bc65;background:#1d2739;color:#d5e3ef;border-radius:5px}
+.dbi-gme-legacy-stage{touch-action:auto;cursor:default;min-height:260px}
+.dbi-gme-read-pin{pointer-events:auto!important;cursor:help!important}
+.dbi-gme-read-block{pointer-events:none!important}
+.dbi-gme-legacy-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.dbi-gme-legacy-box{padding:12px 13px;border:1px solid #45718e;border-radius:8px;background:linear-gradient(180deg,#122d48,#0c1c30);min-width:0}
+.dbi-gme-legacy-box h4{color:#ffd08a;font-size:14px;margin:0 0 10px;padding-bottom:7px;border-bottom:1px solid #315877}
+.dbi-gme-legacy-box p,.dbi-gme-legacy-box li{font-size:12px;color:#c9dded;overflow-wrap:anywhere;line-height:1.5}
+.dbi-gme-legacy-box ul{margin:0;padding-left:18px;max-height:210px;overflow:auto}
+.dbi-gme-linked-quest{display:block;width:100%;text-align:left;margin-bottom:7px;font-size:12px!important}
+.dbi-gme-legacy-quest h3{font-size:20px;color:#ffe0ab;margin:4px 0 12px}
+.dbi-gme-legacy-quest .dbi-gme-step{margin-top:10px}
+.dbi-gme-legacy-quest .dbi-gme-step p{font-size:12px;line-height:1.5;margin:5px 0;color:#d2e5f2}
+@media(max-width:750px){.dbi-gme-legacy-details{grid-template-columns:1fr}.dbi-gme-legacy-banner .dbi-gme-inline button{flex:1 1 150px}}
+
+/* Kreator Map v3 — malowanie mapy od zera na kafelkach; tylko widok GM. */
+.dbi-gme-terrain-mode{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 13px;margin-bottom:12px;border:1px solid #4e84a3;border-radius:9px;background:linear-gradient(115deg,#0c2941,#0b1c30)}
+.dbi-gme-terrain-mode strong{font-size:13px;color:#f7d19c}
+.dbi-gme-terrain-mode .dbi-gme-inline button{font-size:12px;font-weight:800}
+.dbi-gme-terrain-panel{border:1px solid #5b87a8;border-radius:10px;background:linear-gradient(140deg,#122f4b,#071c31);padding:12px;margin:0 0 12px;box-shadow:inset 0 1px 0 #83d7ff28}
+.dbi-gme-terrain-heading{display:flex;justify-content:space-between;flex-wrap:wrap;gap:5px;margin-bottom:9px;color:#ffca78;font-size:13px}
+.dbi-gme-terrain-heading>span{color:#b2cedf;font-size:11px}
+.dbi-gme-terrain-toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding-bottom:9px;margin-bottom:10px;border-bottom:1px solid #345f7a}
+.dbi-gme-terrain-toolbar>button{font-size:12px;padding:7px 11px;min-height:36px}
+.dbi-gme-terrain-size,.dbi-gme-grid-toggle{display:flex;align-items:center;gap:7px;font-size:12px;color:#d6e9f4;white-space:nowrap}
+.dbi-gme-terrain-size select{min-height:34px;padding:5px 7px;border:1px solid #527fa0;border-radius:6px;color:#e8f5ff;background:#102c45}
+.dbi-gme-grid-toggle input{accent-color:#ffbd6b;width:15px;height:15px}
+.dbi-gme-tile-palette{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;align-items:stretch}
+.dbi-gme .dbi-gme-tile-choice{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:8px;align-items:center;min-width:0;padding:6px;text-align:left;font-size:11px;font-weight:700;min-height:54px;background:linear-gradient(#193a56,#10263b);border-color:#4a7691;overflow:hidden}
+.dbi-gme-tile-choice span:nth-child(2){overflow-wrap:anywhere}
+.dbi-gme-tile-choice small{font-size:10px}
+.dbi-gme-tile-swatch{width:40px;height:40px;border-radius:5px;border:1px solid #c7e5f355;background-image:url('../assets/ui/map-editor/terrain-atlas.png');background-size:1000% 100%;background-repeat:no-repeat;box-shadow:inset 0 0 0 1px #06152655,0 2px 6px #0008;image-rendering:pixelated}
+.dbi-gme-terrain-panel>p{margin:10px 0 0;color:#bcd5e5;font-size:11px;line-height:1.5}
+.dbi-gme-terrain-canvas{position:absolute;z-index:0;top:0;left:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
+.dbi-gme-map-stage.is-tile-painting .dbi-gme-pin,.dbi-gme-map-stage.is-tile-painting .dbi-gme-block{pointer-events:none}
+.dbi-gme-map-stage.show-grid::before{content:'';position:absolute;z-index:3;inset:0;pointer-events:none;background-image:linear-gradient(90deg,#d5f8ff55 1px,transparent 1px),linear-gradient(180deg,#d5f8ff55 1px,transparent 1px);background-size:calc(100% / var(--gme-columns)) calc(100% / var(--gme-rows));box-shadow:inset 0 0 1px #9ee7ff77}
+.dbi-gme-map-stage.is-tile-painting{cursor:crosshair}
+.dbi-gme-map-stage.is-tile-painting .dbi-gme-drawing{border:2px solid #ffcf82;background:#efb65a60}
+@media(max-width:1260px){.dbi-gme-tile-palette{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.dbi-gme-tile-palette{grid-template-columns:repeat(2,minmax(0,1fr))}.dbi-gme-terrain-panel{padding:8px}.dbi-gme .dbi-gme-tile-choice{grid-template-columns:30px minmax(0,1fr) auto;gap:5px;min-height:44px;padding:4px}.dbi-gme-tile-swatch{width:30px;height:30px}.dbi-gme-terrain-mode{padding:7px}.dbi-gme-terrain-toolbar>button{padding:7px 8px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.dbi-gme .dbi-gme-tile-choice{transition:none}}

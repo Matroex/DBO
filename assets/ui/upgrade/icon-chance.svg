@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+<defs><linearGradient id="c" x1="12" y1="8" x2="52" y2="56"><stop stop-color="#A5FFFF"/><stop offset=".42" stop-color="#18CDFF"/><stop offset="1" stop-color="#1377F1"/></linearGradient><filter id="g" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3"/></filter></defs>
+<path d="M15 5H49L59 15V49L49 59H15L5 49V15L15 5Z" fill="#0B2549" stroke="#3189D7" stroke-width="2"/>
+<path d="M15 11H49L53 15V49L49 53H15L11 49V15L15 11Z" stroke="#74E0FF" stroke-opacity=".35" stroke-width="1"/>
+<circle cx="32" cy="32" r="21" stroke="url(#c)" stroke-width="4"/><circle cx="32" cy="32" r="13" stroke="#80EFFF" stroke-opacity=".82" stroke-width="3"/><circle cx="32" cy="32" r="5" fill="url(#c)"/><path d="M32 6V17M32 47V58M6 32H17M47 32H58" stroke="#A9FBFF" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,26 @@
+#pageBody .gp{color:#eef5ff;font:15px/1.45 'Segoe UI',sans-serif;container-type:inline-size}
+.gp-card,.gp-level{border:10px solid transparent;border-image:url('../assets/ui/guild/panel-rim.png') 13 stretch;background:linear-gradient(140deg,#22394e,#101f31);box-sizing:border-box}
+.gp-shop,.gp-overview{display:grid;grid-template-columns:minmax(0,40fr) minmax(0,60fr);gap:20px}
+.gp-shop{max-width:880px}.gp-shop .gp-picker{position:relative;overflow:hidden}.gp-orb{display:block;width:100%;height:100%;object-fit:contain;background:#061224}
+.gp-picker label{position:absolute;inset:auto 10px 10px;background:#09172de8;padding:8px;color:white;font-weight:600}.gp-picker select{display:block;width:100%;margin-top:5px}
+.gp-offer,.gp-detail{display:flex;flex-direction:column;justify-content:space-between;gap:12px}.gp-offer{padding:10px 0}.gp-offer button{margin-left:18px}
+.gp-picture{aspect-ratio:4/3}.gp-detail p{margin:0}.gp-level{display:flex;align-items:center;gap:16px;padding:4px 10px}.gp-level>b{color:#ffce85;font-size:23px;border:1px solid #e29b43;padding:2px 14px;background:#292426}.gp-level>div{flex:1;text-align:center}.gp-track{height:12px;border:1px solid #749dbb;background:#081827;border-radius:20px;margin-top:3px}
+.gp-bonuses{display:grid;grid-template-columns:1fr 1fr;gap:8px}.gp-bonus{border-width:7px;border-image-source:url('../assets/ui/guild/inset-rim.png');border-image-slice:8}.gp header{background:#1b3249 url('../assets/ui/guild/panel-heading.webp') center/cover;padding:5px 8px;font-weight:700;border-bottom:1px solid #476781}.gp-bonus:last-child header{color:#ffcd83}.gp-bonus ul{list-style:none;padding:4px;margin:0}.gp-bonus li{display:flex;align-items:center;gap:6px;min-height:23px;font-size:13px}.gp-bonus li img{width:20px;height:19px}
+.gp-objects{margin-top:16px;min-height:145px}.gp-objects header{text-align:center}.gp-objects>div{overflow:auto}.gp-objects table{width:100%;border-collapse:collapse}.gp-objects th,.gp-objects td{text-align:left;padding:7px;font-size:13px}.gp-objects button:disabled{opacity:.55}.gp [data-gp-back]{margin-top:12px}
+@container(max-width:720px){.gp-overview{grid-template-columns:1fr}.gp-picture{max-height:300px}.gp-bonuses{grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}}
+@media(max-width:650px){.gp-shop{grid-template-columns:1fr}.gp-picker{max-width:320px}}
+
+#pageBody .gp-picker select[data-gp-choice],
+#pageBody .gp-picker select[data-gp-choice] option {
+ color-scheme:dark;
+ background-color:#102337;
+ color:#f3f8ff;
+}
+#pageBody .gp-picker select[data-gp-choice] option:checked {
+ background-color:#305579;
+ color:#fff;
+}
+@media (forced-colors:active) {
+ #pageBody .gp-picker select[data-gp-choice],
+ #pageBody .gp-picker select[data-gp-choice] option {color:CanvasText;background-color:Canvas}
+}
