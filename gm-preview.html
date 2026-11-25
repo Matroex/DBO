@@ -1,0 +1,38 @@
+<!doctype html><html lang="pl"><meta charset="utf-8"><title>Test projektu GM</title><body><p id="status">Wczytywanie projektu…</p><script>
+(async()=>{
+ 'use strict';
+ const session=window.sessionStorage, filesKey='dboidle_gm_preview_files', changesKey='dboidle_gm_preview_writes';
+ try{
+  const files=JSON.parse(session.getItem(filesKey)||'null');
+  if(!files)throw Error('Otwórz test z zakładki „Zapis i publikacja” w kreatorze GM.');
+  // All game writes go to this tab. The normal character save is only read.
+  const real=window.localStorage, changes=JSON.parse(session.getItem(changesKey)||'{}');
+  const data=new Map();
+  for(let i=0;i<real.length;i++){const k=real.key(i);data.set(k,real.getItem(k))}
+  for(const [k,v] of Object.entries(changes))if(v===null)data.delete(k);else data.set(k,v);
+  const write=(k,v)=>{k=String(k);changes[k]=v;session.setItem(changesKey,JSON.stringify(changes));if(v===null)data.delete(k);else data.set(k,v)};
+  const storage={get length(){return data.size},key(i){return Array.from(data.keys())[i]??null},getItem(k){return data.get(String(k))??null},setItem(k,v){write(k,String(v))},removeItem(k){write(k,null)},clear(){for(const k of data.keys())write(k,null)}};
+  Object.defineProperty(window,'localStorage',{configurable:true,value:new Proxy(storage,{
+   get:(o,k)=>k in o?o[k]:data.get(k),set:(o,k,v)=>(write(k,String(v)),true),
+   ownKeys:()=>[...data.keys()],getOwnPropertyDescriptor:(o,k)=>data.has(k)?{configurable:true,enumerable:true,value:data.get(k)}:undefined
+  })});
+  const response=await fetch('index.html',{cache:'no-store'});if(!response.ok)throw Error('Błąd odczytu index.html.');
+  const doc=new DOMParser().parseFromString(await response.text(),'text/html'),urls=[];
+  doc.title='Test GM · '+doc.title;
+  if(Object.hasOwn(files,'data/gm-world-published.json')){
+   const loader=doc.getElementById('dbi-world-data-loader');
+   if(!loader)throw Error('Zaktualizuj index.html do wersji obsługującej JSON.');
+   const payload=doc.createElement('script');payload.type='application/json';payload.id='dbi-world-preview-data';
+   payload.textContent=JSON.stringify(JSON.parse(files['data/gm-world-published.json'])).replace(/</g,'\\u003c');
+   loader.before(payload);
+  }
+
+  for(const script of doc.querySelectorAll('script[src]')){
+   const path=script.getAttribute('src').split('?')[0];if(!['js/world.js','js/app.js','data/gm-world-published.js'].includes(path)||!Object.hasOwn(files,path))continue;
+   const url=URL.createObjectURL(new Blob([files[path]],{type:'text/javascript'}));urls.push(url);script.src=url;
+  }
+  document.open();document.write('<!doctype html>'+doc.documentElement.outerHTML);document.close();
+  window.addEventListener('load',()=>urls.forEach(URL.revokeObjectURL),{once:true});
+ }catch(e){document.getElementById('status').textContent=e.message}
+})();
+</script></body></html>

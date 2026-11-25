@@ -131,3 +131,45 @@
 @media(max-width:1260px){.dbi-gme-tile-palette{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.dbi-gme-tile-palette{grid-template-columns:repeat(2,minmax(0,1fr))}.dbi-gme-terrain-panel{padding:8px}.dbi-gme .dbi-gme-tile-choice{grid-template-columns:30px minmax(0,1fr) auto;gap:5px;min-height:44px;padding:4px}.dbi-gme-tile-swatch{width:30px;height:30px}.dbi-gme-terrain-mode{padding:7px}.dbi-gme-terrain-toolbar>button{padding:7px 8px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.dbi-gme .dbi-gme-tile-choice{transition:none}}
+
+/* v3.1: podgląd animowanych dekoracji — tylko kreator GM */
+.dbi-gme-map-stage .dbi-gme-fire-pin{border-color:#f6a95a;background:radial-gradient(circle at 50% 75%,#74311c,#151e30 80%);box-shadow:0 0 13px #ff9e3b65,0 2px 8px #0009}
+.dbi-gme-fire-pin>span{display:block;transform-origin:50% 100%;animation:dbiGmeFlame 1.15s ease-in-out infinite alternate;filter:drop-shadow(0 0 6px #ff9c3b)}
+@keyframes dbiGmeFlame{0%{transform:rotate(-7deg) scale(.94,1.02);filter:drop-shadow(0 0 4px #ff8c28)}100%{transform:rotate(7deg) scale(1.08,.94);filter:drop-shadow(0 0 11px #ffbf55)}}
+@media(prefers-reduced-motion:reduce){.dbi-gme-fire-pin>span{animation:none}}
+/* v4.0: atlas 8 × 16, biblioteka i podgląd rzeczywistych grafik */
+.dbi-gme-tile-swatch{background-size:800% 1600%}
+.dbi-gme-material-group,.dbi-gme-prop-library{border:1px solid #355c78;border-radius:7px;padding:7px;margin:6px 0;background:#0d2338;color:#d4e5f1}
+.dbi-gme-material-group summary,.dbi-gme-prop-library summary{cursor:pointer;color:#f3c87d;font-size:12px;font-weight:700;padding:4px}
+.dbi-gme-material-group[open] summary{margin-bottom:6px}
+.dbi-gme-prop-library p{font-size:11px;line-height:1.4;margin:6px 0}
+.dbi-gme-prop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
+.dbi-gme-prop-grid button{display:grid;place-items:center;gap:3px;min-height:76px;padding:5px;font-size:10px}
+.dbi-gme-prop-grid img{height:48px;max-width:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none}
+.dbi-gme-map-stage .dbi-gme-sprite-pin{transform:none;border:1px solid transparent;border-radius:0;background:none;box-shadow:none;padding:0;min-width:0;min-height:0;overflow:visible;display:block}
+.dbi-gme-map-stage .dbi-gme-sprite-pin img{width:100%;height:100%;object-fit:fill;image-rendering:pixelated;pointer-events:none;display:block}
+.dbi-gme-map-stage .dbi-gme-sprite-pin:hover,.dbi-gme-map-stage .dbi-gme-sprite-pin.is-selected{border:1px dashed #ffd579;box-shadow:0 0 0 1px #ffd57955}
+.dbi-gme-layerbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px;margin:8px 0;border:1px solid #355c78;border-radius:7px;background:#0d2338;font-size:11px;color:#d4e5f1}
+.dbi-gme-layerbar label{display:flex;align-items:center;gap:5px}.dbi-gme-layerbar input{accent-color:#ffbd6b}.dbi-gme-layerbar select{background:#142d45;color:#e5f3fc;border:1px solid #517995;border-radius:4px;padding:4px}
+.dbi-gme-map-stage .dbi-gme-sprite-pin{z-index:1}.dbi-gme-map-stage .dbi-gme-sprite-pin.dbi-gme-above{z-index:6}.dbi-gme-map-stage .dbi-gme-sprite-pin.is-selected{z-index:7}
+
+.dbi-gme-brush-ghost{position:absolute;box-sizing:border-box;pointer-events:none;z-index:8;border:1px solid white;box-shadow:inset 0 0 0 1px #172636,0 0 0 1px #162637}
+.dbi-gme-overview{padding:12px;background:#102234;color:#fff;border:1px solid #6f94a9;max-width:94vw;max-height:94vh}
+.dbi-gme-overview::backdrop{background:#071019cf}
+.dbi-gme-overview>button{display:block;margin:10px auto 0;padding:7px 16px;cursor:pointer}
+
+.dbi-native-dialog{width:min(900px,94vw);max-height:88vh;overflow:auto;box-sizing:border-box;background:#101f32;color:#e5f1fc;border:1px solid #6799b3;padding:18px;border-radius:8px;color-scheme:dark;font:15px system-ui}
+.dbi-native-dialog::backdrop{background:#020a17c9}
+.dbi-native-dialog header{display:flex;align-items:center;justify-content:space-between}
+.dbi-native-dialog button,.dbi-native-dialog select,.dbi-native-dialog input,.dbi-native-dialog textarea{font:inherit;color:inherit;background:#172e47;border:1px solid #547792;border-radius:4px;padding:7px;box-sizing:border-box}
+.dbi-native-dialog button{cursor:pointer;margin:4px}.dbi-native-dialog button:disabled{opacity:.5}
+.dbi-native-dialog input[type=search],.dbi-native-dialog details textarea{width:100%;margin:12px 0}
+.dbi-native-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;max-height:40vh;overflow:auto}
+.dbi-native-fields label{display:grid;gap:4px;align-content:start;color:#cfdfec;font-size:.9em}
+.dbi-native-dialog summary{cursor:pointer;margin-top:12px}
+.dbi-native-canvas{position:relative;width:min(100%,660px);max-height:54vh;background:#20384a center/100% 100% no-repeat;cursor:crosshair;margin:10px 0}
+.dbi-native-canvas button{position:absolute;transform:translate(-50%,-50%);margin:0;padding:2px 6px;border-radius:50%;background:#10243f}.dbi-native-canvas button.active{border:2px solid #ffb84e}
+.dbi-native-paint{display:block;width:min(100%,720px);height:auto;touch-action:none;cursor:crosshair;background:#18283a center/100% 100% no-repeat;image-rendering:pixelated;margin:10px 0}
+
+/* v4.20: lokalizacja każdego etapu i przeciwnik fabularny */
+.dbi-gme-stage-location,.dbi-gme-story-enemy{margin:12px 0;padding:10px;border:1px solid #42657d;border-radius:6px;background:#12273c}.dbi-gme-stage-location summary{cursor:pointer;font-weight:700;color:#d9bc79}.dbi-gme-quest-map{position:relative;max-width:720px;width:100%;background:#1b3849 center/100% 100% no-repeat;margin:10px 0;cursor:crosshair;overflow:hidden}.dbi-gme-quest-map canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}.dbi-gme-stage-pin,.dbi-gme-stage-npc{position:absolute;transform:translate(-50%,-50%);z-index:2}.dbi-gme-stage-pin{pointer-events:none;background:#ffc746;color:#111;font-weight:900;border:2px solid #131c29;border-radius:100%;width:23px;height:23px;display:grid;place-items:center}.dbi-gme-stage-npc{min-width:22px;min-height:22px;padding:0!important;background:#133a54!important;color:#fff!important;border:1px solid #c2d9ed!important;border-radius:50%!important}.dbi-gme-story-enemy h4{margin:0 0 12px;color:#efc278}.dbi-native-canvas{max-height:none;max-width:100%}

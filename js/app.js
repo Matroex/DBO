@@ -291,9 +291,10 @@ function renderTechniques(){
     <div class="dbi-tech-upgrade-status" role="status" aria-atomic="true" style="color:#ffc28b"></div>
    </div><button class="dbi-tech-upgrade" type="button" data-tech-id="${esc(t.id)}" ${unlocked&&step?'':'disabled'}>Ulepsz</button>
   </article>`;
- }).join(''):'<div class="dbi-tech-empty">Nie potrafisz wykonać jeszcze żadnej techniki</div>'}</div>
+ }).join(''):'<div class="dbi-tech-empty">Nie masz jeszcze odblokowanych technik bojowych</div>'}</div>
  ${visibleTechniques.length?'<p class="dbi-tech-note">Wymagane KI przy ulepszaniu to statystyka postaci, nie Mana. Ulepszenie pobiera wyłącznie złoto. Poziomy G200 i B50 zostaną podłączone po wdrożeniu odrodzeń.</p>':''}
  </section>`;
+ window.DBIForms.panel(host.querySelector('.dbi-techniques'),dbiActive?.id);
  host.querySelectorAll('[data-tech-id]').forEach(btn=>btn.onclick=()=>{
   const def=DBI_TECHNIQUES.find(t=>t.id===btn.dataset.techId);
   if(!def)return;
@@ -3854,9 +3855,10 @@ function dbiActiveMissions(){
  const q2=dbiQuestStored('dboidle_quest_laguna_belt_v1_'+id);
  const result=[];
  if(q1?.state==='accepted'){
-  const count=Math.max(0,Math.min(10,Math.floor(Number(q1.kills)||0)));
-  result.push({id:'laguna-saibaman',name:'Oczyść Błękitną Lagunę',location:'Błękitna Laguna · Opiekun Laguny',count,total:10,
-   description:'Pokonaj 10 Kukieł Treningowych na EXPowisku.',ready:'Wróć do Opiekuna Laguny i odbierz Upominek Startowy.'});
+  const need=window.DBIWorld.lagoonRules.kills;
+  const count=Math.max(0,Math.min(need,Math.floor(Number(q1.kills)||0)));
+  result.push({id:'laguna-saibaman',name:'Oczyść Błękitną Lagunę',location:'Błękitna Laguna · Opiekun Laguny',count,total:need,
+   description:'Pokonaj '+need+' Kukieł Treningowych na EXPowisku.',ready:'Wróć do Opiekuna Laguny i odbierz Upominek Startowy.'});
  }
  if(q2?.state==='accepted'){
   const belt=!!window.DBIWorldInventory?.hasWhiteBelt?.();
@@ -3879,7 +3881,7 @@ function dbiActiveMissions(){
  const level=Math.max(1,Math.floor(Number(window.DBIWorldInventory?.character?.()?.level)||1));
  const itemCount=(itemId)=>Number(window.DBIWorldInventory?.countQuestItem?.(itemId))||0;
  const island=readState('dboidle_quest_island_students_v1_');
- if(island?.state==='accepted')add('island-students','Trening u Wielkiego Mistrza','Wyspa Genialnego Żółwia · Wielki Mistrz',island.kills,20,'Pokonaj 20 uczniów mistrza.','Wróć do Wielkiego Mistrza.');
+ if(island?.state==='accepted')add('island-students','Trening u Wielkiego Mistrza','Wyspa Genialnego Żółwia · Wielki Mistrz',island.kills,window.DBIWorld.masterRules.kills,'Pokonaj '+window.DBIWorld.masterRules.kills+' uczniów mistrza.','Wróć do Wielkiego Mistrza.');
  const krillin=readState('dboidle_quest_island_krillin_v1_');
  const masterKrillin=localStorage.getItem('dboidle_quest_master_krillin_v1_'+id);
  if(masterKrillin==='accepted')add('master-krillin','Próba z Krillinem','Wyspa Genialnego Żółwia · Wielki Mistrz',krillin?.state==='won'||krillin?.state==='completed'?1:0,1,'Pokonaj Krillina w pojedynku.','Wróć do Wielkiego Mistrza po nagrodę.');
@@ -3893,7 +3895,7 @@ function dbiActiveMissions(){
    const spirit=window.DBISpiritual?.hasEarnedPoint?.()===true;
    add('forest-spirit','Trening ducha','Dziki Las · Genialny Żółw',spirit?1:0,1,'Zdobądź jeden punkt rozwoju ducha.','Wróć do Genialnego Żółwia.');
   }
-  if(st===2)add('forest-animals','Dzikie zwierzęta','Dziki Las · Genialny Żółw',forestRoshi.kills,30,'Pokonaj 30 dzikich zwierząt.','Wróć po Magiczny Czerwony Kij +4.');
+  if(st===2)add('forest-animals','Dzikie zwierzęta','Dziki Las · Genialny Żółw',forestRoshi.kills,window.DBIWorld.roshiRules.kills,'Pokonaj '+window.DBIWorld.roshiRules.kills+' dzikich zwierząt.','Wróć po Magiczny Czerwony Kij +4.');
   if(st===3)add('forest-mountain','Ratunek Góry Króla','Dziki Las · Genialny Żółw',level,10,'Osiągnij poziom 10.','Wróć do Genialnego Żółwia.');
  }
  const bulma=readState('dboidle_forest_bulma_v1_');
@@ -3904,7 +3906,7 @@ function dbiActiveMissions(){
  }
  // Wędrowiec ma osobny zapis zadania i musi być widoczny również poza mapą.
  const wanderer=readState('dboidle_mountain_wanderer_v1_');
- if(wanderer?.state==='accepted')add('mountain-wanderer','Nauczka dla zamachowców','Góra Króla Lasu · Wędrowiec',wanderer.kills,50,'Pokonaj 50 Zamachowców Góry (każdy wariant).','Wróć do Wędrowca i odbierz +50 do wszystkich statystyk.');
+ if(wanderer?.state==='accepted')add('mountain-wanderer','Nauczka dla zamachowców','Góra Króla Lasu · Wędrowiec',wanderer.kills,window.DBIWorld.wandererRules.kills,'Pokonaj '+window.DBIWorld.wandererRules.kills+' Zamachowców Góry (każdy wariant).','Wróć do Wędrowca i odbierz +50 do wszystkich statystyk.');
  if(wanderer?.state==='bean-available'||wanderer?.state==='bean-accepted')add('mountain-wanderer-bean','Fasolka dla żony Wędrowca','Góra Króla Lasu · Wędrowiec',Math.min(1,itemCount('zen-bean-red')),1,'Oddaj Czerwoną Fasolkę Zen ×1.','Wróć do Wędrowca, aby otrzymać +50 do obrony.');
  const mountain=readState('dboidle_mountain_roshi_v1_');
  if(mountain||location==='mountain'){
@@ -3957,11 +3959,11 @@ function dbiActiveMissions(){
 function dbiMissionsMarkup(missions){
  if(!missions.length)return '<p class="dbi-missions-empty">Brak aktywnych questów</p>';
  return missions.map(m=>{
-  const pct=Math.round(m.count/m.total*100);
+  const pct=Math.max(0,Math.min(100,Math.round(m.count/m.total*100)));
   const complete=m.count>=m.total;
   return `<article class="dbi-mission-entry">
    <div class="dbi-mission-top"><div><h3>${esc(m.name)}</h3><span>${esc(m.location)}</span></div><strong>${m.count}/${m.total}</strong></div>
-   <div class="dbi-mission-track" role="progressbar" aria-label="Postęp: ${esc(m.name)}" aria-valuemin="0" aria-valuemax="${m.total}" aria-valuenow="${m.count}"><div class="dbi-mission-fill" style="width:${pct}%"></div></div>
+   <div class="dbi-mission-track" role="progressbar" aria-label="Postęp: ${esc(m.name)}" aria-valuemin="0" aria-valuemax="${m.total}" aria-valuenow="${Math.max(0,Math.min(m.total,m.count))}"><div class="dbi-mission-fill" style="width:${pct}%"></div></div>
    <p class="dbi-mission-description">${esc(m.description)}</p>
    ${complete?`<p class="dbi-mission-ready">✓ ${esc(m.ready)}</p>`:''}
   </article>`;
@@ -4048,22 +4050,22 @@ function dbiClaimTownJourneyPremium(){
   const walletKey='dboidle_premium_v1_'+dbiActive.id;
   const amount=Number(localStorage.getItem(walletKey))||0;
   if(!dbiSaveInventoryTransaction(inventory.slice(),inventoryPlacement.slice(),[
-   [walletKey,String(amount+10)],
+   [walletKey,String(amount+(window.DBIWorld?.townJourneyRules?.premium??10))],
    [key,JSON.stringify({...state,stage:3})]
   ]))return false;
   dbiRefreshHeaderWallet();return true;
  }catch(error){console.error('Nagroda Miasto pod Górami:',error);return false}
 }
-const DBI_TOWN_TREASURE_REWARDS={
- 1:{take:'quest-old-staff',give:[['reinforcement-plans',10],['change-scroll',20]]},
- 2:{take:'quest-golden-dragon-coin',premium:50},
- 3:{take:'quest-hermit-glasses',techniqueDamageBonusPct:1},
- 4:{take:'quest-sayan-battle-outfit',give:[['quest-ki-energy',1]]},
- 5:{take:'quest-babidi-mark',give:[['addition-chip',10],['updating-chip',20]]},
- 6:{take:'quest-potara-earrings',give:[['quest-material-chest',10]]}
-};
 function dbiClaimTownTreasure(stage){
- const reward=DBI_TOWN_TREASURE_REWARDS[stage];if(!reward||!dbiActive?.id||dbiCharacterIndex<0)return false;
+ const task=window.DBIWorld?.townTreasureTask(stage);
+ if(!task||!dbiActive?.id||dbiCharacterIndex<0)return false;
+ const reward={take:task.id,give:[],premium:0,techniqueDamageBonusPct:0};
+ for(const [item,amount] of task.reward){
+  if(!Number.isSafeInteger(amount)||amount<1||amount>1000000)return false;
+  if(item==='premium'||item==='techniqueDamageBonusPct')reward[item]+=amount;
+  else if(amount<=4000)reward.give.push([item,amount]);
+  else return false;
+ }
  const questKey='dboidle_town_treasures_v1_'+dbiActive.id;
  try{
   const state=JSON.parse(localStorage.getItem(questKey)||'null');
@@ -4115,8 +4117,8 @@ function dbiFindQuestWhiteBelt(){
  return invIndex===-1?null:{kind:'inventory',index:invIndex};
 }
 // Jednorazowa nagroda mistrza, zapisywana dla konkretnej postaci.
-function dbiGrantMasterStats(rewardId){
- if(rewardId!=='master-krillin-v1'||!dbiActive?.id||dbiCharacterIndex<0)return false;
+function dbiGrantStatReward(rewardId,keys,amount,claim=null){
+ if(!dbiActive?.id||dbiCharacterIndex<0)return false;
  const key='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
  try{
   const list=JSON.parse(localStorage.getItem(key)||'[]');
@@ -4124,18 +4126,30 @@ function dbiGrantMasterStats(rewardId){
   if(index<0)return false;
   const c=list[index],flags={...(c.questRewards||{})};
   if(flags[rewardId])return true;
-  const keys=['strength','speed','endurance','intelligence','ki'];
   c.stats={...(c.stats||{})};
   for(const stat of keys){
    const current=dbiStatNumber(c.stats,[stat]);
    const fallback=dbiStatNumber(c,[stat]);
-   c.stats[stat]=(current??fallback??0)+20;
+   c.stats[stat]=(current??fallback??0)+amount;
   }
   flags[rewardId]=true;c.questRewards=flags;
-  localStorage.setItem(key,JSON.stringify(list));dbiCharacters[index]=c;
+  if(claim){
+   const remove=new Set();
+   if(claim.item){
+    for(let i=0;i<inventory.length&&remove.size<claim.need;i++)if(dbiDecodeItemRef(inventory[i]).id===claim.item)remove.add(i);
+    if(remove.size!==claim.need)return false;
+   }
+   const keep=(_,i)=>!remove.has(i);
+   if(!dbiSaveInventoryTransaction(inventory.filter(keep),inventoryPlacement.filter(keep),[[key,JSON.stringify(list)],[claim.key,JSON.stringify({stage:claim.stage+1,kills:0})]]))return false;
+  }else localStorage.setItem(key,JSON.stringify(list));
+  dbiCharacters[index]=c;
   return true;
  }catch{return false}
 }
+function dbiGrantMasterStats(rewardId){
+ return rewardId==='master-krillin-v1'&&dbiGrantStatReward(rewardId,['strength','speed','endurance','intelligence','ki'],20);
+}
+
 // Jednorazowa nagroda Wędrowca: +50 do pięciu statystyk.
 function dbiGrantWandererStats(){
  if(!dbiActive?.id||dbiCharacterIndex<0)return false;
@@ -4328,7 +4342,139 @@ function dbiAutoUseRedZen(){
  dbiSaveInventory();return true;
 }
 window.DBIWorldTechniques=()=>DBI_TECHNIQUES.filter(d=>dbiTechniqueUnlocked(d)).map(d=>({id:d.id,name:d.name,image:d.images[Math.max(0,Math.min(4,Number(dbiTechniqueState()[d.id]||1)-1))],mana:d.useMana,damage:dbiTechniquePower(d.baseDamage,'pvm'),damagePvp:dbiTechniquePower(d.baseDamage,'pvp'),baseDamage:d.baseDamage}));
+// GM: rozlicz wszystkie nagrody etapu razem z ekwipunkiem i postępem.
+// Quest upgrade uses the existing equipment encoding and never creates an extra copy.
+function dbiEditorUpgradeValid(item,from,to){
+ const base=catalog.find(x=>x.id===item);
+ return !!base&&DBI_SLOTS.some(([,slot])=>slot===base.slot)&&Number.isInteger(from)&&Number.isInteger(to)&&from>=0&&to>from&&to<=DBI_ENHANCEMENT_MAX;
+}
+// Policy is optional so published v4.36/v4.37 exact-level quests remain compatible.
+function dbiEditorUpgradePolicyValid(item,from,to,policy=null){
+ if(!policy)return dbiEditorUpgradeValid(item,from,to);
+ const {selection,mode,slots,value}=policy;
+ const known=DBI_SLOTS.map(([,slot])=>slot);
+ if(!['specific','any'].includes(selection)||!['exact','relative','absolute'].includes(mode))return false;
+ if(selection==='specific'&&!catalog.some(x=>x.id===item&&known.includes(x.slot)))return false;
+ if(selection==='any'&&(!Array.isArray(slots)||!slots.length||new Set(slots).size!==slots.length||slots.some(x=>!known.includes(x))))return false;
+ if(mode==='exact')return selection==='specific'&&dbiEditorUpgradeValid(item,from,to);
+ return Number.isInteger(value)&&value>=1&&value<=DBI_ENHANCEMENT_MAX;
+}
+function dbiEditorUpgradeDestination(decoded,item,from,to,policy=null){
+ if(!dbiEditorUpgradePolicyValid(item,from,to,policy))return null;
+ const base=catalog.find(x=>x.id===decoded.id),level=decoded.enhancement;
+ if(!base||!DBI_SLOTS.some(([,slot])=>slot===base.slot)||!Number.isInteger(level)||level<0||level>=DBI_ENHANCEMENT_MAX)return null;
+ if(policy?.selection==='any'){if(!policy.slots.includes(base.slot))return null;}
+ else if(decoded.id!==item)return null;
+ const mode=policy?.mode||'exact';
+ if(mode==='exact'&&level!==from)return null;
+ const dest=mode==='relative'?Math.min(DBI_ENHANCEMENT_MAX,level+policy.value):mode==='absolute'?policy.value:to;
+ return dest>level?dest:null;
+}
+function dbiEditorUpgradeCandidates(characterId,item,from,to,policy=null){
+ if(String(dbiActive?.id)!==String(characterId)||!dbiEditorUpgradePolicyValid(item,from,to,policy))return [];
+ return inventory.flatMap((ref,index)=>{
+  const d=dbiDecodeItemRef(ref),dest=dbiEditorUpgradeDestination(d,item,from,to,policy);if(dest===null)return [];
+  const obj=itemById(ref);
+  return [{index,ref,item:d.id,from:d.enhancement,to:dest,label:obj.name+' +'+d.enhancement+' → +'+dest+' · '+obj.quality+(d.reinforced?' · Wzmocniony':'')+(obj.planBonuses?.length?' · '+obj.planBonuses.map(([key,v,pvp])=>(DBI_PLAN_STAT_DEFS[key]?.[0]||key)+': '+v+(Number.isFinite(pvp)?'/'+pvp:'')).join(', '):'')+' · poz. '+(index+1)}];
+ });
+}
+function dbiClaimEditorQuestRewards(characterId,quest,stage,rewards,item,need,upgrade=null){
+ const fail=message=>({ok:false,message});
+ const stats=['strength','speed','endurance','intelligence','ki'];
+ if(String(dbiActive?.id)!==String(characterId)||!dbiSession?.name||dbiCharacterIndex<0||!/^[a-z][a-z0-9_-]{2,49}$/.test(quest)||!Number.isSafeInteger(stage)||stage<0||!Array.isArray(rewards)||rewards.length>20)return fail('Nieprawidłowa postać lub nagrody.');
+ const progressKey='dboidle_gm_quest_v1_'+characterId+'_'+quest,characterKey='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
+ try{
+  const progress=JSON.parse(localStorage.getItem(progressKey)||'{"stage":0,"kills":0}');
+  if(progress?.stage!==stage)return fail('Ten etap nie jest już aktywny.');
+  const chars=JSON.parse(localStorage.getItem(characterKey)||'[]'),index=chars.findIndex(c=>String(c.id)===String(characterId));
+  if(index<0)return fail('Nie znaleziono postaci.');
+  const character={...chars[index]},refs=inventory.slice(),positions=inventoryPlacement.slice();
+  if(upgrade!==null){
+   if(item||need!==1||!dbiEditorUpgradeValid(upgrade.item,upgrade.from,upgrade.to))return fail('Nieprawidłowe ustawienia ulepszenia.');
+   const {index,ref}=upgrade;
+   if(!Number.isInteger(index)||index<0||refs[index]!==ref||typeof ref!=='string')return fail('Wybrany przedmiot nie znajduje się już w inwentarzu. Otwórz ponownie zadanie.');
+   const decoded=dbiDecodeItemRef(ref);
+   if(decoded.id!==upgrade.item||decoded.enhancement!==upgrade.from)return fail('Przedmiot nie spełnia wymaganego poziomu ulepszenia.');
+   if(upgrade.policy&&dbiEditorUpgradeDestination(decoded,upgrade.target,upgrade.requiredFrom,upgrade.requiredTo,upgrade.policy)!==upgrade.to)return fail('Przedmiot nie spełnia zasad ulepszenia tego etapu.');
+   // Preserve the exact encoded reinforcement and rolls, including legacy bonus formats.
+   const suffix=ref.match(/(?:~p)?(?:~b.*)?$/)[0];
+   refs[index]=dbiItemRef(decoded.id,upgrade.to,decoded.quality)+suffix;
+  }
+  if(item){
+   if(!Number.isSafeInteger(need)||need<1)return fail('Nieprawidłowa liczba przedmiotów do oddania.');
+   let left=need;
+   for(let i=refs.length-1;i>=0&&left>0;i--)if(dbiDecodeItemRef(refs[i]).id===item){refs.splice(i,1);positions.splice(i,1);left--;}
+   if(left)return fail('Brakuje przedmiotów do oddania.');
+  }
+  const totals={gold:0,premium:0,exp:0},statTotals=Object.fromEntries(stats.map(k=>[k,0]));
+  for(const r of rewards){
+   const n=Number(r?.amount),type=r?.type;
+   if(!Number.isSafeInteger(n)||n<1||n>(type==='item'?4000:type==='exp'?999999999:999999))return fail('Nieprawidłowa ilość nagrody.');
+   if(type==='item'){
+    if(typeof r.item!=='string'||!itemById(r.item))return fail('Przedmiot nagrody nie istnieje w katalogu gry.');
+    for(let j=0;j<n;j++){refs.push(r.item);positions.push(null)}
+   }else if(Object.hasOwn(totals,type))totals[type]+=n;
+   else if(type==='stat-all')for(const k of stats)statTotals[k]+=n;
+   else if(typeof type==='string'&&type.startsWith('stat-')&&stats.includes(type.slice(5)))statTotals[type.slice(5)]+=n;
+   else return fail('Nieznany typ nagrody.');
+  }
+  const writes=[];
+  for(const type of ['gold','premium'])if(totals[type]){
+   const key='dboidle_'+type+'_v1_'+characterId,amount=(Number(localStorage.getItem(key))||0)+totals[type];
+   if(!Number.isSafeInteger(amount)||amount<0)return fail('Limit waluty został przekroczony.');
+   writes.push([key,String(amount)]);
+  }
+  let newLevel=level,newExp=exp;
+  if(totals.exp&&newLevel<DBI_MAX_LEVEL){
+   let remaining=Math.max(0,Math.floor(totals.exp*dbiExpMultiplier()));
+   if(!Number.isFinite(remaining))return fail('Nieprawidłowa nagroda EXP.');
+   while(remaining>0&&newLevel<DBI_MAX_LEVEL){
+    const room=dbiRequiredExp(newLevel)-newExp;
+    if(remaining<room){newExp+=remaining;remaining=0;break}
+    remaining-=room;newExp=0;newLevel++;
+   }
+   if(newLevel>=DBI_MAX_LEVEL)newExp=0;
+  }
+  if(Object.values(statTotals).some(n=>n>0)){
+   const flag='gm-quest:'+quest+':'+stage;
+   // Ten sam klucz był używany przez wcześniejsze nagrody statystyk.
+   if(character.questRewards?.[flag])return fail('Statystyki tego etapu zostały już przyznane.');
+   character.stats={...(character.stats||{})};
+   for(const k of stats)if(statTotals[k])character.stats[k]=(dbiStatNumber(character.stats,[k])??dbiStatNumber(character,[k])??0)+statTotals[k];
+   character.questRewards={...(character.questRewards||{}),[flag]:true};
+  }
+  character.level=newLevel;character.exp=newExp;chars[index]=character;
+  writes.push([characterKey,JSON.stringify(chars)],[progressKey,JSON.stringify({stage:stage+1,kills:0})]);
+  if(!dbiSaveInventoryTransaction(refs,positions,writes))return fail('Nie udało się zapisać nagród. Sprawdź miejsce w pamięci gry.');
+  dbiCharacters[index]=character;level=newLevel;exp=newExp;
+  // Po zatwierdzeniu zapisów błąd odświeżenia HUD nie może oznaczać ponownej wypłaty.
+  try{renderExp();dbiRefreshHeaderWallet()}catch(error){console.error('Odświeżenie nagród GM:',error)}
+  return {ok:true};
+ }catch(error){console.error('Nagrody questa GM:',error);return fail('Nie udało się rozliczyć nagród.');}
+}
+
+// Quest item rows reuse the inventory tooltip and the same enhancement calculation.
+function dbiBindEditorItemTooltip(node,id,enhancement=0){
+ if(!node||!catalog.some(item=>item.id===id))return false;
+ const level=Number.isInteger(enhancement)?Math.max(0,Math.min(DBI_ENHANCEMENT_MAX,enhancement)):0;
+ const item=itemById(dbiItemRef(id,level));if(!item)return false;
+ const hide=()=>document.querySelector('#itemTooltip')?.setAttribute('hidden','');
+ const show=event=>{if(event.type==='focus'){const rect=node.getBoundingClientRect();showTooltipItem({clientX:rect.right,clientY:rect.top},item);}else showTooltipItem(event,item);};
+ node.addEventListener('mouseenter',show);
+ node.addEventListener('mousemove',event=>{const tip=document.querySelector('#itemTooltip');if(tip&&!tip.hidden)positionPopup(tip,event.clientX,event.clientY);});
+ node.addEventListener('mouseleave',hide);node.addEventListener('focus',show);node.addEventListener('blur',hide);
+ // A quest can replace its markup while the pointer is over the icon.
+ node.addEventListener('click',hide);
+ return true;
+}
+
 window.DBIWorldInventory={
+  bindEditorItemTooltip:dbiBindEditorItemTooltip,
+  claimEditorQuestRewards:dbiClaimEditorQuestRewards,
+  editorUpgradeMax:DBI_ENHANCEMENT_MAX,
+  editorUpgradeValid:dbiEditorUpgradePolicyValid,
+  editorUpgradeSlots:()=>DBI_SLOTS.map(([label,id])=>({id,label})),
+  editorUpgradeCandidates:dbiEditorUpgradeCandidates,
   claimTownJourneyPremium:dbiClaimTownJourneyPremium,
   claimTownTreasure:dbiClaimTownTreasure,
   bonus:dbiMainBonus,
@@ -4354,6 +4500,14 @@ window.DBIWorldInventory={
    dbiSaveInventory();return true;
   },
   grantHighTowerReward:dbiGrantHighTowerReward,
+  editorItems:()=>catalog.map(({id,name,image,icon,slot})=>({id,name,image,icon,slot,upgradeable:DBI_SLOTS.some(([,s])=>s===slot)})),
+  grantEditorQuestStats:(characterId,quest,stage,stat,amount,item,need)=>{
+   const keys=['strength','speed','endurance','intelligence','ki'];
+   const flag='gm-quest:'+quest+':'+stage;
+   if(!Number.isInteger(Number(amount))||amount<1||amount>999999||stat!=='all'&&!keys.includes(stat))return false;
+   if(String(dbiActive?.id)!==String(characterId))return false;
+   return dbiGrantStatReward(flag,stat==='all'?keys:[stat],Number(amount),{key:'dboidle_gm_quest_v1_'+characterId+'_'+quest,stage,item,need});
+  },
   grantMasterStats:dbiGrantMasterStats,
   grantMountainKi:dbiGrantMountainKi,
   hasWandererStatsReward:()=>!!dbiCharacters[dbiCharacterIndex]?.questRewards?.['mountain-wanderer-stats-v1'],
