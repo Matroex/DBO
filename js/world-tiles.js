@@ -587,6 +587,14 @@
   "height": 65
  },
  {
+  "key": "palac-krolewski",
+  "name": "Pałac królewski",
+  "group": "Budowle",
+  "art": "assets/ui/map-editor/palac-krolewski.png",
+  "width": 480,
+  "height": 320
+ },
+ {
   "key": "catalog-29",
   "name": "Posiadłość",
   "group": "Miasto",
@@ -875,6 +883,14 @@
   "art": "assets/ui/map-editor/realm/dom-morskiej-bryzy.png",
   "width": 142,
   "height": 133
+ },
+ {
+  "key": "realm-kame-house",
+  "name": "Kame House",
+  "group": "Wyspa mistrza",
+  "art": "assets/ui/map-editor/realm/kame-house.png",
+  "width": 152,
+  "height": 95
  },
  {
   "key": "realm-palma-z-hamakiem",

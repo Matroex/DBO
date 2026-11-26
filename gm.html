@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Panel GM — DBOidle</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/mail-gm.css"><link rel="stylesheet" href="css/realm.css"></head>
-<body><main class="game"><section class="dbi-admin"><p id="gmAccessNotice" role="status" hidden>Panel jest dostępny po zalogowaniu na konto Game Mastera. <a href="login.html">Przejdź do logowania</a>.</p><div id="gmPage" hidden>
+<title>Panel GM — DBOidle</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/mail-gm.css"><link rel="stylesheet" href="css/realm.css"><link rel="stylesheet" href="css/gm-content.css?v=workbench1"></head>
+<body><main class="game"><section class="dbi-admin gm-workbench"><p id="gmAccessNotice" role="status" hidden>Panel jest dostępny po zalogowaniu na konto Game Mastera. <a href="login.html">Przejdź do logowania</a>.</p><div id="gmPage" hidden>
 <header class="dbi-admin-head"><h1>Panel GM</h1><a href="index.html">Wróć do gry</a></header>
 <p>Tryb lokalny. Panel obsługuje postacie zapisane w tej przeglądarce.</p>
+<nav class="gm-workbench-nav" aria-label="Panel GM"><a class="ghost-button" href="index.html#gm-items">Przedmioty</a> <a class="ghost-button" href="index.html#gm-chests">Skrzynie</a> <a class="ghost-button" href="index.html#gm-enemies">Moby i bossowie</a></nav>
 <label for="characterSearch">Szukaj po postaci lub koncie</label><input id="characterSearch" type="search">
 <label for="target">Postać</label><select id="target"></select>
 <p id="gmStatus" role="status"></p>
@@ -23,5 +24,6 @@
 <section><h2>Ekwipunek</h2><p id="inventory"></p><form id="teleport"><label>Lokacja<select name="location" id="gmLocation"></select></label><button class="ghost-button">Teleportuj</button></form></section>
 <section><h2>Historia zmian</h2><ol id="history"></ol></section>
 </div></div></section></main>
-<script src="js/items.js"></script><script src="js/local-post.js"></script><link rel="stylesheet" href="css/forms.css"><script src="js/forms.js"></script><script src="js/world.js?v=forms1"></script><script src="js/gm-access.js?v=1"></script><script src="js/gm.js?v=2"></script>
+<script src="js/items.js?v=sayan-upgrade1"></script><script src="js/local-post.js"></script><link rel="stylesheet" href="css/forms.css"><script src="js/forms.js"></script><script src="js/world-tiles.js?v=4120"></script><script src="data/gm-world-published.js?v=palace-editor1"></script><script src="js/world-data.js?v=1" id="dbi-world-data-loader"></script><script src="js/world.js?v=optional-spawn1"></script><script src="js/gm-access.js?v=1"></script><script src="js/gm-content-editor.js?v=workbench1"></script><script src="js/gm.js?v=optional-spawn1"></script>
 </body></html>
+

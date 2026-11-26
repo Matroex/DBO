@@ -498,11 +498,25 @@ function projectPacks(){
  if(window.DBI_GM_PREVIEW)return [deployed];
  let local;try{local=JSON.parse(localStorage.getItem(DBI_CREATOR_LOCAL_KEY)||'null')}catch{}
  if(local?.version!==1)return [deployed];
- if(local.baseRevision!==undefined)return local.baseRevision===projectSignature(deployed)?[deployed,local]:[deployed];
- // Migrate pre-v4.21 publications: prefer a real installed project to stale
- // local snapshots; preserve local-only work if the installed file is empty.
- const installed=deployed?.version===1&&(deployed.revision||['maps','quests','customArt'].some(k=>deployed[k]?.length));
- return installed?[{...local,includesPublished:false},deployed]:[deployed,local];
+ if(local.baseRevision==='palace-layers-20261125'&&deployed?.revision==='palace-teleport-20261125'){
+  const palace=local.maps?.find(map=>map.id==='palac-wszechmogacego-szkic'),entry=palace?.entryPortal;
+  if(entry?.from==='highTowerForest'&&entry.x===435&&entry.y===333)delete palace.entryPortal;
+  return [deployed,local];
+ }
+ if(local.baseRevision!==undefined&&local.baseRevision===projectSignature(deployed))return [deployed,local];
+ if(deployed?.version!==1)return [local];
+ // A newer deployment owns matching IDs. Keep locations that were only published in this browser.
+ const installedIds=new Set((deployed.maps||[]).map(map=>map.id));
+ const maps=(local.maps||[]).filter(map=>!installedIds.has(map.id));
+ const retainedIds=new Set(maps.map(map=>map.id));
+ if(!maps.length)return [deployed];
+ const unique=(key,id,items)=>items.filter(item=>!(deployed[key]||[]).some(entry=>entry[id]===item[id]));
+ return [deployed,{
+  version:1,maps,
+  quests:unique('quests','id',(local.quests||[]).filter(quest=>retainedIds.has(quest.mapId))),
+  pickups:unique('pickups','id',(local.pickups||[]).filter(item=>retainedIds.has(item.mapId))),
+  customArt:unique('customArt','key',local.customArt||[])
+ }];
 }
 window.DBIWorldProjectPacks=projectPacks;
 window.DBIWorldProjectSignature=projectSignature;
@@ -527,6 +541,8 @@ function validEditorEnemy(unit){
  if([c.gold,c.exp].some(v=>v!==undefined&&!integer(v,0,999999999)))return false;
  return c.drops===undefined||(Array.isArray(c.drops)&&c.drops.length<=30&&c.drops.every(row=>row&&typeof row.id==='string'&&row.id.length>0&&row.id.length<=150&&Number.isFinite(row.chance)&&row.chance>=0&&row.chance<=100&&integer(row.qty,1,100)));
 }
+// Stable project portal IDs; legacy maps without IDs are addressed by their original coordinates.
+const dbiPortalKey=p=>p?.portalId||('xy:'+p?.x+':'+p?.y);
 const DBI_CREATOR_PUBLISHED=(()=>{
  const combined=new Map(),quests=new Map(),artByKey=new Map();
  for(const pack of projectPacks()){
@@ -542,10 +558,10 @@ const DBI_CREATOR_PUBLISHED=(()=>{
    if(!Number.isFinite(map.sizeX)||!Number.isFinite(map.sizeY)||map.sizeX<10||map.sizeY<10||map.sizeX>100||map.sizeY>100)continue;
    const width=map.sizeX*TILE,height=map.sizeY*TILE;
    const point=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.y>=0&&p.x<=width&&p.y<=height;
-   if(!point(map.spawn))continue;
+   if(map.spawn!=null&&!point(map.spawn))continue;
    const resolveArt=p=>{const src=artByKey.get(p.art);return typeof src==='string'&&/^data:image\/(?:webp|png);base64,/.test(src)?{...p,art:src}:p};
    const loc={creatorMap:true,name:map.name.slice(0,90),sizeX:map.sizeX,sizeY:map.sizeY,art:hasTerrain?null:map.art,
-    ...(hasTerrain?{terrain:{version:1,tiles:map.terrain.tiles.slice(),heights:map.terrain.heights?.slice(),visual:window.DBITerrain?.settings?.(map),...(map.terrain.terrace?{terrace:{...map.terrain.terrace}}:{})}}:{}),spawn:{x:map.spawn.x,y:map.spawn.y,...(map.spawn.placementTool==='spawn'?{placementTool:'spawn',label:String(map.spawn.label||'').slice(0,90)}:{})},
+    ...(hasTerrain?{terrain:{version:1,tiles:map.terrain.tiles.slice(),heights:map.terrain.heights?.slice(),visual:window.DBITerrain?.settings?.(map),...(map.terrain.terrace?{terrace:{...map.terrain.terrace}}:{})}}:{}),spawn:map.spawn?{x:map.spawn.x,y:map.spawn.y,...(map.spawn.placementTool==='spawn'?{placementTool:'spawn',label:String(map.spawn.label||'').slice(0,90)}:{})}:null,
     npc:(Array.isArray(map.npc)?map.npc:[]).filter(n=>point(n)).slice(0,60).map(resolveArt).map(n=>({...n,label:String(n.label||'NPC').slice(0,90)})),
     scenery:(Array.isArray(map.scenery)?map.scenery:[]).filter(p=>p&&Number.isFinite(p.width)&&Number.isFinite(p.height)&&(point(p)||p.animation==='campfire'&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x<width&&p.y<height&&p.x+p.width>0&&p.y+p.height>0)).filter((()=>{let ordinary=0,edges=0;return p=>p.edgeTile===true?++edges<=1200:++ordinary<=300})()).map(resolveArt),
     blocked:(Array.isArray(map.blocked)?map.blocked:[]).filter(b=>Array.isArray(b)&&b.length===4&&b.every(Number.isFinite)).slice(0,150),
@@ -560,16 +576,28 @@ const DBI_CREATOR_PUBLISHED=(()=>{
  }
  for(const [mapId,map] of combined){
   // Portale dozwolone tylko do zarejestrowanych map; istniejąca animacja jest wspólna.
-  map.portals=map.portals.filter(p=>DBI_CREATOR_BUILTIN_IDS.has(p.to)||combined.has(p.to));
+  map.portals=map.portals.filter(p=>!p.to||DBI_CREATOR_BUILTIN_IDS.has(p.to)||combined.has(p.to));
   EXTRA_MAPS[mapId]=map;
  }
  // Opcjonalne wejście do nowej mapy z istniejącej lokacji; bez usuwania jej portali.
  for(const [mapId,map] of combined){
   const entry=map.entryPortal,source=entry?.from&&EXTRA_MAPS[entry.from];
-  if(!source||entry.from===mapId||!Number.isFinite(entry.x)||!Number.isFinite(entry.y))continue;
+  if(!map.spawn||!source||entry.from===mapId||!Number.isFinite(entry.x)||!Number.isFinite(entry.y))continue;
   if(entry.x<0||entry.y<0||entry.x>source.sizeX*TILE||entry.y>source.sizeY*TILE)continue;
   const originals=source.portals||(source.portal?[source.portal]:[]);
-  source.portals=[...originals,{x:entry.x,y:entry.y,to:mapId,destinationArrival:{x:map.spawn.x,y:map.spawn.y}}];
+  source.portals=[...originals,{x:entry.x,y:entry.y,to:mapId,...(entry.label?{label:String(entry.label).slice(0,90)}:{}),destinationArrival:{x:map.spawn.x,y:map.spawn.y}}];
+ }
+ // Optional reverse link on an original map: overlay only, never edit its source definition.
+ const claimedReturns=new Set();
+ for(const [mapId,map] of combined){
+  for(const p of map.portals||[]){
+   if(p.arrivalMode!=='portal'||p.portalReturn!==true||!DBI_CREATOR_BUILTIN_IDS.has(p.to))continue;
+   const target=EXTRA_MAPS[p.to],portals=target?.portals||(target?.portal?[target.portal]:[]);
+   const match=portals?.find(t=>dbiPortalKey(t)===p.targetPortalId),key=p.to+'|'+p.targetPortalId;
+   if(!match||claimedReturns.has(key))continue;
+   claimedReturns.add(key);
+   target.portals=portals.map(t=>t===match?{...t,to:mapId,arrivalMode:'portal',targetPortalId:dbiPortalKey(p)}:t);
+  }
  }
  return {maps:[...combined.keys()],quests:[...quests.values()]};
 })();
@@ -577,6 +605,10 @@ window.DBIGMWorldPublished={maps:DBI_CREATOR_PUBLISHED.maps,quests:DBI_CREATOR_P
 for(const config of Object.values(EXTRA_MAPS)){
  if(config.terrain){config.terrainCanvas=null;config.terrainReady=false;config.terrainVisualReady=null;}
  else{config.image=new Image();config.image.src=config.art;}
+ if(config.creatorMap)config.drawables=[
+  ...(config.scenery||[]).map(item=>({type:'scenery',item,order:mapDrawOrder('scenery',item)})),
+  ...(config.npc||[]).map(item=>({type:'npc',item,order:mapDrawOrder('npc',item)}))
+ ].sort((a,b)=>a.order-b.order);
  for(const prop of config.scenery||[]){
   if(prop.animation==='campfire'||(!prop.art&&!prop.file))continue;
   prop.image=new Image();prop.image.src=prop.art||'assets/world/army/'+prop.file;
@@ -677,6 +709,11 @@ function creatorLabelPosition(map,n,kind){
  const box=own||matches[0];
  return {x:box?(box.left+box.right)/2:n.x,y:Math.max(14,box?box.top-6:n.y-6)};
 }
+function mapDrawOrder(type,item){
+ if(Number.isInteger(item.drawOrder))return Math.max(-100,Math.min(100,item.drawOrder));
+ if(type==='npc')return 10;
+ return item.layer==='above'&&item.animation!=='campfire'?30:0;
+}
 function drawCreatorNpc(ctx,n){
  if(n.image?.complete&&n.image.naturalWidth){const {width,height}=npcSize(n),bounds=[n.x-width/2,n.y-height,width,height];if(n.source)ctx.drawImage(n.image,...n.source,...bounds);else ctx.drawImage(n.image,...bounds);}
  // No placeholder, seal or duplicated label for a logical toolbar marker.
@@ -733,6 +770,20 @@ function editorQuestDistance(p,x,y){
  return r?Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom)):Math.hypot(x-p.x,y-p.y);
 }
 const mapPortals=map=>map?.portals||(map?.portal?[map.portal]:[]);
+// A linked portal uses its current position, never cached coordinates or map spawn.
+function dbiLinkedPortalArrival(portal,destination,canStand){
+ const target=mapPortals(destination).find(p=>dbiPortalKey(p)===portal.targetPortalId);
+ if(!target||![target.x,target.y].every(Number.isFinite))return null;
+ const w=destination.sizeX*TILE,h=destination.sizeY*TILE;
+ const dirs=[[0,1,'down'],[1,0,'right'],[-1,0,'left'],[0,-1,'up'],[1,1,'down'],[-1,1,'down'],[1,-1,'up'],[-1,-1,'up']];
+ // Prefer the area in front of the portal, then try all nearby walkable directions.
+ for(const radius of [32,24,40,48,16,8,0])for(const [dx,dy,dir] of dirs){
+  const length=Math.hypot(dx,dy),x=Math.round(target.x+dx/length*radius),y=Math.round(target.y+dy/length*radius);
+  if(x<0||y<0||x>=w||y>=h||!canStand(x,y))continue;
+  return {x,y,dir};
+ }
+ return null;
+}
 function mountainLakeBlocked(x,y){
  const entrance=y>=13.8&&y<=14.65;
  if(x<.3||x>=48.3||y<2.15||y>=27.6||(x<1.7&&!entrance))return true;
@@ -794,8 +845,53 @@ const DBI_WORLD_LOCATIONS=Object.freeze([
  {id:'mountainLake',name:EXTRA_MAPS.mountainLake.name,spawn:{...EXTRA_MAPS.mountainLake.spawn}},
  // Panel GM wyświetla kolejność tego rejestru. Nowe mapy dopisujemy na końcu.
  ...['mountainTown','armyBase','forestEdge','centralSector','banditLand','metropolis'].map(id=>({id,name:EXTRA_MAPS[id].name,spawn:{...EXTRA_MAPS[id].spawn}})),
- ...DBI_CREATOR_PUBLISHED.maps.map(id=>({id,name:EXTRA_MAPS[id].name,spawn:{...EXTRA_MAPS[id].spawn}}))
+ ...DBI_CREATOR_PUBLISHED.maps.map(id=>({id,name:EXTRA_MAPS[id].name,spawn:EXTRA_MAPS[id].spawn?{...EXTRA_MAPS[id].spawn}:null}))
 ]);
+ const forestBossStats={strength:800,speed:900,endurance:700,intelligence:450,ki:100,baseAttack:250,baseDefense:150,attack:650,defense:220,hp:6000};
+ const guardianStats={race:'Ziemianin',strength:20000,speed:25000,endurance:50000,intelligence:10000,ki:20000,attack:2000,defense:30000,hp:100000};
+ const baseBossTypes={
+  forestEdge:{name:'Strażnik Lasu',level:500,stats:guardianStats,gold:50000,exp:50000,
+   description:'Po pierwszym spadku do połowy HP Strażnik wyprowadza cios za 300% obrażeń. Co 3 sekundy odzyskuje 2 000 HP.',
+   chest:{id:'guardian-chest',name:'Skrzynia Strażnika Lasu',image:'assets/world/frontier/guardian-chest.png'}},
+  centralForest:{name:'Leśny Wojownik (Boss)',level:120,stats:forestBossStats,gold:1000,exp:10000,
+   description:'Najpotężniejszy wojownik z wszystkich Leśnych Wojowników!',
+   chest:{id:'skrzynia-lesnego-wojownika',name:'Skrzynia Leśnego Wojownika',image:'assets/items/skrzynia-lesnego-wojownika.png'}}
+ };
+
+const starterMobs={
+ laguna:[{level:1,name:'Kukła Treningowa'}],
+ island:[{level:3,name:'Uczeń Mistrza'}]
+};
+const worldMobStats=(location,level)=>({strength:location==='laguna'?0:4*level,speed:2*level,endurance:3*level,intelligence:0,ki:0,power:0});
+function gmEncounterDefaults(entry,level){
+ const {unit}=entry;
+ if(entry.boss)return {...unit.stats,level:unit.level,gold:unit.gold,exp:unit.exp};
+ const stats={...worldMobStats(entry.mapId,level),...unit.combat?.stats};
+ return {...stats,level:unit.level,gold:unit.combat?.gold??level*5,exp:unit.combat?.exp,
+  attack:stats.attack??stats.strength*.5,defense:stats.defense??stats.endurance*.1,hp:stats.hp??(level>=100?level*5+5000:level*5)};
+}
+function gmEncounters(projectMaps=[]){
+ const locations=new Map(DBI_WORLD_LOCATIONS.map(({id,name})=>[id,{name,map:EXTRA_MAPS[id]}]));
+ for(const map of projectMaps){
+  if(DBI_CREATOR_BUILTIN_IDS.has(map.id)||Object.hasOwn(starterMobs,map.id))continue;
+  locations.set(map.id,{name:map.name,map:{
+   mobNames:editorMobVariants(map).filter(unit=>typeof unit.name==='string'&&Number.isFinite(unit.level)&&validEditorEnemy(unit)),
+   boss:map.boss
+  }});
+ }
+ return [...locations].flatMap(([id,{name:location,map}])=>{
+  const marker=map?.boss,c=marker?.combat||{};
+  const boss=baseBossTypes[id]||(marker?{
+   name:marker.label||'Boss',portrait:marker.portrait,level:marker.level||1,
+   stats:c.stats,gold:c.gold??0,exp:c.exp??0,drops:c.drops||[]
+  }:null);
+  const mobs=(map?.mobNames||starterMobs[id]||[]).map((unit,index)=>({
+   key:id+':mob:'+index,mapId:id,location,unit,drops:unit.combat?.drops??window.DBIContent.normalDrops(id,unit.name)
+  }));
+  if(boss)mobs.push({key:id+':boss',location,boss:true,unit:boss,drops:boss.drops??[{id:boss.chest.id,chance:100,qty:1}]});
+  return mobs;
+ });
+}
 const dungeonLimitKey=characterId=>'dboidle_high_tower_limit_v1_'+characterId;
 function dungeonLimit(characterId){
  const raw=localStorage.getItem(dungeonLimitKey(characterId));
@@ -810,6 +906,7 @@ function gmSetDungeonLimit(characterId,limit){
 function gmTeleport(characterId,locationId){
  const destination=DBI_WORLD_LOCATIONS.find(x=>x.id===locationId);
  if(!destination||!characterId)return {ok:false,message:'Nieznana lokacja lub brak aktywnej postaci.'};
+ if(!destination.spawn)return {ok:false,message:'Ta lokacja nie ma punktu startowego dla teleportu GM.'};
  const battleKey='dboidle_battle_v1_'+String(characterId);
  try{const battle=JSON.parse(localStorage.getItem(battleKey)||'null');if(battle?.status==='running')return {ok:false,message:'Najpierw zakończ trwającą walkę.'};}catch{}
  const key='dboidle_world_v1_'+String(characterId);
@@ -937,7 +1034,8 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  if(turtleAlreadyDropped)try{localStorage.setItem(turtleDropKey,'1')}catch{}
  const key='dboidle_world_v1_'+String(id||'test');let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null')}catch{}
  const player={x:SPAWN.x,y:SPAWN.y,dir:'down',location:'laguna'};
- if(saved&&(saved.location==='island'||extraMap(saved.location))){player.location=saved.location;const spawn=DBI_WORLD_LOCATIONS.find(l=>l.id===saved.location)?.spawn||ISLAND_SPAWN;player.x=Number.isFinite(saved.x)?saved.x:spawn.x;player.y=Number.isFinite(saved.y)?saved.y:spawn.y;player.dir=['up','down','left','right'].includes(saved.dir)?saved.dir:'down';}else if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)&&!blocked(saved.x,saved.y)){player.x=clamp(saved.x,20,WORLD-20);player.y=clamp(saved.y,20,WORLD-20);player.dir=['up','down','left','right'].includes(saved.dir)?saved.dir:'down';}
+ if(saved&&(saved.location==='island'||extraMap(saved.location))){const spawn=DBI_WORLD_LOCATIONS.find(l=>l.id===saved.location)?.spawn;
+  if(spawn||Number.isFinite(saved.x)&&Number.isFinite(saved.y)){player.location=saved.location;player.x=Number.isFinite(saved.x)?saved.x:spawn.x;player.y=Number.isFinite(saved.y)?saved.y:spawn.y;player.dir=['up','down','left','right'].includes(saved.dir)?saved.dir:'down';}}else if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)&&!blocked(saved.x,saved.y)){player.x=clamp(saved.x,20,WORLD-20);player.y=clamp(saved.y,20,WORLD-20);player.dir=['up','down','left','right'].includes(saved.dir)?saved.dir:'down';}
  container.innerHTML=`<div class="world-grid"><section class="world-shell"><div class="world-toolbar"><strong>🌿 BŁĘKITNA LAGUNA</strong></div><div class="world-frame"><canvas id="worldCanvas" tabindex="0" aria-label="Mapa gry, WASD i strzałki"></canvas><div class="world-prompt" id="worldPrompt" hidden>Naciśnij E, aby porozmawiać z Opiekunem Laguny</div></div><span id="worldCoords" class="map-coordinates">Pozycja: —</span><div class="world-help">WASD / strzałki — ruch. Wejdź na namiot, aby wybrać potwory. Podejdź do Opiekuna Laguny i naciśnij E, aby rozpocząć misję.</div></section><aside id="worldSide" class="world-side"><h2>🌍 Błękitna Laguna</h2><p>Znajdź namiot treningowy na mapie. Po wejściu na niego zobaczysz listę 15 przeciwników. Walkę można ukryć i otworzyć ponownie.</p></aside></div><div id="worldOverlay" class="world-overlay" hidden><section id="worldBattle" class="world-battle world-modal"></section></div>`;
  const canvas=container.querySelector('canvas'),ctx=canvas.getContext('2d'),frame=container.querySelector('.world-frame'),prompt=container.querySelector('#worldPrompt'),coords=container.querySelector('#worldCoords');
  const formSelector=window.DBIForms.selector(id,canvas);
@@ -992,7 +1090,16 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   const destination=extraMap(portal.to);
   if(!destination)return;
   const returnPortal=mapPortals(destination).find(candidate=>candidate.to===player.location);
-  const arrival=portal.destinationArrival||returnPortal?.arrival||destination.spawn;
+  let arrival;
+  if(portal.arrivalMode==='portal'){
+   arrival=dbiLinkedPortalArrival(portal,destination,(x,y)=>{
+    const tile=nativePaint[portal.to]?.[Math.floor(x/TILE)+','+Math.floor(y/TILE)];
+    return !window.DBITerrain?.palette[tile]?.blocked&&!extraBlocked(portal.to,x,y);
+   });
+   if(!arrival){let message=side.querySelector('[data-portal-error]');if(!message){message=document.createElement('p');message.dataset.portalError='1';message.setAttribute('role','status');side.prepend(message);}message.textContent='Nie można przejść: brak portalu docelowego lub wolnego miejsca przy nim.';return;}
+  }else if(portal.arrivalMode==='spawn')arrival=destination.spawn;
+  else arrival=portal.destinationArrival||returnPortal?.arrival||destination.spawn;
+  if(!arrival){let message=side.querySelector('[data-portal-error]');if(!message){message=document.createElement('p');message.dataset.portalError='1';message.setAttribute('role','status');side.prepend(message);}message.textContent='Ten portal nie ma ustawionego punktu wejścia.';return;}
   player.location=portal.to;
   player.x=arrival.x;player.y=arrival.y;
   player.dir=arrival.dir||returnPortal?.arrivalDirection||(portal.to==='centralForest'?'down':'up');
@@ -1904,6 +2011,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  if(Math.abs(dx)>Math.abs(dy))player.dir=dx>0?'right':'left';else player.dir=dy>0?'down':'up';}
  const width=canvas.clientWidth,height=canvas.clientHeight;camX+=(player.x-camX)*Math.min(1,dt*8);camY+=(player.y-camY)*Math.min(1,dt*8);
  const onIsland=player.location==='island';frame.classList.toggle('world-island',onIsland);
+ let drawLayer;
  const currentExtra=extraMap(player.location);const worldSize=currentExtra?currentExtra.sizeX*TILE:onIsland?ISLAND_WORLD:WORLD;const worldHeight=currentExtra?currentExtra.sizeY*TILE:onIsland?ISLAND_WORLD:32*TILE;
  // Stadion 10×10: powiększamy cały świat (teren i bohatera), nie wklejamy małej miniatury na zielone tło.
  const viewScale=worldViewScale(player.location,currentExtra,width,height,worldSize,worldHeight);
@@ -1935,8 +2043,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   else{ctx.fillStyle='#365d39';ctx.fillRect(0,0,map.sizeX*TILE,map.sizeY*TILE);}
   drawNativePaint(ctx,player.location,map.sizeX,map.sizeY);
   const drawDecoration=prop=>{if(!prop.image?.complete||!prop.image.naturalWidth)return;const rot=Number(prop.rotation)||0;if(!prop.effect&&!rot&&prop.flipX!=='yes'){ctx.drawImage(prop.image,prop.x,prop.y,prop.width,prop.height);return}ctx.save();ctx.translate(prop.x+prop.width/2,prop.y+prop.height/2);ctx.rotate(rot*Math.PI/180);ctx.scale(prop.flipX==='yes'?-1:1,1);ctx.drawImage(prop.image,-prop.width/2,-prop.height/2,prop.width,prop.height);window.DBITerrain?.drawEffect(ctx,prop.effect,-prop.width/2,-prop.height/2,prop.width,prop.height,performance.now());ctx.restore()};
-  for(const prop of map.scenery||[]){
-   if(prop.layer==='above'&&prop.animation!=='campfire')continue;
+  const drawScenery=prop=>{
    if(prop.animation==='campfire'){
     // Animowana dekoracja rysowana proceduralnie; żadnych zmian w mechanice świata.
     // Używa istniejącej pętli canvas — nie tworzy dodatkowych timerów ani animacji portali.
@@ -1977,6 +2084,18 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
     ctx.restore();
    }else drawDecoration(prop);
    if(!map.creatorMap&&prop.label)mapBadge(ctx,prop.label,(prop.placementTool==='object'||prop.questMarker===true)&&!prop.art&&!prop.file&&prop.animation!=='campfire'?prop.x:prop.x+prop.width/2,Math.max(14,prop.y-5));
+  };
+  if(map.creatorMap){
+   drawLayer=(min,max)=>{
+    for(const {type,item,order} of map.drawables){
+     if(order<min||order>=max)continue;
+     if(type==='npc')drawCreatorNpc(ctx,item);
+     else drawScenery(item);
+    }
+   };
+   drawLayer(-Infinity,10);
+  }else for(const prop of map.scenery||[]){
+   if(prop.layer!=='above'||prop.animation==='campfire')drawScenery(prop);
   }
   for(const p of mapPortals(map)){
    mapSeal(ctx,p.x,p.y,25,"#89cfe7");
@@ -2003,8 +2122,8 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   }
   if(map.spawn?.placementTool==='spawn'&&map.spawn.label)mapBadge(ctx,map.spawn.label,map.spawn.x,Math.max(14,map.spawn.y-5));
   ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#071725';ctx.fillStyle='#ffe4a3';
-  for(const [index,n] of map.npc.entries()){
-   if(map.creatorMap){drawCreatorNpc(ctx,n);continue;}
+  drawLayer?.(10,20);
+  for(const [index,n] of (map.creatorMap?[]:map.npc).entries()){
    if(player.location==='stadium')continue; // Stadion: znaczniki rysowane na końcu, nad postacią.
    mapSeal(ctx,n.x,n.y,17,"#f0c579");
    const sprite=n.image||(player.location==='centralForest'?centralNpcSprites[n.label]:(player.location==='forest'||player.location==='mountain'||player.location==='stadium')?(n.label==='Genialny Żółw'?roshiSprite:n.label==='Bulma'?bulmaSprite:n.label==='Wędrowiec'?wandererSprite:null):null);
@@ -2098,7 +2217,8 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   if(quest.state!=='completed'||quest2.state!=='completed')drawQuestMark(ctx,NPC.x,NPC.y-35,time);
  }
  character(ctx,player.x,player.y,player.dir,moving,time);
- if(currentExtra)for(const prop of currentExtra.scenery||[]){if(prop.layer!=='above'||prop.animation==='campfire')continue;if(prop.image?.complete&&prop.image.naturalWidth){ctx.save();ctx.translate(prop.x+prop.width/2,prop.y+prop.height/2);ctx.rotate((Number(prop.rotation)||0)*Math.PI/180);ctx.scale(prop.flipX==='yes'?-1:1,1);ctx.drawImage(prop.image,-prop.width/2,-prop.height/2,prop.width,prop.height);window.DBITerrain?.drawEffect(ctx,prop.effect,-prop.width/2,-prop.height/2,prop.width,prop.height,performance.now());ctx.restore()}if(!currentExtra.creatorMap&&prop.label)mapBadge(ctx,prop.label,(prop.placementTool==='object'||prop.questMarker===true)&&!prop.art&&!prop.file?prop.x:prop.x+prop.width/2,Math.max(14,prop.y-5));}
+ drawLayer?.(20,Infinity);
+ if(currentExtra&&!currentExtra.creatorMap)for(const prop of currentExtra.scenery||[]){if(prop.layer!=='above'||prop.animation==='campfire')continue;if(prop.image?.complete&&prop.image.naturalWidth){ctx.save();ctx.translate(prop.x+prop.width/2,prop.y+prop.height/2);ctx.rotate((Number(prop.rotation)||0)*Math.PI/180);ctx.scale(prop.flipX==='yes'?-1:1,1);ctx.drawImage(prop.image,-prop.width/2,-prop.height/2,prop.width,prop.height);window.DBITerrain?.drawEffect(ctx,prop.effect,-prop.width/2,-prop.height/2,prop.width,prop.height,performance.now());ctx.restore()}if(!currentExtra.creatorMap&&prop.label)mapBadge(ctx,prop.label,(prop.placementTool==='object'||prop.questMarker===true)&&!prop.art&&!prop.file?prop.x:prop.x+prop.width/2,Math.max(14,prop.y-5));}
  if(currentExtra?.creatorMap)drawCreatorLabels(ctx,currentExtra);
  // Stadion: przed zakończeniem turnieju znacznik pozostaje na środku areny.
  // Po zakończeniu (etap 5) znika ze środka i pojawia się przy bramie.
@@ -2210,27 +2330,17 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  overlay.addEventListener('pointerdown',e=>{if(e.target===overlay)hideBattle()});
  const battleKey='dboidle_battle_v1_'+String(id||'test');
  const MOB_COUNT=15, MAX_MS=12*60*60*1000, REGEN_MS=5000;
- const baseMobStats={strength:4,speed:2,endurance:3,intelligence:0,ki:0,power:0};
- const mobStats=level=>Object.fromEntries(Object.entries(baseMobStats).map(([k,v])=>[k,k==='strength'&&player.location==='laguna'?0:v*level]));
+ const mobStats=level=>worldMobStats(player.location,level);
  const mapMobLevel=(base)=>base+window.DBIGuild.bonusesFor(id).mobLevel;
  const battleMobLevel=(enemy)=>battle.dungeonStage!=null||battle.storySoldier||battle.boss?enemy.level:mapMobLevel(enemy.level);
  const mobStatsTooltip=mob=>{
-  if(mob.combat||mob.drops){const st=mob.stats||configuredStats(mob);return [['Siła','strength'],['Szybkość','speed'],['Wytrzymałość','endurance'],['Inteligencja','intelligence'],['KI','ki'],['Atak','attack'],['Obrona','defense'],['HP','hp']].map(([label,key])=>label+': '+st[key]).join(' | ')}
+  if(mob.combat||mob.drops||mob.stats){const st=mob.stats||configuredStats(mob);return [['Siła','strength'],['Szybkość','speed'],['Wytrzymałość','endurance'],['Inteligencja','intelligence'],['KI','ki'],['Atak','attack'],['Obrona','defense'],['HP','hp']].map(([label,key])=>label+': '+st[key]).join(' | ')}
   if(mob.name==='Strażnik Lasu')return [['Rasa','race'],['Siła','strength'],['Szybkość','speed'],['Wytrzymałość','endurance'],['Inteligencja','intelligence'],['KI','ki'],['Atak','attack'],['Obrona','defense'],['HP','hp']].map(([label,key])=>label+': '+guardianStats[key]).join(' | ');
   if(mob.name==='Leśny Wojownik (Boss)')return 'Siła: 800 | Szybkość: 900 | Wytrzymałość: 700 | Inteligencja: 450 | KI: 100 | Atak: 650 | Obrona: 220 | HP: 6000';
   const st=mobStats(mob.level),round=v=>Math.round(Number(v)||0);
   return 'Siła: '+round(st.strength)+' | Szybkość: '+round(st.speed)+' | Wytrzymałość: '+round(st.endurance)+' | Inteligencja: '+round(st.intelligence)+' | KI: '+round(st.ki)+' | Atak: '+round(st.strength*.5)+' | Obrona: '+round(st.endurance*.1)+' | HP: '+round(mobHp(mob.level));
  };
- const forestBossStats={strength:800,speed:900,endurance:700,intelligence:450,ki:100,baseAttack:250,baseDefense:150,attack:650,defense:220,hp:6000};
- const guardianStats={race:'Ziemianin',strength:20000,speed:25000,endurance:50000,intelligence:10000,ki:20000,attack:2000,defense:30000,hp:100000};
- const bossTypes={
-  forestEdge:{name:'Strażnik Lasu',level:500,stats:guardianStats,gold:50000,exp:50000,
-   description:'Po pierwszym spadku do połowy HP Strażnik wyprowadza cios za 300% obrażeń. Co 3 sekundy odzyskuje 2 000 HP.',
-   chest:{id:'guardian-chest',name:'Skrzynia Strażnika Lasu',image:'assets/world/frontier/guardian-chest.png'}},
-  centralForest:{name:'Leśny Wojownik (Boss)',level:120,stats:forestBossStats,gold:1000,exp:10000,
-   description:'Najpotężniejszy wojownik z wszystkich Leśnych Wojowników!',
-   chest:{id:'skrzynia-lesnego-wojownika',name:'Skrzynia Leśnego Wojownika',image:'assets/items/skrzynia-lesnego-wojownika.png'}}
- };
+ const bossTypes=structuredClone(baseBossTypes);
  const mobHp=lvl=>lvl>=100?lvl*5+5000:lvl*5;
  function configuredStats(unit){
   const base={...mobStats(unit.level),...unit.combat?.stats};
@@ -2242,6 +2352,11 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   const level=marker.level||1;
   bossTypes[loc]={name:marker.label,portrait:marker.portrait||'',level,stats:configuredStats({...marker,level}),gold:marker.combat.gold??0,exp:marker.combat.exp??0,
    drops:marker.combat.drops||[],description:'Boss tej lokacji.'};
+ }
+ const overrides=window.DBIContent?.read().enemies||{};
+ for(const [loc,boss] of Object.entries(bossTypes)){
+  const change=overrides[loc+':boss'];
+  if(change)bossTypes[loc]={...boss,...change,stats:{...boss.stats,...change.stats}};
  }
  const battleBoss=()=>battle.bossConfig||bossTypes[battle.location]||bossTypes.centralForest;
  const interval=speed=>Math.max(1500,3000-Math.max(0,Number(speed)||0)*.01);
@@ -2328,10 +2443,17 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
  const mobInterval=(level,stats)=>interval((stats||mobStats(level)).speed*enemyStatFactor());
  const regenAmount=()=>{const multiplier=1+Math.floor(Math.max(1,Number(hero().level)||1)/100);return {hp:(multiplier+window.DBIGuild.bonusesFor(id).regen)*(1+gearBonus('hpRegenPct')/100),ki:multiplier*.5*(1+gearBonus('kiRegenPct')/100)}};
  
- const lagunaMobs=Array.from({length:MOB_COUNT},(_,i)=>({id:i,level:1,name:'Kukła Treningowa'}));
- const islandMobs=Array.from({length:MOB_COUNT},(_,i)=>({id:i,level:3,name:'Uczeń Mistrza'}));
- const extraMobs={};for(const [loc,map] of Object.entries(EXTRA_MAPS))extraMobs[loc]=map.mobNames.length?Array.from({length:MOB_COUNT},(_,i)=>({id:i,...map.mobNames[i%map.mobNames.length]})):[];
- const currentMobs=()=>extraMap(player.location)?extraMobs[player.location]:player.location==='island'?islandMobs:lagunaMobs;
+ const rosterByMap={...starterMobs,...Object.fromEntries(Object.entries(EXTRA_MAPS).map(([loc,map])=>[loc,map.mobNames]))};
+ const mobsByMap=Object.fromEntries(Object.entries(rosterByMap).map(([loc,units])=>{
+  const configured=units.map((unit,index)=>{
+   const change=overrides[loc+':mob:'+index];
+   if(!change)return unit;
+   return {...unit,level:change.level??unit.level,combat:{...unit.combat,
+    stats:{...unit.combat?.stats,...change.stats},drops:change.drops??unit.combat?.drops,gold:change.gold,exp:change.exp}};
+  });
+  return [loc,configured.length?Array.from({length:MOB_COUNT},(_,i)=>({id:i,...configured[i%configured.length]})):[]];
+ }));
+ const currentMobs=()=>mobsByMap[player.location]||[];
  let selected=new Set(),battle=null,lastSide='none',lastRender=0,uiBattle=null;const sellSelection=new Set();
  try{
   const old=JSON.parse(localStorage.getItem(battleKey)||'null');
@@ -2393,7 +2515,13 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    'change-scroll':'assets/items/zwoj-zmiany.png',
    'addition-chip':'assets/items/czip-dodania.png',
    'updating-chip':'assets/items/czip-aktualizujacy.png',
-   // Brak oryginalnych grafik Energii KI i Skrzyni Materiałów: pokazujemy ikony tekstowe.
+   'quest-old-staff':'assets/items/quest-old-staff.png',
+   'quest-golden-dragon-coin':'assets/items/quest-golden-dragon-coin.png',
+   'quest-hermit-glasses':'assets/items/quest-hermit-glasses.png',
+   'quest-sayan-battle-outfit':'assets/items/quest-sayan-battle-outfit.png',
+   'quest-babidi-mark':'assets/items/quest-babidi-mark.png',
+   'quest-ki-energy':'assets/items/quest-ki-energy.png',
+   // Skrzynia Materiałów zachowuje ikonę tekstową.
   };
   return known[itemId]||'';
  }
@@ -2467,7 +2595,8 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   else if(task){
    text='<p>'+escapeText(task.text)+'</p>';
    const quantity=window.DBIWorldInventory?.countQuestItem?.(task.id)||0;
-   goal={text:'<span aria-hidden="true">'+task.symbol+'</span> Oddaj '+escapeText(task.name)+' ('+Math.min(1,quantity)+'/1)',done:quantity>=1};disabled=quantity<1;
+   const taskImage=townItemVisual(task.id);
+   goal={text:(taskImage?'<img class="world-quest-chest" width="26" src="'+taskImage+'" alt="">':'<span aria-hidden="true">'+task.symbol+'</span>')+' Oddaj '+escapeText(task.name)+' ('+Math.min(1,quantity)+'/1)',done:quantity>=1};disabled=quantity<1;
    reward=task.reward.map(([key,count,name])=>townRewardLine(townItemVisual(key),escapeText(name)+(key==='techniqueDamageBonusPct'?'':' ×'+count),key==='premium'?'💎':key==='techniqueDamageBonusPct'?'⚡':key==='quest-ki-energy'?'🔷':key==='quest-material-chest'?'📦':'✦')).join('');
    button=task.button;
   }else if(stage===7){
@@ -2504,7 +2633,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   if(closed||battle||window.DBIStoryCombat?.isRunning?.()||worldTrainingActive()||!t||!['spawn','point'].includes(t.mode))return null;
   const dest=DBI_WORLD_LOCATIONS.find(l=>l.id===t.mapId),map=extraMap(t.mapId);
   if(!dest)return null;
-  const p=t.mode==='spawn'?dest.spawn:t,x=p.x,y=p.y;
+  const p=t.mode==='spawn'?dest.spawn:t,x=p?.x,y=p?.y;
   const width=t.mapId==='laguna'?SIZE*TILE:t.mapId==='island'?ISLAND_WORLD:map?.sizeX*TILE;
   const height=t.mapId==='laguna'?32*TILE:t.mapId==='island'?ISLAND_WORLD:map?.sizeY*TILE;
   if(![x,y,width,height].every(Number.isFinite)||x<0||y<0||x>=width||y>=height)return null;
@@ -2914,7 +3043,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   const nextBattle={location:player.location,combatVersion:2,status:'running',started:now,updated:now,round:0,kills:0,gold:0,exp:0,totalDamage:0,loot:[],log:[],
    enemies:isDungeon?dungeonWave(0,now):[...selected].map(i=>{
     const unit=mobList[i],stats=configuredStats(unit);
-    return {id:i,name:unit.name,portrait:unit.portrait||unit.art||'',level:unit.level,...(unit.combat?{stats,drops:unit.combat.drops}:{}),hp:stats.hp,max:stats.hp,nextAttack:now+mobInterval(unit.level,stats)};
+    return {id:i,name:unit.name,portrait:unit.portrait||unit.art||'',level:unit.level,...(unit.combat?{stats,drops:unit.combat.drops,gold:unit.combat.gold,exp:unit.combat.exp}:{}),hp:stats.hp,max:stats.hp,nextAttack:now+mobInterval(unit.level,stats)};
    }),
    hp:ch.maxHp??50,maxHp:ch.maxHp??50,ki:ch.maxKi??100,maxKi:ch.maxKi??100,
    nextHeroAttack:now+500,nextRegen:now+REGEN_MS,nextZenUse:now+1000,heroHits:0,heroDamageTaken:0,pveOptions:pveSettings(),nextWaveAt:now,nextGreenAt:now};
@@ -2976,16 +3105,18 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
         localStorage.setItem(bossVictoryKey,String(next));
         finishBattle('Pokonano: '+battleBoss().name+'!');return;
        }
-       battle.gold+=monsterGold(battleMobLevel(target)*5,true);
+       battle.gold+=monsterGold(target.gold??battleMobLevel(target)*5,true);
        // Drop questowy: tylko aktywny etap, maks. jeden pierścień w nieodebranym łupie.
        if(battle.location==='centralForest'&&target.name==='Leśny Wojownik (Silny)'&&father.stage===1&&
           !(window.DBIWorldInventory?.countQuestItem?.('pierscien-ojca')>0)&&
           !battle.loot.some(item=>item.id==='pierscien-ojca')&&dropRoll(0.10)){
         battle.loot.push({id:'pierscien-ojca',name:'Pierścień Ojca',icon:'💍',image:'assets/items/pierscien-ojca.png',sell:0,sellable:false});
        }
-       if(!target.drops)battle.loot.push(...rollHiddenMobLoot());
+       battle.loot.push(...rollHiddenMobLoot());
        countNorthernKill(target);
-       const earned=window.DBIWorldInventory?.grantMobKills?.(1,battleMobLevel(target),target.name)||0;
+       const earned=(target.exp===undefined
+        ?window.DBIWorldInventory?.grantMobKills?.(1,battleMobLevel(target),target.name)
+        :window.DBIWorldInventory?.grantExp?.(target.exp,true))||0;
        const lootStart=battle.loot.length;
        if(target.drops)battle.loot.push(...lootItems(target.drops,true));
        else {
@@ -3457,9 +3588,9 @@ function dbiLegacyEditorCatalog(){
   const safePoint=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)?{...p,image:undefined}:null;
   const safeAsset=s=>({ ...s, image:undefined,art:s.art||(s.file?'assets/world/army/'+s.file:'') });
   catalogue.push({
-   id,name:map.name,sizeX:map.sizeX,sizeY:map.sizeY,art:map.art,spawn:{...map.spawn},
+   id,name:map.name,sizeX:map.sizeX,sizeY:map.sizeY,art:map.art,spawn:map.spawn?{...map.spawn}:null,
    npc:(map.npc||[]).map(safeAsset),scenery:(map.scenery||[]).map(safeAsset),
-   blocked:(map.blocked||[]).map(rect=>[...rect]),portals:[...(map.portals||[]),...(map.portal?[map.portal]:[])].map(p=>({...p})),
+   blocked:(map.blocked||[]).map(rect=>[...rect]),portals:mapPortals(map).map(p=>({...p})),
    mobNames:(map.mobNames||[]).map(e=>({...e})),mobs:safePoint(map.mobs),boss:safePoint(map.boss),
    city:safePoint(map.city),dungeon:safePoint(map.dungeon),
    specialCollision:!Array.isArray(map.blocked)
@@ -3508,5 +3639,5 @@ function dbiLegacyEditorCatalog(){
  return {maps:catalogue.sort((a,b)=>DBI_WORLD_LOCATIONS.findIndex(e=>e.id===a.id)-DBI_WORLD_LOCATIONS.findIndex(e=>e.id===b.id)),quests};
 }
 
- window.DBIWorld={editorQuestTargets,resolveEditorQuestPoint,originalJourneyDone,lagoonRules,masterRules,roshiRules,wandererRules,townJourneyRules,townTreasureTask:stage=>TOWN_TREASURE_TASKS[stage],npcSize,editorMobVariants,validEditorEnemy,mobPortrait,enemyPortraitImg,defaultEnemyPortrait:DEFAULT_ENEMY_PORTRAIT,questOpponentMarkup,questOpponentStyles,start,stop,setNearbyPlayers(players){active?.setNearbyPlayers(players)},isMobBattleRunning,useZen:useSavedZen,locations:DBI_WORLD_LOCATIONS,legacyEditorData:dbiLegacyEditorCatalog,gmTeleport,dungeonLimit,gmSetDungeonLimit};window.addEventListener('pagehide',stop);
+ window.DBIWorld={editorQuestTargets,resolveEditorQuestPoint,originalJourneyDone,lagoonRules,masterRules,roshiRules,wandererRules,townJourneyRules,townTreasureTask:stage=>TOWN_TREASURE_TASKS[stage],npcSize,mapDrawOrder,editorMobVariants,validEditorEnemy,mobPortrait,enemyPortraitImg,defaultEnemyPortrait:DEFAULT_ENEMY_PORTRAIT,questOpponentMarkup,questOpponentStyles,start,stop,setNearbyPlayers(players){active?.setNearbyPlayers(players)},isMobBattleRunning,useZen:useSavedZen,locations:DBI_WORLD_LOCATIONS,gmEncounters,gmEncounterDefaults,legacyEditorData:dbiLegacyEditorCatalog,gmTeleport,dungeonLimit,gmSetDungeonLimit};window.addEventListener('pagehide',stop);
 })();

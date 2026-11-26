@@ -97,7 +97,7 @@
 @media(max-width:1200px){.inv-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 
 /* v1.0 — drag and drop, opisy i menu kontekstowe */
-.inv-cell.has-item{user-select:none;cursor:grab;touch-action:pan-y}.inv-cell.has-item:active{cursor:grabbing}.inv-empty.drop-target{background:#284d58;border-color:#71dfda;box-shadow:inset 0 0 12px #4edbcd55}.inv-cell.quality-0{border-color:#8395a3}.inv-cell.quality-1{border-color:#d2c9ae}.inv-cell.quality-2{border-color:#3fa9f5}.inv-cell.quality-3{border-color:#ad6bf4}.inv-cell.quality-4{border-color:#ffbe54;box-shadow:inset 0 0 10px #ffc05733}.item-tooltip,.item-actions{position:fixed;z-index:9999;width:245px;padding:12px;background:#081624;border:1px solid #66829a;border-radius:5px;box-shadow:0 14px 35px #000c;color:#d8e6f1;font-size:12px;pointer-events:none}.item-tooltip[hidden]{display:none}.item-tooltip strong,.item-tooltip span,.item-tooltip em{display:block;margin-bottom:7px}.item-tooltip strong{font-size:14px}.item-tooltip em{color:#9aafbd;font-style:normal}.quality-text-0{color:#9fadb7}.quality-text-1{color:#e6dfd0}.quality-text-2{color:#58baff}.quality-text-3{color:#bf8aff}.quality-text-4{color:#ffcd66}.item-actions{pointer-events:auto;width:180px;padding:8px}.item-actions div{font-weight:700;padding:7px 6px;border-bottom:1px solid #334a60}.item-actions button{display:block;width:100%;margin-top:5px;padding:10px;text-align:left;background:#371d25;border:1px solid #8e4454;color:#ffd7dc;border-radius:3px}.item-actions button:hover{background:#66303c}
+.inv-cell.has-item{user-select:none;cursor:grab;touch-action:pan-y}.inv-cell.has-item:active{cursor:grabbing}.inv-empty.drop-target{background:#284d58;border-color:#71dfda;box-shadow:inset 0 0 12px #4edbcd55}.inv-cell.quality-0{border-color:#8395a3}.inv-cell.quality-1{border-color:#d2c9ae}.inv-cell.quality-2{border-color:#3fa9f5}.inv-cell.quality-3{border-color:#ed3f3f}.inv-cell.quality-4{border-color:#ffbe54;box-shadow:inset 0 0 10px #ffc05733}.item-tooltip,.item-actions{position:fixed;z-index:9999;width:245px;padding:12px;background:#081624;border:1px solid #66829a;border-radius:5px;box-shadow:0 14px 35px #000c;color:#d8e6f1;font-size:12px;pointer-events:none}.item-tooltip[hidden]{display:none}.item-tooltip strong,.item-tooltip span,.item-tooltip em{display:block;margin-bottom:7px}.item-tooltip strong{font-size:14px}.item-tooltip em{color:#9aafbd;font-style:normal}.quality-text-0{color:#9fadb7}.quality-text-1{color:#e6dfd0}.quality-text-2{color:#58baff}.quality-text-3{color:#ff5555}.quality-text-4{color:#ffcd66}.item-actions{pointer-events:auto;width:180px;padding:8px}.item-actions div{font-weight:700;padding:7px 6px;border-bottom:1px solid #334a60}.item-actions button{display:block;width:100%;margin-top:5px;padding:10px;text-align:left;background:#371d25;border:1px solid #8e4454;color:#ffd7dc;border-radius:3px}.item-actions button:hover{background:#66303c}
 
 /* v1.1: naprawa drop oraz dymki w stylu klasycznego RPG */
 .inv-cell.inv-empty{pointer-events:auto}
@@ -111,7 +111,7 @@
 .item-tooltip .tip-description{font-size:11px;color:#5bb7f5;margin:8px 0;white-space:pre-line}
 .item-tooltip .tip-bottom{border-top:1px solid #423126;padding:9px 0 2px;display:flex;flex-direction:column;gap:3px;font-size:12px}
 .item-tooltip .tip-bottom strong{font-size:11px;letter-spacing:1.2px}
-.item-tooltip .quality-text-0{color:#aab1b6}.item-tooltip .quality-text-1{color:#e2d4ba}.item-tooltip .quality-text-2{color:#56b8fa}.item-tooltip .quality-text-3{color:#c08cff}.item-tooltip .quality-text-4{color:#ffcb64}
+.item-tooltip .quality-text-0{color:#aab1b6}.item-tooltip .quality-text-1{color:#e2d4ba}.item-tooltip .quality-text-2{color:#56b8fa}.item-tooltip .quality-text-3{color:#ff5555}.item-tooltip .quality-text-4{color:#ffcb64}
 
 /* v1.2 — płynny podgląd rzeczywistego miejsca upuszczenia */
 .inv-drop-preview{position:absolute;z-index:8;pointer-events:none;box-sizing:border-box;border:2px solid #71e4d9;border-radius:3px;background:rgba(67,207,189,.20);box-shadow:inset 0 0 18px rgba(71,230,210,.18),0 0 14px rgba(71,230,210,.20);transition:left 85ms ease-out,top 85ms ease-out,height 85ms ease-out,background 110ms ease-out,border-color 110ms ease-out;will-change:left,top}
@@ -5661,8 +5661,17 @@
 .game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-tabs button.active{
  border-color:#ffb24b;background:linear-gradient(180deg,#ffb34a,#c66518);color:#fff8e7;box-shadow:inset 0 0 0 1px rgba(255,239,188,.34),0 0 12px rgba(255,174,61,.22);
 }
-.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-scroll{width:100%;max-width:100%;height:550px;min-height:0;overflow:auto;padding:4px;background:linear-gradient(180deg,#0d1d34,#081628)}
-.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid{margin:0}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-scroll{
+ width:100%;max-width:100%;height:auto;min-height:0;max-height:none;overflow:visible;
+ container-type:inline-size;padding:4px;background:linear-gradient(180deg,#0d1d34,#081628);
+}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid{
+ --dbi-gap:4px;
+ --dbi-cell:calc((100cqw - 5 * var(--dbi-gap))/6);
+ position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+ grid-template-rows:repeat(10,var(--dbi-cell));grid-auto-rows:var(--dbi-cell);
+ gap:var(--dbi-gap);width:100%;max-width:100%;min-width:0;margin:0;
+}
 .game.atlas-app .atlas-view #pageBody .dbi-upgrade-inv .inv-grid>.inv-cell{
  border-color:#42688a;background:linear-gradient(160deg,#133253,#0b2036 73%,#09182b);
  box-shadow:inset 0 1px 0 rgba(162,215,255,.07);
@@ -7170,7 +7179,7 @@
  --forge-quality-text:#58baff;--forge-quality-border:#3fa9f5;--forge-quality-top:#154d82;--forge-quality-bottom:#0b2445;--forge-quality-glow:rgba(63,169,245,.48);
 }
 .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b.dbi-forge-tier-3{
- --forge-quality-text:#bf8aff;--forge-quality-border:#ad6bf4;--forge-quality-top:#59265b;--forge-quality-bottom:#240e40;--forge-quality-glow:rgba(173,107,244,.46);
+ --forge-quality-text:#ff5555;--forge-quality-border:#ed3f3f;--forge-quality-top:#792626;--forge-quality-bottom:#380e0e;--forge-quality-glow:rgba(237,63,63,.46);
 }
 .game.atlas-app .atlas-view #pageBody .dbi-forge-v2 .dbi-forge-quality-steps b.dbi-forge-tier-4{
  --forge-quality-text:#ffcd66;--forge-quality-border:#ffbe54;--forge-quality-top:#955022;--forge-quality-bottom:#532211;--forge-quality-glow:rgba(255,190,84,.52);
@@ -7328,7 +7337,7 @@
 .game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-0{--forge-win-color:#9fadb7;--forge-win-rgb:159,173,183}
 .game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-1{--forge-win-color:#e6dfd0;--forge-win-rgb:230,223,208}
 .game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-2{--forge-win-color:#58baff;--forge-win-rgb:88,186,255}
-.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-3{--forge-win-color:#bf8aff;--forge-win-rgb:191,138,255}
+.game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-3{--forge-win-color:#ff5555;--forge-win-rgb:255,85,85}
 .game.atlas-app .atlas-view #pageBody .dbi-forge-v2.dbi-forge-result-tier-4{--forge-win-color:#ffcd66;--forge-win-rgb:255,205,102}
 .game.atlas-app .atlas-view #pageBody .dbi-forge-v2[data-smith-view="quality"] .dbi-forge-quality-aura{
  position:absolute;left:50%;top:49%;z-index:1;
@@ -8254,3 +8263,37 @@ body .game.atlas-app .atlas-rail #nav >button[aria-expanded="true"]::after{conte
 @media(prefers-reduced-motion:reduce){
  .game.atlas-app .atlas-view #pageBody .dbi-guild-deposit button{transition:none}
 }
+
+/* Fit the painted area of each icon within its two-cell inventory slot. */
+.eq-right .inv-grid > .inv-cell.inv-tall:has(img[src$="/sayan-50-miecz.png"]) > span:first-child,
+.inv-grid > .inv-cell.inv-tall:has(img:is([src$="/sayan-50-zbroja.png"], [src$="/sayan-250-zbroja.png"], [src$="/pancerz-krola-saiyan.png"])) > span:first-child {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+}
+.eq-right .inv-grid > .inv-cell.inv-tall img[src$="/sayan-50-miecz.png"],
+.inv-grid > .inv-cell.inv-tall img:is([src$="/sayan-50-zbroja.png"], [src$="/sayan-250-zbroja.png"], [src$="/pancerz-krola-saiyan.png"]) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+}
+.eq-right .inv-grid > .inv-cell.inv-tall img[src$="/sayan-50-miecz.png"] {
+  transform: translateX(-6%) rotate(-24deg) scale(1.86);
+}
+.inv-grid > .inv-cell.inv-tall img[src$="/sayan-50-zbroja.png"] {
+  transform: translateX(-6.4%) scale(1.49, 1.78);
+}
+.inv-grid > .inv-cell.inv-tall img[src$="/sayan-250-zbroja.png"] {
+  transform: scale(1.19, 1.48);
+}
+.inv-grid > .inv-cell.inv-tall img[src$="/pancerz-krola-saiyan.png"] {
+  transform: scale(1.19, 1.46);
+}
+
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-materials-card .dbi-upgrade-four-materials{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-four-materials .dbi-upgrade-mat-tile{width:100%;min-width:0;max-width:none}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-four-materials .dbi-upgrade-mat-meta b{white-space:normal;overflow-wrap:anywhere}
+
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-tier-materials .dbi-upgrade-mat-tile{height:auto;min-height:88px}
+.game.atlas-app .atlas-view #pageBody .dbi-upgrade-tier-materials .dbi-upgrade-mat-meta b{white-space:normal;overflow-wrap:anywhere}

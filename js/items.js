@@ -15,9 +15,235 @@ const DBI_SAYAN_50_ITEMS=[
  ['buty','Buty Sayan','buty','🥾'],
 ].map(([key,name,slot,icon])=>({
  id:'sayan-50-'+key,name,slot,icon,image:'assets/items/sayan-50-'+key+'.png',
- requiredLevel:50,requiredRace:'saiyan',quality:'Pospolity',attack:0,defense:0,ki:0,
- description:'Zestaw Sayan na 50. poziom.'
+ requiredLevel:100,requiredRace:'saiyan',quality:'Pospolity',attack:0,defense:0,ki:0,
+ ...(key==='miecz'?{techniqueAttackMin:50,techniqueAttackMax:60}:{}),
+ description:'Zestaw Sayan na 100. poziom.'
 }));
+const DBI_SAYAN_250_ITEMS=DBI_SAYAN_50_ITEMS.map(source=>{
+ const key=source.id.slice('sayan-50-'.length);
+ const name=key==='rekawice'?'Naramienniki':source.name.replace(/ Sayan$/,'');
+ return {...source,id:'sayan-250-'+key,name:name+' Elitarnych Sayan',
+  image:'assets/items/sayan-250-'+key+'.png',requiredLevel:250,
+  description:'Zestaw Elitarnych Sayan na 250. poziom.'};
+});
+// Nowe materiały — bez dropów, receptur i automatycznych nagród.
+const DBI_NEW_MATERIALS_20261125=[
+ {
+  "id": "fiolka-smoczego-plynu",
+  "name": "Fiolka Smoczego Płynu",
+  "slot": "materiał",
+  "icon": "🧪",
+  "image": "assets/items/fiolka-smoczego-plynu.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Fiolka z niebieskim smoczym płynem."
+ },
+ {
+  "id": "material-sayan",
+  "name": "Materiał Sayan",
+  "slot": "materiał",
+  "icon": "🧵",
+  "image": "assets/items/material-sayan.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Fragment materiału Sayan."
+ },
+ {
+  "id": "nameczanska-kula",
+  "name": "Nameczańska Kula",
+  "slot": "materiał",
+  "icon": "🟢",
+  "image": "assets/items/nameczanska-kula.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Zielona kula z jedną złotą gwiazdą."
+ },
+ {
+  "id": "dzwoneczek",
+  "name": "Dzwoneczek",
+  "slot": "materiał",
+  "icon": "🔔",
+  "image": "assets/items/dzwoneczek.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Złoty dzwoneczek."
+ },
+ {
+  "id": "maska-kukly",
+  "name": "Maska Kukły",
+  "slot": "materiał",
+  "icon": "🎭",
+  "image": "assets/items/maska-kukly.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Biało-czerwona maska."
+ },
+ {
+  "id": "ogon-sayan",
+  "name": "Ogon Sayan",
+  "slot": "materiał",
+  "icon": "🐒",
+  "image": "assets/items/ogon-sayan.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Zwinięty ogon Sayan."
+ },
+ {
+  "id": "szara-fiolka",
+  "name": "Szara fiolka",
+  "slot": "materiał",
+  "icon": "🧪",
+  "image": "assets/items/szara-fiolka.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Szara fiolka z korkiem."
+ },
+ {
+  "id": "miska-ryzu",
+  "name": "Miska ryżu",
+  "slot": "materiał",
+  "icon": "🍚",
+  "image": "assets/items/miska-ryzu.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Miska wypełniona ryżem."
+ },
+ {
+  "id": "kawalek-ciala-buu",
+  "name": "Kawałek Ciała BUU",
+  "slot": "materiał",
+  "icon": "🟣",
+  "image": "assets/items/kawalek-ciala-buu.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Różowy fragment ciała BUU."
+ },
+ {
+  "id": "kapsula-kosmiczna-sayan",
+  "name": "Kapsuła kosmiczna Sayan",
+  "slot": "materiał",
+  "icon": "🚀",
+  "image": "assets/items/kapsula-kosmiczna-sayan.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Kulista kapsuła kosmiczna."
+ },
+ {
+  "id": "dna-sayan",
+  "name": "DNA Sayan",
+  "slot": "materiał",
+  "icon": "🧬",
+  "image": "assets/items/dna-sayan.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Żółto-niebieska helisa DNA."
+ },
+ {
+  "id": "kosmiczna-plytka",
+  "name": "Kosmiczna Płytka",
+  "slot": "materiał",
+  "icon": "🔧",
+  "image": "assets/items/kosmiczna-plytka.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Płytka z obwodami elektronicznymi."
+ },
+ {
+  "id": "czarna-kostka",
+  "name": "Czarna kostka",
+  "slot": "materiał",
+  "icon": "⬛",
+  "image": "assets/items/czarna-kostka.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Czarna kostka o kamiennej strukturze."
+ },
+ {
+  "id": "kamienna-inskrypcja-starozytnych-sayan",
+  "name": "Kamienna Inskrypcja Starożytnych Sayan",
+  "slot": "materiał",
+  "icon": "🪨",
+  "image": "assets/items/kamienna-inskrypcja-starozytnych-sayan.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Kamienna tablica z inskrypcją."
+ },
+ {
+  "id": "sayanska-ruda",
+  "name": "Sayańska Ruda",
+  "slot": "materiał",
+  "icon": "🪨",
+  "image": "assets/items/sayanska-ruda.png",
+  "quality": "Pospolity",
+  "requiredLevel": 1,
+  "attack": 0,
+  "defense": 0,
+  "ki": 0,
+  "description": "Złoto-czarna ruda."
+ },
+ ...[
+  ['sayanska-duma','Sayańska Duma','🔥','Złoty płomień otaczający kroplę o szkarłatnej barwie.'],
+  ['sayanski-metal','Sayański Metal','🟨','Sztabka złocistego metalu.'],
+  ['skrawek-sayanskiej-duszy','Skrawek Sayańskiej Duszy','👤','Ciemna sylwetka otoczona niebieską aurą.'],
+  ['krwisty-krysztal','Krwisty Kryształ','💎','Głęboko czerwony kryształ o błyszczących krawędziach.'],
+  ['ksiezycowy-pyl','Księżycowy Pył','🌙','Srebrzysty pył zamknięty w fiolce ze znakiem półksiężyca.'],
+  ['sztuczny-ksiezyc','Sztuczny Księżyc','🌕','Jasna kula otoczona promieniami energii.'],
+  ['iskra-super-sayana','Iskra Super Sayana','⚡','Skupiona iskra złotej energii z rozgałęzionymi błyskawicami.']
+ ].map(([id,name,icon,description])=>({
+  id,name,slot:'materiał',icon,image:'assets/items/'+id+'.png',
+  quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0,description
+ }))
+];
+DBI_DEFAULT_ITEMS.push(...DBI_NEW_MATERIALS_20261125);
+// Nowe jakości Pyłu smoczych kul. Odrębne ID gwarantują osobne stosy materiału.
+const DBI_DRAGON_DUST_VARIANTS=[
+ ['dragon-ball-dust-common','Zwyczajny','szary'],
+ ['dragon-ball-dust-rare','Rzadki','zielony'],
+ ['dragon-ball-dust-epic','Epicki','czarny']
+].map(([id,quality,color])=>({id,name:'Pył smoczych kul',slot:'materiał',image:'assets/items/pyl-smoczych-kul-'+color+'.png',icon:'✨',quality,requiredLevel:1,attack:0,defense:0,ki:0,description:'Magiczny pył wykorzystywany do ulepszania przedmiotów.'}));
+DBI_DEFAULT_ITEMS.push(...DBI_DRAGON_DUST_VARIANTS);
 const DBI_KEY='dbi_catalog_v08';
 function dbiLoadCatalog(){
  let items=structuredClone(DBI_DEFAULT_ITEMS);
@@ -25,7 +251,22 @@ function dbiLoadCatalog(){
  for(const item of DBI_SAYAN_50_ITEMS){
   const index=items.findIndex(entry=>entry.id===item.id);
   if(index<0)items.push({...item});
-  else items[index]={...item,...items[index],slot:item.slot,image:item.image,requiredLevel:item.requiredLevel,requiredRace:item.requiredRace};
+  else items[index]={...item,...items[index],slot:item.slot,image:item.image,requiredLevel:item.requiredLevel,requiredRace:item.requiredRace,description:items[index].description==='Zestaw Sayan na 50. poziom.'?item.description:items[index].description??item.description,...(item.id==='sayan-50-miecz'?{techniqueAttackMin:50,techniqueAttackMax:60}:{})};
+ }
+ for(const item of DBI_SAYAN_250_ITEMS){
+  const index=items.findIndex(entry=>entry.id===item.id);
+  if(index<0)items.push({...item});
+  else items[index]={...item,...items[index],slot:item.slot,requiredLevel:item.requiredLevel,requiredRace:item.requiredRace};
+ }
+ // Uzupełnij zapisany wcześniej katalog, bez nadpisywania edycji GM.
+ for(const item of DBI_NEW_MATERIALS_20261125){
+  if(!items.some(entry=>entry.id===item.id))items.push({...item});
+ }
+ // Uzupełnia także katalogi zapisane przed dodaniem nowych jakości.
+ for(const item of DBI_DRAGON_DUST_VARIANTS){
+  const index=items.findIndex(entry=>entry.id===item.id);
+  if(index<0)items.push({...item});
+  else items[index]={...items[index],...item};
  }
  return items;
 }

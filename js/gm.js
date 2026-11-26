@@ -27,9 +27,9 @@
   return characters().find(({key,character})=>JSON.stringify([key,character.id])===target.value);
  }
  const catalog=()=>dbiLoadCatalog();
- grantForm.elements.item.append(option('','Bez przedmiotu'));
+ grantForm.elements.namedItem('item').append(option('','Bez przedmiotu'));
  for(const item of catalog().slice().sort((a,b)=>a.name.localeCompare(b.name,'pl'))){
-  grantForm.elements.item.append(option(item.id,item.name+' · '+item.id));
+  grantForm.elements.namedItem('item').append(option(item.id,item.name+' · '+item.id));
  }
  function keys(id){return {
   gold:'dboidle_gold_v1_'+id,dragon:'dboidle_dragon_wallet_v1_'+id,premium:'dboidle_premium_v1_'+id
@@ -118,14 +118,24 @@
   return 'Wysłano wiadomość.';
  });
  const map=byId('gmLocation');
- for(const place of window.DBIWorld.locations)map.append(option(place.id,place.name));
+ for(const place of window.DBIWorld.locations.filter(loc=>loc.spawn))map.append(option(place.id,place.name));
+ window.DBIGmContentEditor.locationSearch(map);
  submit(byId('teleport'),({character},data)=>{
   const result=window.DBIWorld.gmTeleport(character.id,String(data.get('location')));
   if(!result.ok)throw Error(result.message);
   post.write([post.log(character.id,character.name,'Teleportacja',result.message)]);
   return result.message;
  });
+ const itemSelect=grantForm.elements.namedItem('item'),itemPreview=document.createElement('div');
+ itemPreview.className='gm-visual';itemSelect.closest('label').after(itemPreview);
+ const previewGrant=()=>{
+  const item=catalog().find(entry=>entry.id===itemSelect.value);
+  itemPreview.hidden=!item;
+  if(item)window.DBIGmContentEditor.visual(itemPreview,{...item,detail:item.quality,description:item.description});
+ };
+ itemSelect.addEventListener('change',previewGrant);previewGrant();
  byId('characterSearch').addEventListener('input',refresh);
  target.addEventListener('change',renderDetails);
  refresh();
 })();
+

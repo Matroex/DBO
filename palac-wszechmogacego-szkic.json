@@ -1,0 +1,219 @@
+{
+  "version": 1,
+  "maps": [
+    {
+      "id": "palac-wszechmogacego-szkic",
+      "name": "Pałac Wszechmogącego",
+      "sizeX": 28,
+      "sizeY": 28,
+      "terrain": {
+        "version": 1,
+        "tiles": [
+          32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 38, 38, 38, 38, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+          32, 32, 32, 32, 32, 32, 32, 32, 32, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+          32, 32, 32, 32, 32, 32, 32, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 32, 32, 32, 32, 32, 32, 32,
+          32, 32, 32, 32, 32, 38, 38, 38, 38, 38, 38, 36, 36, 36, 36, 36, 36, 38, 38, 38, 38, 38, 38, 32, 32, 32, 32, 32,
+          32, 32, 32, 32, 38, 38, 38, 38, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 38, 38, 38, 38, 32, 32, 32, 32,
+          32, 32, 32, 32, 38, 38, 38, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 38, 38, 38, 32, 32, 32, 32,
+          32, 32, 32, 38, 38, 38, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 38, 38, 38, 32, 32, 32,
+          32, 32, 38, 38, 38, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 38, 38, 38, 32, 32,
+          32, 32, 38, 38, 38, 37, 37, 37, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 37, 37, 37, 38, 38, 38, 32, 32,
+          32, 38, 38, 38, 36, 37, 37, 37, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 37, 37, 37, 36, 38, 38, 38, 32,
+          32, 38, 38, 38, 36, 37, 37, 37, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 37, 37, 37, 36, 38, 38, 38, 32,
+          32, 38, 38, 38, 36, 37, 37, 37, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 37, 37, 37, 36, 38, 38, 38, 32,
+          32, 38, 38, 36, 36, 37, 37, 37, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 37, 37, 37, 36, 36, 38, 38, 32,
+          32, 38, 38, 36, 36, 37, 37, 37, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 37, 37, 37, 36, 36, 38, 38, 32,
+          32, 38, 38, 36, 36, 37, 37, 37, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 37, 37, 37, 36, 36, 38, 38, 32,
+          32, 38, 38, 38, 36, 36, 36, 36, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 36, 36, 36, 36, 38, 38, 38, 32,
+          32, 38, 38, 38, 36, 36, 36, 36, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 36, 36, 36, 36, 38, 38, 38, 32,
+          32, 38, 38, 38, 36, 36, 36, 36, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 36, 36, 36, 36, 38, 38, 38, 32,
+          32, 32, 38, 38, 38, 36, 36, 36, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 36, 36, 36, 38, 38, 38, 32, 32,
+          32, 32, 38, 38, 38, 36, 36, 36, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 36, 36, 36, 38, 38, 38, 32, 32,
+          32, 32, 32, 38, 38, 38, 36, 36, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 36, 36, 38, 38, 38, 32, 32, 32,
+          32, 32, 32, 32, 38, 38, 38, 36, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 36, 38, 38, 38, 32, 32, 32, 32,
+          32, 32, 32, 32, 38, 38, 38, 38, 36, 36, 36, 30, 30, 30, 30, 30, 30, 36, 36, 36, 38, 38, 38, 38, 32, 32, 32, 32,
+          32, 32, 32, 32, 32, 38, 38, 38, 38, 38, 38, 36, 36, 36, 36, 36, 36, 38, 38, 38, 38, 38, 38, 32, 32, 32, 32, 32,
+          32, 32, 32, 32, 32, 32, 32, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 32, 32, 32, 32, 32, 32, 32,
+          32, 32, 32, 32, 32, 32, 32, 32, 32, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+          32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 38, 38, 38, 38, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+          32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32
+        ],
+        "visual": {
+          "enabled": true,
+          "transitions": true,
+          "hardness": 1,
+          "variation": 2,
+          "details": 1,
+          "organic": 2
+        },
+        "terrace": {
+          "x": 448,
+          "y": 432,
+          "r": 382
+        }
+      },
+      "spawn": {
+        "x": 448,
+        "y": 740,
+        "placementTool": "spawn",
+        "label": "Dziedziniec"
+      },
+      "blocked": [
+        [
+          313,
+          180,
+          583,
+          290
+        ]
+      ],
+      "scenery": [
+        {
+          "x": 288,
+          "y": 55,
+          "width": 320,
+          "height": 281,
+          "art": "assets/ui/map-editor/palace49/palac-jutrzenki.png",
+          "label": "Pałac",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 174.5,
+          "y": 226,
+          "width": 61,
+          "height": 76,
+          "art": "assets/ui/map-editor/palace49/palma.png",
+          "label": "Palma",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 174.5,
+          "y": 350,
+          "width": 61,
+          "height": 76,
+          "art": "assets/ui/map-editor/palace49/palma.png",
+          "label": "Palma",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 174.5,
+          "y": 482,
+          "width": 61,
+          "height": 76,
+          "art": "assets/ui/map-editor/palace49/palma.png",
+          "label": "Palma",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 134,
+          "y": 275,
+          "width": 86,
+          "height": 88,
+          "art": "assets/ui/map-editor/palace49/cyprysy.png",
+          "label": "Aleja zachodnia",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 660.5,
+          "y": 226,
+          "width": 61,
+          "height": 76,
+          "art": "assets/ui/map-editor/palace49/palma.png",
+          "label": "Palma",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 660.5,
+          "y": 350,
+          "width": 61,
+          "height": 76,
+          "art": "assets/ui/map-editor/palace49/palma.png",
+          "label": "Palma",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 660.5,
+          "y": 482,
+          "width": 61,
+          "height": 76,
+          "art": "assets/ui/map-editor/palace49/palma.png",
+          "label": "Palma",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 676,
+          "y": 275,
+          "width": 86,
+          "height": 88,
+          "art": "assets/ui/map-editor/palace49/cyprysy.png",
+          "label": "Aleja wschodnia",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 325.5,
+          "y": 517,
+          "width": 25,
+          "height": 94,
+          "art": "assets/ui/map-editor/palace49/lampa.png",
+          "label": "Latarnia",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 545.5,
+          "y": 517,
+          "width": 25,
+          "height": 94,
+          "art": "assets/ui/map-editor/palace49/lampa.png",
+          "label": "Latarnia",
+          "placementTool": "decoration",
+          "questMarker": false,
+          "layer": "above"
+        },
+        {
+          "x": 389,
+          "y": 756,
+          "width": 118,
+          "height": 57,
+          "art": "assets/ui/map-editor/realm/schody-z-marmuru.png",
+          "label": "Główne schody",
+          "placementTool": "decoration",
+          "questMarker": false
+        }
+      ],
+      "npc": [
+        {
+          "x": 514,
+          "y": 350,
+          "label": "Pan Popo",
+          "art": "assets/ui/map-editor/space410/pan-popo.png",
+          "scalePct": 115,
+          "questId": "",
+          "placementTool": "library-npc",
+          "questMarker": false
+        }
+      ],
+      "portals": [],
+      "mobNames": []
+    }
+  ],
+  "quests": []
+}

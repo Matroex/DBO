@@ -35,10 +35,26 @@
  const number=(v,min,max,defaultValue=min)=>Math.min(max,Math.max(min,Number.isFinite(Number(v))?Number(v):defaultValue));
  function read(key){try{const x=JSON.parse(localStorage.getItem(key)||'null');return x&&x.version===1?x:null}catch{return null}}
  const empty=()=>({version:1,maps:[],quests:[]});
+ const palaceMapId='palac-wszechmogacego-szkic';
+ function adoptPalace(pack,published){
+  const installed=published.maps.find(map=>map.id===palaceMapId)||window.DBI_GM_WORLD_DATA?.maps?.find(map=>map.id===palaceMapId);
+  if(!installed)return pack;
+  const local=pack.maps.find(map=>map.id===palaceMapId),previousEntry=local?.entryPortal;
+  if(!pack.palaceTeleportOnly&&previousEntry?.from==='highTowerForest'&&previousEntry.x===435&&previousEntry.y===333){
+   delete local.entryPortal;
+  }
+  pack.palaceTeleportOnly=true;
+  if(!local)pack.maps.unshift(installed);
+  else if(!pack.adoptedPalace&&!local.entryPortal&&!local.portals?.length){
+   local.portals=installed.portals;
+  }
+  pack.adoptedPalace=true;
+  return pack;
+ }
  function draft(){
   const published=currentPublished(),saved=read(DRAFT_KEY);
-  if(!saved)return clone({...published,includesPublished:true});
-  if(saved.includesPublished)return clone(saved);
+  if(!saved)return clone(adoptPalace({...published,includesPublished:true},published));
+  if(saved.includesPublished)return clone(adoptPalace(saved,published));
   // Migrate old drafts without discarding unpublished work or installed assets.
   const merged={...saved,includesPublished:true};
   for(const key of ['maps','quests','customArt','pickups']){
@@ -46,7 +62,7 @@
    for(const v of [...(published[key]||[]),...(saved[key]||[])])entries.set(v[id],v);
    merged[key]=[...entries.values()];
   }
-  return clone(merged);
+  return clone(adoptPalace(merged,published));
  }
  const currentPublished=()=>{
   const maps=new Map(),quests=new Map(),art=new Map(),pickups=new Map();
@@ -366,9 +382,35 @@
  registerMissions();
 
  let state=null,lastStatus='';
+ // Portal identities are per map and survive moving / renaming a portal.
+ const portalKey=p=>p?.portalId||('xy:'+p?.x+':'+p?.y);
+ function ensurePortalIds(pack){
+  for(const m of pack.maps||[]){const used=new Set((m.portals||[]).map(p=>p.portalId).filter(Boolean));
+   for(const p of m.portals||[])if(!p.portalId){let id;do{id='p-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)}while(used.has(id));p.portalId=id;used.add(id);}
+  }
+  return pack;
+ }
+ function portalMap(pack,id){return pack.maps.find(m=>m.id===id)||legacyMapData(id,pack)}
+ function portalTarget(pack,p){return (portalMap(pack,p.to)?.portals||[]).find(t=>portalKey(t)===p.targetPortalId)}
+ function portalMode(p){return p.arrivalMode||'custom'}
+ function isPortalPair(a,map,b,targetMap){return portalMode(a)==='portal'&&portalMode(b)==='portal'&&a.to===targetMap.id&&b.to===map.id&&a.targetPortalId===portalKey(b)&&b.targetPortalId===portalKey(a)}
+ function unlinkPortalReturn(map,p){
+  const otherMap=state.pack.maps.find(m=>m.id===p.to),other=portalTarget(state.pack,p);
+  if(otherMap&&other&&isPortalPair(p,map,other,otherMap)){delete other.targetPortalId;delete other.portalReturn;other.to='';other.arrivalMode='portal';}
+  delete p.portalReturn;
+ }
+ function portalConnectionsView(map,p){
+  const dest=p.to&&portalMap(state.pack,p.to),target=portalTarget(state.pack,p),mode=portalMode(p);
+  const options=(dest?.portals||[]).map((t,i)=>[portalKey(t),(t.label||'Portal '+(i+1))+' · X: '+Math.round(t.x)+', Y: '+Math.round(t.y)+(t.to?' → '+(allLocations().find(m=>m.id===t.to)?.name||t.to):'')]);
+  if(p.targetPortalId&&!target)options.push([p.targetPortalId,'⚠ Brak wybranego portalu — wybierz ponownie']);
+  const otherMap=state.pack.maps.find(m=>m.id===p.to),paired=target&&(otherMap?isPortalPair(p,map,target,otherMap):p.portalReturn===true);
+  return field('Nazwa na mapie gry','item.label',p.label||'')+field('Mapa docelowa','item.to',p.to||'',{options:[['','Wybierz lokację'],...allLocations().filter(l=>l.id!==map.id&&!['laguna','island'].includes(l.id)).map(l=>[l.id,l.name])]})+
+   field('Miejsce pojawienia się','item.arrivalMode',mode,{options:[['portal','Konkretny portal docelowy'],['spawn','Domyślny punkt startowy'],['custom','Własne współrzędne (px)']]})+
+   (mode==='portal'?field('Portal docelowy','item.targetPortalId',p.targetPortalId||'',{options:[['','Wybierz portal'],...options]})+'<div class="dbi-gme-entry"><p>'+(target?'✓ Wybrano: '+esc(target.label||'Portal')+' ('+Math.round(target.x)+', '+Math.round(target.y)+'). Postać pojawi się przy nim na przechodnim terenie.':options.length?'Wybierz punkt docelowy z listy.':'Najpierw postaw portal na mapie docelowej.')+'</p><button type="button" data-gme-command="portal-pair" '+(!target||paired?'disabled':'')+'>Połącz również w drugą stronę</button> <button type="button" data-gme-command="portal-unpair" '+(!paired?'disabled':'')+'>Pozostaw tylko przejście w jedną stronę</button>'+(paired?'<p>✓ Połączenie dwustronne</p>':'')+(!otherMap&&target?'<p>Powrót na oryginalnej mapie zostanie ustawiony w danych publikacji, bez edycji jej kodu.</p>':'')+'</div>':mode==='custom'?field('Miejsce pojawienia X','item.destinationArrival.x',p.destinationArrival?.x??0,{type:'number',min:0})+field('Miejsce pojawienia Y','item.destinationArrival.y',p.destinationArrival?.y??0,{type:'number',min:0}):'');
+ }
  function saveDraft(){
   if(!state)return false;
-  try{localStorage.setItem(DRAFT_KEY,JSON.stringify(state.pack));setStatus('Projekt zapisany lokalnie.');return true}
+  try{ensurePortalIds(state.pack);localStorage.setItem(DRAFT_KEY,JSON.stringify(state.pack));setStatus('Projekt zapisany lokalnie.');return true}
   catch(e){setStatus('Nie udało się zapisać. Sprawdź limit pamięci przeglądarki.');return false}
  }
  function setStatus(text){lastStatus=text;const node=state?.root?.querySelector('[data-gme-status]');if(node)node.textContent=text}
@@ -406,14 +448,29 @@
    if((m.scenery||[]).filter(isEdge).length>1200)problems.push('Mapa „'+m.id+'”: maksymalnie 1200 kafelków obramowania.');
    if((m.scenery||[]).some(p=>isEdge(p)&&p.edgeBlock===true&&edgeContains(p,m.spawn?.x,m.spawn?.y)))problems.push('Mapa „'+m.id+'”: start leży na obramowaniu blokującym ruch.');
    if([...(m.scenery||[]),...(m.npc||[])].some(p=>String(p.art).startsWith('user-')&&!pack.customArt?.some(a=>a.key===p.art)))problems.push('Brakuje grafiki obiektu na mapie '+m.id);
+   if(m.spawn!=null&&(![m.spawn.x,m.spawn.y].every(Number.isFinite)||m.spawn.x<0||m.spawn.y<0||m.spawn.x>=m.sizeX*32||m.spawn.y>=m.sizeY*32))problems.push('Mapa '+m.name+': nieprawidłowy punkt startowy.');
+   if(!m.spawn&&m.entryPortal?.from)problems.push('Mapa '+m.name+': usuń automatyczny portal wejściowy albo przywróć start.');
    if(!m.name?.trim())problems.push('Mapa „'+m.id+'”: podaj nazwę.');
    if(m.terrain){
     if(!terrain?.valid(m))problems.push('Mapa „'+m.id+'”: uszkodzona siatka kafelków terenu.');
-    else if(terrain.isBlocked(m,Number(m.spawn?.x)||0,Number(m.spawn?.y)||0))problems.push('Mapa „'+m.id+'”: punkt startowy leży na terenie nieprzechodnim. Przenieś start lub zmień kafelek.');
+    else if(m.spawn&&terrain.isBlocked(m,m.spawn.x,m.spawn.y))problems.push('Mapa „'+m.id+'”: punkt startowy leży na terenie nieprzechodnim. Przenieś start lub zmień kafelek.');
    }
    else if(!validAsset.test(m.art)||m.art.includes('..'))problems.push('Mapa „'+m.id+'”: podaj prawidłową ścieżkę grafiki assets/...');
    if(!(Number(m.sizeX)>=10&&Number(m.sizeX)<=100&&Number(m.sizeY)>=10&&Number(m.sizeY)<=100))problems.push('Mapa „'+m.id+'”: rozmiar od 10 do 100 kafelków.');
    if((m.portals||[]).some(p=>p.to&&(['laguna','island'].includes(p.to)||(!ids.has(p.to)&&!builtinIds.has(p.to)&&!pack.maps.some(map=>map.id===p.to)))))problems.push('Mapa „'+m.id+'”: portal ma nieznany cel.');
+  }
+  const legacyReturns=new Set();
+  for(const m of pack.maps){
+   const keys=new Set();
+   for(const p of m.portals||[]){
+    const key=portalKey(p);if(keys.has(key))problems.push('Mapa '+m.name+': powtórzony identyfikator portalu.');keys.add(key);
+    const destination=p.to&&portalMap(pack,p.to);
+    if(destination&&!destination.spawn&&(portalMode(p)==='spawn'||portalMode(p)==='custom'&&!p.destinationArrival))problems.push('Portal „'+(p.label||key)+'”: ustaw współrzędne albo wybierz portal docelowy. Mapa nie ma startu.');
+    if(portalMode(p)!=='portal'||!p.to&&!p.targetPortalId)continue;
+    const dest=portalMap(pack,p.to),target=portalTarget(pack,p);
+    if(!dest||!target||!p.to||p.to===m.id||!Number.isFinite(target.x)||!Number.isFinite(target.y)||target.x<0||target.y<0||target.x>dest.sizeX*32||target.y>dest.sizeY*32)problems.push('Mapa '+m.name+': portal „'+(p.label||key)+'” nie ma prawidłowego portalu docelowego.');
+    if(p.portalReturn===true&&!pack.maps.some(x=>x.id===p.to)){const id=p.to+'|'+p.targetPortalId;if(legacyReturns.has(id))problems.push('Dwa portale próbują ustawić powrót z tego samego portalu na starej mapie.');legacyReturns.add(id);}
+   }
   }
   const qIds=new Set();for(const q of pack.quests){
    if(!validId.test(q.id)||qIds.has(q.id))problems.push('Quest: niepoprawne lub powtórzone ID '+q.id);qIds.add(q.id);
@@ -467,7 +524,9 @@
  const itemSearchOptions=new WeakMap();
  const normalizeItemSearch=value=>String(value??'').toLocaleLowerCase('pl').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').trim();
  function searchableItemField(label,key,value,options){
-  const rows=options.slice();
+  // Nazwa przedmiotu zostaje niezmienna; jakość rozróżnia odmiany w wyborze GM.
+  const dustQualities={'dragon-ball-dust':'Pospolity','dragon-ball-dust-common':'Zwyczajny','dragon-ball-dust-rare':'Rzadki','dragon-ball-dust-epic':'Epicki'};
+  const rows=options.map(([id,title])=>[id,Object.hasOwn(dustQualities,id)?'Pył smoczych kul · '+dustQualities[id]:title]);
   if(!rows.length||!value&&!rows.some(([id])=>id===''))rows.unshift(['','Wybierz przedmiot']);
   if(value&&!rows.some(([id])=>String(id)===String(value)))rows.push([value,'Brak w katalogu: '+value]);
   const selected=rows.some(([id])=>String(id)===String(value))?String(value):'';
@@ -492,10 +551,12 @@
  }
  function mapSelect(){
   const legacy=legacyCatalog().maps;
-  return '<div class="dbi-gme-projects"><strong>Istniejące mapy ('+legacy.length+')</strong>'+legacy.map(m=>'<button type="button" class="dbi-gme-legacy-option '+(m.id===state.mapId?'active':'')+'" data-gme-map="'+esc(m.id)+'" title="Mapa z gry">'+esc(m.name)+'</button>').join('')+
+  const palace=state.pack.maps.find(m=>m.id===palaceMapId);
+  const palaceShortcut=palace?'<button type="button" class="'+(palace.id===state.mapId?'active':'')+'" data-gme-map="'+esc(palace.id)+'">Otwórz Pałac Wszechmogącego</button>':'';
+  return '<div class="dbi-gme-projects">'+palaceShortcut+'<strong>Istniejące mapy ('+legacy.length+')</strong>'+legacy.map(m=>'<button type="button" class="dbi-gme-legacy-option '+(m.id===state.mapId?'active':'')+'" data-gme-map="'+esc(m.id)+'" title="Mapa z gry">'+esc(m.name)+'</button>').join('')+
    '<button type="button" data-gme-command="sync-installed">Wczytaj brakujące z gry</button><strong>Mapy projektu ('+state.pack.maps.length+')</strong>'+state.pack.maps.map(m=>'<button type="button" class="'+(m.id===state.mapId?'active':'')+'" data-gme-map="'+esc(m.id)+'">'+esc(m.name)+'</button>').join('')+'<label>Szablon lokacji <select data-map-theme><option>Równina</option><option>Leśna zatoka</option><option>Miasto kapsuł</option><option>Stadion</option><option>Pałac ponad chmurami</option><option>Osada Szmaragdowej Wody</option><option>Port orbitalny</option><option>Przystań zaświatów</option><option>Wyspa mistrza</option><option>Komnata wahadeł</option><option>Namek · archipelag</option><option>Namek · płaskowyż Starszego</option><option>Namek · obóz imperium</option><option>Namek · ostatnie chwile</option><option>Przyszłość · laboratorium czasu</option><option>Przyszłość · ruiny miasta</option><option>Ziemia · turniej sztuk walki</option><option>Zaświaty · sąd dusz</option><option>Statek – sala grawitacyjna</option><option>Górskie dojo</option></select></label><button type="button" data-gme-command="add-map">+ Nowa mapa</button></div>'
  }
- function editorTop(){return '<header class="dbi-gme-header"><div><span class="dbi-gme-tag">PANEL GM / NARZĘDZIA ŚWIATA</span><h2>🗺 Kreator map i questów v4.52</h2><p>Buduj teren od zera, rozmieszczaj obiekty i twórz questy. Edytuj także mapy i fabułę dodane do gry.</p></div><button type="button" data-gme-command="exit">Wróć do Panelu GM</button></header><nav class="dbi-gme-tabs">'+[['maps','Mapy i obiekty'],['pickups','Przedmioty na mapie'],['enemies','Moby i bossowie'],['quests','Questy i dialogi'],['publish','Zapis i publikacja']].map(([id,label])=>'<button type="button" data-gme-tab="'+id+'" class="'+(state.tab===id?'active':'')+'">'+label+'</button>').join('')+'</nav>'}
+ function editorTop(){return '<header class="dbi-gme-header"><div><span class="dbi-gme-tag">PANEL GM / NARZĘDZIA ŚWIATA</span><h2>🗺 Kreator map i questów v4.53</h2><p>Buduj teren od zera, rozmieszczaj obiekty i twórz questy. Edytuj także mapy i fabułę dodane do gry.</p></div><button type="button" data-gme-command="exit">Wróć do Panelu GM</button></header><nav class="dbi-gme-tabs">'+[['maps','Mapy i obiekty'],['pickups','Przedmioty na mapie'],['enemies','Moby i bossowie'],['quests','Questy i dialogi'],['publish','Zapis i publikacja']].map(([id,label])=>'<button type="button" data-gme-tab="'+id+'" class="'+(state.tab===id?'active':'')+'">'+label+'</button>').join('')+'</nav>'}
  const sceneryRoles=[['','Dekoracja'],['arena','Arena walki'],['qualifier','Hala eliminacyjna'],['building','Budynek'],['landmark','Punkt orientacyjny']];
  function questSources(map){return [...(map.npc||[]),...(map.scenery||[])]}
  // Project markers have explicit provenance, independent of their art, name or quest.
@@ -2464,7 +2525,7 @@
   cancelAnimationFrame(previewFrame);
   const stage=state.root.querySelector('[data-gme-map-stage]'),m=currentMap();if(!stage||!m)return;
   const water=!!m.terrain;
-  const effects=(m.scenery||[]).filter(p=>p.effect&&(p.layer==='above'?state.showAbove!==false:state.showProps!==false));
+  const effects=(m.scenery||[]).filter(p=>p.effect&&(window.DBIWorld.mapDrawOrder('scenery',p)>=20?state.showAbove!==false:state.showProps!==false));
   if(!water&&!effects.length)return;
   const makeCanvas=parent=>{const c=document.createElement('canvas');c.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';parent.appendChild(c);return c};
   const wc=water?makeCanvas(stage):null;
@@ -2550,18 +2611,21 @@
   if(!map)return '<section class="dbi-gme-empty">Utwórz pierwszą mapę, aby rozpocząć.</section>';
   const tools=[['select','↖ Wybierz / przesuń'],['spawn','🏁 Start'],['npc','👤 NPC'],['scenery','🏠 Obiekt'],['campfire','🔥 Ognisko'],['mobs','⚔ Expowisko'],['boss','👑 Boss (znacznik)'],['portal','🌀 Portal'],['blocked','⛔ Kolizja']];
   const W=map.sizeX*32,H=map.sizeY*32;
-  const pins=[['spawn',0,map.spawn],...(map.npc||[]).map((x,i)=>['npc',i,x]),...(map.scenery||[]).map((x,i)=>['scenery',i,x]),...(map.portals||[]).map((x,i)=>['portals',i,x]),...(map.mobs?[['mobs',0,map.mobs]]:[]),...(map.boss?[['boss',0,map.boss]]:[])];
+  const pins=[['spawn',0,map.spawn],...(map.scenery||[]).map((x,i)=>['scenery',i,x]),...(map.npc||[]).map((x,i)=>['npc',i,x]),...(map.portals||[]).map((x,i)=>['portals',i,x]),...(map.mobs?[['mobs',0,map.mobs]]:[]),...(map.boss?[['boss',0,map.boss]]:[])];
   const glyph={spawn:'🏁',npc:'👤',scenery:'🏠',portals:'🌀',mobs:'⚔',boss:'👑'};
-  const objects=pins.filter(([type,i,p])=>p&&(type==='scenery'?(p.layer==='above'?state.showAbove!==false:state.showProps!==false):state.showMarkers!==false)).map(([type,i,p])=>{const selected=state.selection?.type===type&&state.selection?.index===i,visible=type==='scenery'&&p.art&&(validAsset.test(p.art)||spriteUrl(p.art)!==p.art)&&!p.art.includes('..')&&p.animation!=='campfire';
+  const order=(type,p)=>window.DBIWorld.mapDrawOrder(type,p);
+  const objectSelector='<label>Wybierz NPC lub obiekt <select data-gme-layer-object><option value="">Wybierz z listy</option>'+pins.filter(([type])=>type==='npc'||type==='scenery').filter(([, ,p])=>!isEdge(p)).map(([type,i,p])=>'<option value="'+type+':'+i+'" '+(state.selection?.type===type&&state.selection?.index===i?'selected':'')+'>'+esc(objectLabel(type,p,i))+' · '+(i+1)+'</option>').join('')+'</select></label>';
+  const objects=pins.filter(([type,i,p])=>p&&(type==='scenery'?(order(type,p)>=20?state.showAbove!==false:state.showProps!==false):state.showMarkers!==false)).map(([type,i,p])=>{const selected=state.selection?.type===type&&state.selection?.index===i,visible=type==='scenery'&&p.art&&(validAsset.test(p.art)||spriteUrl(p.art)!==p.art)&&!p.art.includes('..')&&p.animation!=='campfire';
+   const z=type==='npc'||type==='scenery'?order(type,p)+101:205;
    if(type==='npc'&&hasNpcImage(p)){
     const {width,height}=window.DBIWorld.npcSize(p);
-    return '<button type="button" class="dbi-gme-pin dbi-gme-sprite-pin '+(selected?'is-selected':'')+'" data-gme-select="npc:'+i+'" title="'+esc(p.label)+'" aria-label="'+esc(p.label)+'" style="left:'+(p.x/W*100)+'%;top:'+(p.y/H*100)+'%;width:'+(width/W*100)+'%;height:'+(height/H*100)+'%;transform:translate(-50%,-100%)"><img src="'+esc(spriteUrl(p.art))+'" alt="" draggable="false">'+(npcQuestMarker(p)?'<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;background:#102438;border:1px solid #d0ab60;border-radius:50%;padding:3px">👤</span>':'')+'</button>';
+    return '<button type="button" class="dbi-gme-pin dbi-gme-sprite-pin '+(selected?'is-selected':'')+'" data-gme-select="npc:'+i+'" title="'+esc(p.label)+'" aria-label="'+esc(p.label)+'" style="z-index:'+z+';left:'+(p.x/W*100)+'%;top:'+(p.y/H*100)+'%;width:'+(width/W*100)+'%;height:'+(height/H*100)+'%;transform:translate(-50%,-100%)"><img src="'+esc(spriteUrl(p.art))+'" alt="" draggable="false">'+(npcQuestMarker(p)?'<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;background:#102438;border:1px solid #d0ab60;border-radius:50%;padding:3px">👤</span>':'')+'</button>';
    }
-   if(visible)return '<button type="button" class="dbi-gme-pin dbi-gme-sprite-pin '+(p.layer==='above'?'dbi-gme-above ':'')+(selected?'is-selected':'')+'" data-gme-select="'+type+':'+i+'" style="left:'+(p.x/W*100)+'%;top:'+(p.y/H*100)+'%;width:'+(p.width/W*100)+'%;height:'+(p.height/H*100)+'%" title="'+esc(objectLabel(type,p,i))+'"><img draggable="false" src="'+esc(spriteUrl(p.art))+'" style="transform:rotate('+number(p.rotation,0,270,0)+'deg) scaleX('+(p.flipX==='yes'?-1:1)+')" alt="">'+(sceneryQuestMarker(p)?'<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;background:#102438;border:1px solid #d0ab60;border-radius:50%;padding:3px">🏠</span>':'')+'</button>';
-   return '<button type="button" class="dbi-gme-pin '+(p.animation==='campfire'?'dbi-gme-fire-pin ':'')+(selected?'is-selected':'')+'" data-gme-select="'+type+':'+i+'" style="left:'+((p.animation==='campfire'?p.x+(p.width||64)/2:p.x)/W*100)+'%;top:'+((p.animation==='campfire'?p.y+(p.height||64)/2:p.y)/H*100)+'%" title="'+esc(objectLabel(type,p,i))+'"><span>'+(p.animation==='campfire'?'🔥':type==='scenery'&&!sceneryQuestMarker(p)?'·':glyph[type])+'</span></button>'}).join('');
+   if(visible)return '<button type="button" class="dbi-gme-pin dbi-gme-sprite-pin '+(selected?'is-selected':'')+'" data-gme-select="'+type+':'+i+'" style="z-index:'+z+';left:'+(p.x/W*100)+'%;top:'+(p.y/H*100)+'%;width:'+(p.width/W*100)+'%;height:'+(p.height/H*100)+'%" title="'+esc(objectLabel(type,p,i))+'"><img draggable="false" src="'+esc(spriteUrl(p.art))+'" style="transform:rotate('+number(p.rotation,0,270,0)+'deg) scaleX('+(p.flipX==='yes'?-1:1)+')" alt="">'+(sceneryQuestMarker(p)?'<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;background:#102438;border:1px solid #d0ab60;border-radius:50%;padding:3px">🏠</span>':'')+'</button>';
+   return '<button type="button" class="dbi-gme-pin '+(p.animation==='campfire'?'dbi-gme-fire-pin ':'')+(selected?'is-selected':'')+'" data-gme-select="'+type+':'+i+'" style="z-index:'+z+';left:'+((p.animation==='campfire'?p.x+(p.width||64)/2:p.x)/W*100)+'%;top:'+((p.animation==='campfire'?p.y+(p.height||64)/2:p.y)/H*100)+'%" title="'+esc(objectLabel(type,p,i))+'"><span>'+(p.animation==='campfire'?'🔥':type==='scenery'&&!sceneryQuestMarker(p)?'·':glyph[type])+'</span></button>'}).join('');
   const blocks=(state.showBlocks===false?[]:map.blocked||[]).map((b,i)=>'<button type="button" data-gme-select="blocked:'+i+'" class="dbi-gme-block '+(state.selection?.type==='blocked'&&state.selection.index===i?'is-selected':'')+'" style="left:'+(b[0]/W*100)+'%;top:'+(b[1]/H*100)+'%;width:'+((b[2]-b[0])/W*100)+'%;height:'+((b[3]-b[1])/H*100)+'%"></button>').join('');
   const selected=currentObject();
-  return '<section class="dbi-gme-work"><div class="dbi-gme-terrain-mode"><strong>Rodzaj tła mapy</strong><div class="dbi-gme-inline"><button type="button" data-gme-command="mode-tiles" class="'+(map.terrain?'active':'')+'">🎨 Buduj z kafelków</button><button type="button" data-gme-command="mode-png" class="'+(!map.terrain?'active':'')+'">🖼 Tło PNG</button></div></div><div class="dbi-gme-map-settings">'+field('ID mapy','map.id',map.id)+field('Nazwa mapy','map.name',map.name)+field('Szerokość (kafelki)','map.sizeX',map.sizeX,{type:'number',min:10,max:100})+field('Wysokość (kafelki)','map.sizeY',map.sizeY,{type:'number',min:10,max:100})+(map.terrain?'':field('Grafika tła (ścieżka pliku)','map.art',map.art,{placeholder:'assets/world/moja-mapa.webp'}))+'<div class="dbi-gme-inline"><button type="button" data-gme-command="duplicate-map">Duplikuj</button><button type="button" data-gme-command="delete-map" class="danger">Usuń mapę</button></div><p>'+(map.terrain?'Tło budujesz z kafelków — nie potrzebujesz PNG.':'Grafikę mapy dodaj osobno do folderu <code>assets/</code>. Tutaj wskazujesz jej ścieżkę.')+'</p><div class="dbi-gme-entry"><strong>Opcjonalny portal wejściowy z istniejącej mapy</strong><p>Używa istniejącego portalu i animacji. Poprzednie portale pozostaną bez zmian.</p><div class="dbi-gme-fields">'+field('Mapa wejściowa','entry.from',map.entryPortal?.from||'',{options:[['','Bez wejścia'],...allLocations().filter(loc=>loc.id!==map.id&&!['laguna','island'].includes(loc.id)).map(loc=>[loc.id,loc.name])]})+field('Pozycja portalu X (px)','entry.x',map.entryPortal?.x??128,{type:'number',min:0,max:4000})+field('Pozycja portalu Y (px)','entry.y',map.entryPortal?.y??128,{type:'number',min:0,max:4000})+'</div></div></div>'+(map.terrain?tileView(map):'')+edgeView(map)+propView()+'<div class="dbi-gme-layerbar">'+[['showProps','Dekoracje'],['showAbove','Nad postacią'],['showMarkers','NPC i znaczniki'],['showBlocks','Kolizje']].map(([k,label])=>'<label><input type="checkbox" data-gme-layer="'+k+'" '+(state[k]!==false?'checked':'')+'> '+label+'</label>').join('')+'<button type="button" data-gme-command="overview">Podgląd całej mapy</button><label>Powiększenie <select data-gme-zoom>'+[100,150,200,300].map(n=>'<option value="'+n+'" '+((state.zoom||100)===n?'selected':'')+'>'+n+'%</option>').join('')+'</select></label></div><div class="dbi-gme-tools">'+tools.map(([id,title])=>'<button type="button" data-gme-tool="'+id+'" class="'+(state.tool===id?'active':'')+'">'+title+'</button>').join('')+'</div><div class="dbi-gme-map-wrap"><div data-gme-map-stage class="dbi-gme-map-stage '+(map.terrain&&state.showGrid?'show-grid':'')+' '+(map.terrain&&tileTools.has(state.tool)?'is-tile-painting':'')+'" style="width:'+(state.zoom||100)+'%;--gme-columns:'+map.sizeX+';--gme-rows:'+map.sizeY+';aspect-ratio:'+map.sizeX+'/'+map.sizeY+';'+(map.terrain?'background-image:none': 'background-image:url(&quot;'+esc(map.art)+'&quot;);background-size:100% 100%')+'">'+(map.terrain?'<canvas data-gme-terrain-canvas class="dbi-gme-terrain-canvas" aria-label="Teren mapy"></canvas>':'')+blocks+objects+'<div class="dbi-gme-drawing" hidden></div></div></div><p class="dbi-gme-help">Kliknij narzędzie, a potem miejsce na mapie. Kliknij postawiony obiekt, aby wybrać jego rolę i opcjonalny quest. Prawy przycisk usuwa element pod kursorem. Wybór i przesuwanie: narzędzie ↖. Kolizje: przeciągnij prostokąt. NPC i obiekty są osobno od tła. Statystyki bossa i łupy ustawisz w zakładce Moby i bossowie.</p><div class="dbi-gme-inspector"><h3>Właściwości zaznaczenia</h3>'+inspector(map,selected)+'</div></section>';
+  return '<section class="dbi-gme-work"><div class="dbi-gme-terrain-mode"><strong>Rodzaj tła mapy</strong><div class="dbi-gme-inline"><button type="button" data-gme-command="mode-tiles" class="'+(map.terrain?'active':'')+'">🎨 Buduj z kafelków</button><button type="button" data-gme-command="mode-png" class="'+(!map.terrain?'active':'')+'">🖼 Tło PNG</button></div></div><div class="dbi-gme-map-settings">'+field('ID mapy','map.id',map.id)+field('Nazwa mapy','map.name',map.name)+field('Szerokość (kafelki)','map.sizeX',map.sizeX,{type:'number',min:10,max:100})+field('Wysokość (kafelki)','map.sizeY',map.sizeY,{type:'number',min:10,max:100})+(map.terrain?'':field('Grafika tła (ścieżka pliku)','map.art',map.art,{placeholder:'assets/world/moja-mapa.webp'}))+'<div class="dbi-gme-inline"><button type="button" data-gme-command="duplicate-map">Duplikuj</button><button type="button" data-gme-command="delete-map" class="danger">Usuń mapę</button></div><p>'+(map.terrain?'Tło budujesz z kafelków — nie potrzebujesz PNG.':'Grafikę mapy dodaj osobno do folderu <code>assets/</code>. Tutaj wskazujesz jej ścieżkę.')+'</p><div class="dbi-gme-entry">'+(!map.spawn?'<p class="dbi-gme-help">Brak punktu startowego. Domyślny teleport jest wyłączony. Ustaw wejście przez portal z własnym punktem docelowym albo przez quest.</p>':'')+'<strong>Opcjonalny portal wejściowy z istniejącej mapy</strong><p>Używa istniejącego portalu i animacji. Poprzednie portale pozostaną bez zmian.</p><div class="dbi-gme-fields">'+field('Mapa wejściowa','entry.from',map.entryPortal?.from||'',{options:[['','Bez wejścia'],...allLocations().filter(loc=>loc.id!==map.id&&!['laguna','island'].includes(loc.id)).map(loc=>[loc.id,loc.name])]})+field('Pozycja portalu X (px)','entry.x',map.entryPortal?.x??128,{type:'number',min:0,max:4000})+field('Pozycja portalu Y (px)','entry.y',map.entryPortal?.y??128,{type:'number',min:0,max:4000})+'</div></div></div>'+(map.terrain?tileView(map):'')+edgeView(map)+propView()+'<div class="dbi-gme-layerbar">'+[['showProps','Dekoracje'],['showAbove','Nad postacią'],['showMarkers','NPC i znaczniki'],['showBlocks','Kolizje']].map(([k,label])=>'<label><input type="checkbox" data-gme-layer="'+k+'" '+(state[k]!==false?'checked':'')+'> '+label+'</label>').join('') +objectSelector+'<button type="button" data-gme-command="overview">Podgląd całej mapy</button><label>Powiększenie <select data-gme-zoom>'+[100,150,200,300].map(n=>'<option value="'+n+'" '+((state.zoom||100)===n?'selected':'')+'>'+n+'%</option>').join('')+'</select></label></div><div class="dbi-gme-tools">'+tools.map(([id,title])=>'<button type="button" data-gme-tool="'+id+'" class="'+(state.tool===id?'active':'')+'">'+title+'</button>').join('')+'</div><div class="dbi-gme-map-wrap"><div data-gme-map-stage class="dbi-gme-map-stage '+(map.terrain&&state.showGrid?'show-grid':'')+' '+(map.terrain&&tileTools.has(state.tool)?'is-tile-painting':'')+'" style="width:'+(state.zoom||100)+'%;--gme-columns:'+map.sizeX+';--gme-rows:'+map.sizeY+';aspect-ratio:'+map.sizeX+'/'+map.sizeY+';'+(map.terrain?'background-image:none': 'background-image:url(&quot;'+esc(map.art)+'&quot;);background-size:100% 100%')+'">'+(map.terrain?'<canvas data-gme-terrain-canvas class="dbi-gme-terrain-canvas" aria-label="Teren mapy"></canvas>':'')+blocks+objects+'<div class="dbi-gme-drawing" hidden></div></div></div><p class="dbi-gme-help">Kliknij narzędzie, a potem miejsce na mapie. Kliknij postawiony obiekt, aby wybrać jego rolę i opcjonalny quest. Prawy przycisk usuwa element pod kursorem. Wybór i przesuwanie: narzędzie ↖. Kolizje: przeciągnij prostokąt. NPC i obiekty są osobno od tła. Statystyki bossa i łupy ustawisz w zakładce Moby i bossowie.</p><div class="dbi-gme-inspector"><h3>Właściwości zaznaczenia</h3>'+inspector(map,selected)+'</div></section>';
  }
  function inspector(map,selected){
   const sel=state.selection;
@@ -2574,12 +2638,17 @@
    html=pointFields();
    if(sel.type==='npc')html+=field('Typ elementu NPC','item.placementTool',npcPlacement(selected),{options:[['npc','👤 NPC — ręczny znacznik questa'],['library-npc','Grafika NPC — bez znacznika questa']]})+(hasNpcImage(selected)?field('Rozmiar obrazu NPC (%)','item.scalePct',window.DBIWorld.npcSize(selected).percent,{type:'number',min:25,max:400,step:1}):'')+field('Nazwa NPC na mapie gry','item.label',selected.label)+field('Grafika sprite’a','item.art',selected.art||'',{placeholder:'assets/world/npc.png'})+field('Przypisany quest','item.questId',selected.questId||'',{options:[['','Bez questa'],...state.pack.quests.map(q=>[q.id,q.name])]});
    if(sel.type==='spawn'&&selected.placementTool==='spawn')html+=field('Nazwa na mapie gry','item.label',selected.label||'');
-   if(sel.type==='portals')html+=field('Nazwa na mapie gry','item.label',selected.label||'')+field('Mapa docelowa','item.to',selected.to||'',{options:[['','Wybierz lokację'],...allLocations().filter(loc=>loc.id!==map.id&&!['laguna','island'].includes(loc.id)).map(loc=>[loc.id,loc.name])]})+field('Miejsce pojawienia X','item.destinationArrival.x',selected.destinationArrival?.x??0,{type:'number',min:0})+field('Miejsce pojawienia Y','item.destinationArrival.y',selected.destinationArrival?.y??0,{type:'number',min:0});
-   if(sel.type==='scenery')html+=field('Typ elementu mapy','item.placementTool',sceneryPlacement(selected),{options:[['object','🏠 Obiekt — znacznik questa'],['campfire','🔥 Ognisko — znacznik questa'],['decoration','Dekoracja — bez znacznika questa']]})+field('Co reprezentuje obiekt?','item.role',selected.role||'',{options:sceneryRoles})+field('Quest przy obiekcie','item.questId',selected.questId||'',{options:[['','Bez questa'],...state.pack.quests.map(q=>[q.id,q.name])]})+field('Nazwa na mapie gry','item.label',selected.label||'',{placeholder:'np. Arena turniejowa'})+field('Grafika obiektu','item.art',selected.art||'')+field('Animacja dekoracji','item.animation',selected.animation||'',{options:[['','Brak animacji'],['campfire','Ognisko — płomienie i iskry']]})+field('Warstwa dekoracji','item.layer',selected.layer||'',{options:[['','Pod postacią'],['above','Nad postacią (bez ogniska)']]})+field('Obrót grafiki','item.rotation',selected.rotation||0,{options:[[0,'0°'],[90,'90°'],[180,'180°'],[270,'270°']]})+field('Odbicie poziome','item.flipX',selected.flipX||'',{options:[['','Nie'],['yes','Tak']]})+field('Szerokość (px)','item.width',selected.width,{type:'number',min:1})+field('Wysokość (px)','item.height',selected.height,{type:'number',min:1});
+   if(sel.type==='portals')html+=portalConnectionsView(map,selected);
+   if(sel.type==='scenery')html+=field('Typ elementu mapy','item.placementTool',sceneryPlacement(selected),{options:[['object','🏠 Obiekt — znacznik questa'],['campfire','🔥 Ognisko — znacznik questa'],['decoration','Dekoracja — bez znacznika questa']]})+field('Co reprezentuje obiekt?','item.role',selected.role||'',{options:sceneryRoles})+field('Quest przy obiekcie','item.questId',selected.questId||'',{options:[['','Bez questa'],...state.pack.quests.map(q=>[q.id,q.name])]})+field('Nazwa na mapie gry','item.label',selected.label||'',{placeholder:'np. Arena turniejowa'})+field('Grafika obiektu','item.art',selected.art||'')+field('Animacja dekoracji','item.animation',selected.animation||'',{options:[['','Brak animacji'],['campfire','Ognisko — płomienie i iskry']]})+field('Domyślna warstwa dekoracji','item.layer',selected.layer||'',{options:[['','Pod postacią'],['above','Nad postacią (bez ogniska)']]})+field('Obrót grafiki','item.rotation',selected.rotation||0,{options:[[0,'0°'],[90,'90°'],[180,'180°'],[270,'270°']]})+field('Odbicie poziome','item.flipX',selected.flipX||'',{options:[['','Nie'],['yes','Tak']]})+field('Szerokość (px)','item.width',selected.width,{type:'number',min:1})+field('Wysokość (px)','item.height',selected.height,{type:'number',min:1});
+   if(sel.type==='npc'||sel.type==='scenery'){
+    html+=field('Kolejność rysowania','item.drawOrder',selected.drawOrder??'',{
+     type:'number',min:-100,max:100,step:1,placeholder:String(window.DBIWorld.mapDrawOrder(sel.type,selected))
+    })+'<p>Wyższa liczba oznacza bliżej przodu. Domyślnie zwykłe dekoracje mają 0, NPC 10, a dekoracje nad postacią 30. Poziomy od 20 zasłaniają gracza. Puste pole przywraca ustawienie domyślne.</p>';
+   }
    if(sel.type==='mobs')html+=field('Nazwa expowiska','item.label',selected.label||'Expowisko')+field('Grafika expowiska','item.art',selected.art||'')+'<button type="button" data-gme-command="enc-open-mobs">Ustaw moby i łupy</button>';
    if(sel.type==='boss')html+=field('Nazwa bossa','item.label',selected.label||'Boss')+field('Grafika bossa','item.art',selected.art||'')+'<button type="button" data-gme-command="enc-open-boss">Ustaw bossa i łupy</button>';
   }
-  return '<div class="dbi-gme-fields">'+html+'</div>'+(sel.type!=='spawn'?'<button type="button" class="danger" data-gme-command="delete-object">Usuń zaznaczony element</button>':'');
+  return '<div class="dbi-gme-fields">'+html+'</div>'+'<button type="button" class="danger" data-gme-command="delete-object">'+(sel.type==='spawn'?'Usuń punkt startowy':'Usuń zaznaczony element')+'</button>';
  }
  const statNames={strength:'Siła',speed:'Szybkość',endurance:'Wytrzymałość',intelligence:'Inteligencja',ki:'KI'};
  const enemyFields={...statNames,attack:'Atak',defense:'Obrona',hp:'HP'};
@@ -2749,8 +2818,8 @@
    rewardsView(st,i)+'</div>'+(st.requirement==='story'?storyEnemyView(st,i):'')+stageLocationView(q,st,i)+stageTeleportView(q,st,i):'')+'</div></article>').join('');
   return '<div class="dbi-gme-quest-layout">'+list+'<section class="dbi-gme-quest-edit"><div class="dbi-gme-fields">'+(q.id===JOURNEY_ID?'<p><strong>Pierwsza Podróż — dalsze etapy</strong><br>Kontynuacja od zakończonego etapu w Mieście pod Górami. Dotychczasowe zapisy graczy pozostają bez zmian.</p>':field('ID questa','quest.id',q.id)+field('Nazwa questa','quest.name',q.name))+field('Mapa powiązana','quest.mapId',q.mapId,{options:allLocations().map(m=>[m.id,m.name])})+'</div><p>Każdy etap może mieć własną mapę oraz punkt interakcji. Możesz też użyć dotychczasowego przypisania do NPC. Etapy wykonują się po kolei, a postęp zapisuje się dla każdej postaci.</p><div class="dbi-gme-inline"><button type="button" data-gme-command="test-quest">Testuj quest od początku (GM)</button><button type="button" data-gme-command="publish-live">Włącz questy w grze (lokalnie)</button><button type="button" class="danger" data-gme-command="delete-quest">Usuń quest</button></div><div class="dbi-gme-inline" style="position:sticky;top:0;z-index:4;background:#10243b;border:1px solid #466986;border-radius:7px;padding:8px;margin-top:12px"><button type="button" data-gme-command="add-step">+ Dodaj etap</button><button type="button" data-gme-command="collapse-steps">Zwiń wszystkie</button><button type="button" data-gme-command="expand-steps">Rozwiń wszystkie</button><span style="font-size:12px;color:#c4d6e8">Etapy: '+q.steps.length+'</span></div>'+steps+'<div class="dbi-gme-inline" style="margin-top:12px"><button type="button" data-gme-command="add-step">+ Dodaj etap</button><button type="button" data-gme-command="collapse-steps">Zwiń wszystkie</button></div></section></div>';
  }
- function publicationData(){
-  const deployed=clone(state.pack);delete deployed.nativeEdits;delete deployed.baseRevision;deployed.includesPublished=true;
+ function publicationData(pack=state.pack){
+  const deployed=clone(pack);delete deployed.nativeEdits;delete deployed.baseRevision;delete deployed.adoptedPalace;delete deployed.palaceTeleportOnly;deployed.includesPublished=true;
   deployed.revision=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);return deployed;
  }
  function publicationError(issues){state.tab='publish';draw();setStatus('Publikacja zablokowana: '+issues[0]);}
@@ -2764,9 +2833,10 @@
    location.reload();
   }catch(e){setStatus('Nie udało się opublikować: '+e.message)}
  }
- async function publishOriginals(name){
-  const issues=validate(state.pack);if(issues.length)return publicationError(issues);
-  if(!saveDraft())return;
+ async function publishOriginals(name,pack=state.pack,report=setStatus){
+  const issues=validate(pack);
+  if(issues.length)return report===setStatus?publicationError(issues):report('Publikacja zablokowana: '+issues[0]);
+  if(report===setStatus&&!saveDraft())return;
   const test=name!=='download-js',questTest=name==='test-quest';
   if(questTest&&!/^https?:$/.test(location.protocol))return setStatus('Odizolowany test wymaga HTTP/HTTPS. Otwórz grę przez lokalny serwer lub GitHub Pages.');
   let seed=null;
@@ -2774,17 +2844,20 @@
   const tab=test?window.open('about:blank','_blank'):null;
   if(test&&!tab)return setStatus('Zezwól na otwarcie karty testowej.');
   try{
-   const native=Object.keys(state.pack.nativeEdits||{}).length>0;
+   const native=Object.keys(pack.nativeEdits||{}).length>0;
    if(native){
     if(location.protocol==='file:')throw Error('Projekt zawiera zmiany kodu starych map lub questów. Otwórz grę przez HTTP/HTTPS (lokalny serwer lub GitHub Pages) i ponów eksport. Szkic jest zapisany; nie pominięto żadnych zmian.');
     try{await window.DBINativeEditor.load(true)}catch(e){throw Error('Nie można odczytać kodu starych map/questów (js/world.js lub js/app.js): '+e.message+'. Szkic zapisany; ponów eksport po przywróceniu dostępu do plików.')}
    }
-   const output=native?window.DBINativeEditor.build(state.pack.nativeEdits):{};
-   const deployed=publicationData();
+   const output=native?window.DBINativeEditor.build(pack.nativeEdits):{};
+   const deployed=publicationData(pack);
+   deployed.gmContent=window.DBIContent.read();
+   deployed.gmCatalog=window.DBIGmPublicationCatalog();
    output['data/gm-world-published.json']=JSON.stringify(deployed,null,2)+'\n';
    if(test){await window.DBINativeEditor.preview(tab,output,seed);setStatus(questTest?'Quest od początku w odizolowanej karcie — prawdziwy postęp nie jest zmieniany.':'Projekt uruchomiony w odizolowanej karcie testowej.');}
    else{
-    // Data-only publications never need executable files or index.html.
+    // The legacy data script loads the same publication when the game runs from disk.
+    output['data/gm-world-published.js']='window.DBI_GM_WORLD_DATA=JSON.parse('+JSON.stringify(JSON.stringify(deployed))+');\n';
     let versioned=false;
     if(native){
      try{
@@ -2801,9 +2874,9 @@
      }catch(e){console.warn('Kreator GM: eksport bez index.html:',e.message)}
     }
     window.DBINativeEditor.saveZip(output);
-    setStatus('Pobrano ZIP: '+deployed.quests.length+' questów, '+deployed.maps.length+' map. '+(native?'Wgraj wszystkie pliki'+(versioned?' z index.html.':'; odśwież Ctrl+F5.'):'Wgraj data/gm-world-published.json do gry. Przy uruchomieniu z dysku testuj przez publikację lokalną.'));
+    report('Pobrano ZIP z mapami, questami, przedmiotami, skrzyniami i ustawieniami przeciwników. Rozpakuj wszystkie pliki do folderu gry z zachowaniem ścieżek.'+(native&&!versioned?' Odśwież stronę skrótem Ctrl+F5.':''));
    }
-  }catch(e){tab?.close();setStatus('Nie udało się przygotować zmian: '+e.message)}
+  }catch(e){tab?.close();report('Nie udało się przygotować zmian: '+e.message)}
  }
  function characterDiagnostics(q){
   if(!q)return '';
@@ -2824,13 +2897,14 @@
   if(!active?.id||!session?.name||active.account!==session.name.toLowerCase())throw Error('Brak aktywnej postaci.');
   if(!q?.steps?.length)throw Error('Wybierz quest z co najmniej jednym etapem.');
   const id=active.id,first=q.steps[0],mapId=stepMap(q,first),map=projectMapData(mapId)||builtins().find(m=>m.id===mapId);
-  if(!map?.spawn)throw Error('Brak punktu startowego mapy.');
+  const entry=map?.spawn||first.point;
+  if(!entry)throw Error('Ustaw punkt pierwszego etapu, aby przetestować quest na mapie bez startu.');
   const charsKey='dboidle_characters_v1_'+session.name.toLowerCase();
   const chars=JSON.parse(localStorage.getItem(charsKey)||'[]'),character=chars.find(c=>c.id===id);
   if(!character)throw Error('Nie znaleziono postaci.');
   // These are overlay writes only, never writes to real localStorage.
   const writes={ [questProgressKey(id,q.id)]:JSON.stringify({stage:0,kills:0}), ['dboidle_battle_v1_'+id]:null,
-   ['dboidle_world_v1_'+id]:JSON.stringify({location:mapId,x:map.spawn.x,y:map.spawn.y,dir:'down'}) };
+   ['dboidle_world_v1_'+id]:JSON.stringify({location:mapId,x:entry.x,y:entry.y,dir:'down'}) };
   for(const p of state.pack.pickups||[])if(p.questId===q.id)writes[pickupKey(id,p.id)]=null;
   if(q.id===JOURNEY_ID){
    writes['dboidle_north_journey_v1_'+id]=JSON.stringify({stage:16,kills:0,won:true});
@@ -2847,7 +2921,7 @@
   let char;try{char=JSON.parse(sessionStorage.getItem(charKey)||'null')}catch{}
   const status=char?.id?(originalJourneyDone(char.id)?'Dotychczasowa fabuła ukończona.':'Dotychczasowa fabuła nieukończona: kontynuacja odblokuje się po rozmowie z Prezydentem i Generałem.'):'Brak aktywnej postaci.';
   const diagnostic=journey?'<p><b>Pierwsza Podróż:</b> projekt: '+journey.steps.length+' etapów; w bieżącej publikacji: '+(publishedJourney?.steps?.length||0)+'. '+esc(status)+'</p>':'';
-  return '<div class="dbi-gme-publish"><h3>Zapis i publikacja</h3><p>Projekt: '+state.pack.maps.length+' map, '+state.pack.quests.length+' questów. W bieżącej publikacji: '+live.quests.length+' questów.</p>'+diagnostic+characterDiagnostics(publishedJourney)+(window.DBI_GM_WORLD_LOAD_ERROR?'<p class="dbi-gme-errors">Błąd wczytania JSON: '+esc(window.DBI_GM_WORLD_LOAD_ERROR)+'</p>':'')+(native?'<p>Zmiany kodu starych map i questów ('+native+') wymagają eksportu ZIP lub odizolowanej karty testowej.</p>':'')+(problems.length?'<div class="dbi-gme-errors"><b>Popraw przed publikacją:</b><ul>'+problems.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>':'<p class="dbi-gme-valid">✓ Projekt gotowy do publikacji.</p>')+'<div class="dbi-gme-publish-actions"><button data-gme-command="save">Zapisz projekt (szkic)</button><button data-gme-command="publish-live">Włącz questy w grze (lokalnie)</button><button data-gme-command="publish-local">Otwórz odizolowany test</button>'+(state.pack.maps.length?'<button data-gme-command="test-map">Testuj wybraną mapę</button>':'')+'<button data-gme-command="download-js">Pobierz ZIP na GitHub</button><button data-gme-command="export">Eksport projektu JSON</button><button data-gme-command="import-trigger">Import projektu JSON</button></div><input hidden type="file" data-gme-import accept=".json"><p>Publikacja lokalna działa tylko w tej przeglądarce. Zwykły ZIP zawiera tylko data/gm-world-published.json. Gra przez HTTP/HTTPS wczytuje dane automatycznie; przy otwarciu z dysku użyj Włącz questy w grze (lokalnie). Zmiany kodu starych map wymagają HTTP/HTTPS i mogą zawierać dodatkowe pliki JS. Wgraj wszystkie pliki z zachowaniem folderów. Nie zastępuj danych pustym projektem.</p></div>';
+  return '<div class="dbi-gme-publish"><h3>Zapis i publikacja</h3><p>Projekt: '+state.pack.maps.length+' map, '+state.pack.quests.length+' questów. W bieżącej publikacji: '+live.quests.length+' questów.</p>'+diagnostic+characterDiagnostics(publishedJourney)+(window.DBI_GM_WORLD_LOAD_ERROR?'<p class="dbi-gme-errors">Błąd wczytania JSON: '+esc(window.DBI_GM_WORLD_LOAD_ERROR)+'</p>':'')+(native?'<p>Zmiany kodu starych map i questów ('+native+') wymagają eksportu ZIP lub odizolowanej karty testowej.</p>':'')+(problems.length?'<div class="dbi-gme-errors"><b>Popraw przed publikacją:</b><ul>'+problems.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>':'<p class="dbi-gme-valid">✓ Projekt gotowy do publikacji.</p>')+'<div class="dbi-gme-publish-actions"><button data-gme-command="save">Zapisz projekt (szkic)</button><button data-gme-command="publish-live">Włącz questy w grze (lokalnie)</button><button data-gme-command="publish-local">Otwórz odizolowany test</button>'+(state.pack.maps.length?'<button data-gme-command="test-map">Testuj wybraną mapę</button>':'')+'<button data-gme-command="download-js">Pobierz ZIP na GitHub</button><button data-gme-command="export">Eksport projektu JSON</button><button data-gme-command="import-trigger">Import projektu JSON</button></div><input hidden type="file" data-gme-import accept=".json"><p>ZIP zawiera projekt świata, katalog przedmiotów, zawartość skrzyń i ustawienia mobów oraz bossów z Panelu GM. Rozpakuj wszystkie pliki do folderu gry z zachowaniem ścieżek. Eksport zmian kodu starych map wymaga otwarcia gry przez HTTP/HTTPS.</p></div>';
  }
  // The map and sidebar scroll independently of the page. Replacing the editor DOM
  // otherwise discards their positions, focus and manually expanded material groups.
@@ -2887,6 +2961,7 @@
  }
  function draw(){
   if(!state)return;
+  ensurePortalIds(state.pack);
   const restore=rememberView(state.root);
   state.root.innerHTML='<div class="dbi-gme">'+editorTop()+'<div class="dbi-gme-content">'+(state.tab==='maps'?'<aside class="dbi-gme-sidebar">'+mapSelect()+'</aside>'+mapView():state.tab==='pickups'?pickupView():state.tab==='enemies'?encountersView():state.tab==='quests'?questView():publishView())+'</div><footer class="dbi-gme-footer"><span data-gme-status role="status">'+esc(lastStatus||'Zapis projektu nie publikuje questów w grze. Użyj opcji Włącz w grze.')+'</span><button type="button" data-gme-command="save">Zapisz</button></footer></div>';
   restore();
@@ -3370,15 +3445,29 @@
    draw();return;
   }
   if(name==='add-step'&&q){const step=newStep(stepMap(q,q.steps.at(-1)||{}));q.steps.push(step);state.openSteps.add(step);saveDraft();draw();const card=$(state.root,'[data-gme-step-card="'+(q.steps.length-1)+'"]');card?.scrollIntoView?.({block:'start',behavior:'instant'});card?.querySelector('textarea')?.focus({preventScroll:true});return}
-  if(name==='delete-map'&&m){if(state.pack.quests.some(q=>q.steps?.some(s=>s.teleport?.mapId===m.id)))return setStatus('Najpierw zmień teleporty questów prowadzące na tę mapę.');if(state.pack.pickups?.some(p=>p.mapId===m.id))return setStatus('Najpierw usuń przedmioty z tej mapy.');if(!confirm('Usunąć mapę „'+m.name+'” z projektu?'))return;state.pack.maps=state.pack.maps.filter(x=>x!==m);state.mapId=state.pack.maps[0]?.id||null;state.selection=null;state.undo=[];state.redo=[];saveDraft();draw();return}
-  if(name==='duplicate-map'&&m){const copy=clone(m);let n=2;while(state.pack.maps.some(x=>x.id===m.id+'-'+n))n++;copy.id=m.id+'-'+n;copy.name=m.name+' (kopia)';state.pack.maps.push(copy);state.mapId=copy.id;state.selection=null;state.undo=[];state.redo=[];saveDraft();draw();return}
-  if(name==='delete-object'&&m){const s=state.selection;if(!s||s.type==='spawn')return;if(s.type==='scenery'&&isEdge(m.scenery[s.index])){const p=m.scenery[s.index],a={x:p.x/32,y:p.y/32};return edgeEdit(m,a,a,'manual',true)}if(s.type==='mobs'||s.type==='boss')delete m[s.type];else m[s.type].splice(s.index,1);state.selection=null;saveDraft();draw();return}
+  if((name==='portal-pair'||name==='portal-unpair')&&m&&state.selection?.type==='portals'){
+   const p=currentObject(),target=p&&portalTarget(state.pack,p),dest=p&&portalMap(state.pack,p.to),otherMap=state.pack.maps.find(x=>x.id===p?.to);
+   if(!p||portalMode(p)!=='portal'||!target||!dest)return setStatus('Najpierw wybierz portal docelowy.');
+   if(name==='portal-unpair'){unlinkPortalReturn(m,p);saveDraft();draw();setStatus('Pozostawiono przejście w jedną stronę.');return;}
+   if(!otherMap){
+    const conflict=state.pack.maps.some(x=>(x.portals||[]).some(o=>o!==p&&o.portalReturn===true&&o.to===p.to&&o.targetPortalId===p.targetPortalId));
+    if(conflict)return setStatus('Ten portal ma już ustawiony inny powrót. Najpierw rozłącz poprzednie połączenie.');
+   }
+   if(target.to&&!(otherMap&&isPortalPair(p,m,target,otherMap))&&!confirm('Portal docelowy ma już kierunek przejścia. Zastąpić go powrotem do „'+m.name+'”?'))return;
+   if(otherMap){unlinkPortalReturn(otherMap,target);target.to=m.id;target.arrivalMode='portal';target.targetPortalId=portalKey(p);delete target.portalReturn;}
+   else p.portalReturn=true;
+   saveDraft();draw();setStatus('Połączono portale w obie strony.');return;
+  }
+  if(name==='delete-map'&&m){if(state.pack.maps.some(x=>x!==m&&(x.portals||[]).some(p=>p.to===m.id)))return setStatus('Najpierw zmień portale prowadzące do tej mapy.');if(state.pack.quests.some(q=>q.steps?.some(s=>s.teleport?.mapId===m.id)))return setStatus('Najpierw zmień teleporty questów prowadzące na tę mapę.');if(state.pack.pickups?.some(p=>p.mapId===m.id))return setStatus('Najpierw usuń przedmioty z tej mapy.');if(!confirm('Usunąć mapę „'+m.name+'” z projektu?'))return;state.pack.maps=state.pack.maps.filter(x=>x!==m);state.mapId=state.pack.maps[0]?.id||null;state.selection=null;state.undo=[];state.redo=[];saveDraft();draw();return}
+  if(name==='duplicate-map'&&m){const copy=clone(m);let n=2;while(state.pack.maps.some(x=>x.id===m.id+'-'+n))n++;copy.id=m.id+'-'+n;copy.name=m.name+' (kopia)';for(const p of copy.portals||[]){delete p.portalReturn;if(portalMode(p)==='portal'){p.arrivalMode='spawn';delete p.targetPortalId;}}state.pack.maps.push(copy);state.mapId=copy.id;state.selection=null;state.undo=[];state.redo=[];saveDraft();draw();return}
+  if(name==='delete-object'&&m){const s=state.selection;if(!s)return;if(s.type==='spawn'){delete m.spawn;state.selection=null;saveDraft();draw();return}if(s.type==='portals'){const p=m.portals[s.index];if(state.pack.maps.some(x=>(x.portals||[]).some(o=>o!==p&&portalMode(o)==='portal'&&o.to===m.id&&o.targetPortalId===portalKey(p)))){if(!confirm('Inny portal prowadzi do tego punktu. Usunięcie przerwie połączenie; przed publikacją wybierz nowy cel. Kontynuować?'))return;}delete p.portalReturn;}if(s.type==='scenery'&&isEdge(m.scenery[s.index])){const p=m.scenery[s.index],a={x:p.x/32,y:p.y/32};return edgeEdit(m,a,a,'manual',true)}if(s.type==='mobs'||s.type==='boss')delete m[s.type];else m[s.type].splice(s.index,1);state.selection=null;saveDraft();draw();return}
   if(name==='delete-quest'&&q){if(state.pack.pickups?.some(p=>p.questId===q.id&&p.when!=='always'))return setStatus('Najpierw zmień warunki pojawiania się powiązanych przedmiotów.');if(!confirm('Usunąć quest „'+q.name+'”?'))return;state.pack.quests=state.pack.quests.filter(x=>x!==q);for(const m of state.pack.maps)for(const n of questSources(m))if(n.questId===q.id)n.questId='';state.questId=state.pack.quests[0]?.id||null;saveDraft();draw();return}
   if(name==='export'){download('astralni-map-quest-projekt.json',JSON.stringify(state.pack,null,2),'application/json');return}
   if(name==='import-trigger'){$(state.root,'[data-gme-import]')?.click();return}
   if(name==='publish-live')return publishLive();
   if(name==='publish-local'||name==='download-js'||name==='test-quest')return publishOriginals(name);
   if(name==='test-map'){
+   if(!m?.spawn)return setStatus('Ta mapa nie ma startu. Testuj ją przez ustawiony portal lub quest.');
    if(Object.keys(state.pack.nativeEdits||{}).length)return publishOriginals(name);
    const errors=validate(state.pack);if(errors.length)return publicationError(errors);
    try{const p=publicationData();p.baseRevision=window.DBIWorldProjectSignature(window.DBI_GM_WORLD_DATA);localStorage.setItem(PUBLISHED_KEY,JSON.stringify(p))}catch{return setStatus('Nie udało się zapisać publikacji lokalnej.')}
@@ -3403,7 +3492,7 @@
   if(path.startsWith('enc.'))return encounterField(path,value);
   if(path.startsWith('entry.')&&m){m.entryPortal??={from:'',x:128,y:128};const prop=path.slice(6);m.entryPortal[prop]=prop==='from'?String(value):number(value,0,4000,0)}
   else if(path==='map.mobNames'&&m){m.mobNames=String(value).split('\n').slice(0,12).map(line=>line.trim()).filter(Boolean).map(line=>{const [name,level]=line.split('|');return {name:String(name||'Potwór').slice(0,80),level:number(level,1,999999,1)}})}
-  else if(path.startsWith('map.')&&m){const prop=path.slice(4);if(prop==='id'){if(!validId.test(value)||state.pack.maps.some(x=>x!==m&&x.id===value)||builtins().some(x=>x.id===value)){setStatus('ID mapy musi być unikalne: litery a-z, cyfry, - lub _.');return false}m.id=value;state.mapId=value;for(const p of state.pack.pickups||[])if(p.mapId===oldId)p.mapId=value;for(const x of state.pack.quests){if(x.mapId===oldId)x.mapId=value;for(const st of x.steps||[]){if(st.mapId===oldId)st.mapId=value;if(st.teleport?.mapId===oldId)st.teleport.mapId=value}}}
+  else if(path.startsWith('map.')&&m){const prop=path.slice(4);if(prop==='id'){if(!validId.test(value)||state.pack.maps.some(x=>x!==m&&x.id===value)||builtins().some(x=>x.id===value)){setStatus('ID mapy musi być unikalne: litery a-z, cyfry, - lub _.');return false}m.id=value;state.mapId=value;for(const x of state.pack.maps){for(const p of x.portals||[])if(p.to===oldId)p.to=value;if(x.entryPortal?.from===oldId)x.entryPortal.from=value;}for(const p of state.pack.pickups||[])if(p.mapId===oldId)p.mapId=value;for(const x of state.pack.quests){if(x.mapId===oldId)x.mapId=value;for(const st of x.steps||[]){if(st.mapId===oldId)st.mapId=value;if(st.teleport?.mapId===oldId)st.teleport.mapId=value}}}
    else if(['sizeX','sizeY'].includes(prop)){
     const oldWidth=m.sizeX,oldHeight=m.sizeY,oldTiles=m.terrain?.tiles?.slice();
     m[prop]=Math.round(number(value,10,100,40));m.scenery=(m.scenery||[]).filter(p=>!isEdge(p)||p.x<m.sizeX*32&&p.y<m.sizeY*32).map(p=>isEdge(p)?{...p,width:Math.min(p.width,m.sizeX*32-p.x),height:Math.min(p.height,m.sizeY*32-p.y)}:p);refreshEdges(m);state.edgeUndo=null;
@@ -3441,7 +3530,7 @@
    }
    else if(prop==='enemy'){step.enemy??=newStoryEnemy();step.enemy[key]=Object.hasOwn(storyFields,key)?Math.round(number(value,key==='hp'||key==='level'?1:0,999999999,0)):String(value).slice(0,150)}
    else if(prop==='teleport'){
-    if(key==='mapId'){if(!value)delete step.teleport;else{const dest=projectMapData(value);if(!dest)return false;step.teleport={mapId:value,mode:'spawn',x:Math.round(dest.spawn.x),y:Math.round(dest.spawn.y)};}}
+    if(key==='mapId'){if(!value)delete step.teleport;else{const dest=projectMapData(value);if(!dest)return false;step.teleport={mapId:value,mode:dest.spawn?'spawn':'point',x:Math.round(dest.spawn?.x??dest.sizeX*16),y:Math.round(dest.spawn?.y??dest.sizeY*16)};}}
     else if(step.teleport&&key==='mode'&&['spawn','point'].includes(value))step.teleport.mode=value;
     else if(step.teleport&&['x','y'].includes(key)){const dest=projectMapData(step.teleport.mapId);if(!dest)return false;step.teleport[key]=Math.round(number(value,0,Math.ceil((key==='x'?dest.sizeX:dest.sizeY)*32)-1));}
     else return false;
@@ -3451,7 +3540,14 @@
    else {const previous=step.requirement;step[prop]=['count','rewardAmount'].includes(prop)?Math.round(number(value,1,999999,1)):String(value).slice(0,2000);if(prop==='requirement'&&value==='upgrade'&&previous!=='upgrade'){step.target='';step.count=1;step.upgradeFrom=0;step.upgradeTo=1;delete step.upgradePolicy;}if(prop==='requirement'&&value==='story')step.enemy??=newStoryEnemy();if(prop==='requirement'&&value==='kill'&&previous!=='kill')resetKillRoster(q,step,state.pack)}
   }
   else if(path.startsWith('rect.')&&m&&state.selection?.type==='blocked'){const i=Number(path.slice(5)),rect=currentObject();rect[i]=number(value,0,Math.max(m.sizeX,m.sizeY)*32,0);if(rect[2]<rect[0])[rect[0],rect[2]]=[rect[2],rect[0]];if(rect[3]<rect[1])[rect[1],rect[3]]=[rect[3],rect[1]]}
-  else if(path.startsWith('item.')&&m){const item=currentObject();if(!item)return false;const prop=path.slice(5);if(state.selection?.type==='npc'&&prop!=='placementTool'&&!['npc','library-npc'].includes(item.placementTool)){item.placementTool=npcPlacement(item);item.questMarker=npcQuestMarker(item);}if(prop==='destinationArrival.x'||prop==='destinationArrival.y'){item.destinationArrival??={x:0,y:0};item.destinationArrival[prop.split('.')[1]]=number(value,0,5000,0)}
+  else if(path.startsWith('item.')&&m){const item=currentObject();if(!item)return false;const prop=path.slice(5);if(state.selection?.type==='npc'&&prop!=='placementTool'&&!['npc','library-npc'].includes(item.placementTool)){item.placementTool=npcPlacement(item);item.questMarker=npcQuestMarker(item);}if(state.selection?.type==='portals'&&prop==='to'){
+    if(item.to!==value){unlinkPortalReturn(m,item);item.to=value;delete item.targetPortalId;item.arrivalMode='portal';}
+   }else if(state.selection?.type==='portals'&&prop==='arrivalMode'){
+    if(!['portal','spawn','custom'].includes(value))return false;if(portalMode(item)!==value){unlinkPortalReturn(m,item);item.arrivalMode=value;if(value!=='portal')delete item.targetPortalId;}
+   }else if(state.selection?.type==='portals'&&prop==='targetPortalId'){
+    if(value&&!(portalMap(state.pack,item.to)?.portals||[]).some(p=>portalKey(p)===value))return false;
+    if(item.targetPortalId!==value){unlinkPortalReturn(m,item);item.targetPortalId=value;item.arrivalMode='portal';}
+   }else if(prop==='destinationArrival.x'||prop==='destinationArrival.y'){item.destinationArrival??={x:0,y:0};item.destinationArrival[prop.split('.')[1]]=number(value,0,5000,0)}
    else if(['x','y','width','height'].includes(prop))item[prop]=number(value,prop==='width'||prop==='height'?1:0,5000,0);
    else if(prop==='art'&&value&&(!validAsset.test(value)||value.includes('..'))){setStatus('Grafika musi być plikiem z assets/.');return false}
    else if(prop==='scalePct'&&state.selection?.type==='npc'){
@@ -3471,6 +3567,10 @@
     item.placementTool=value;item.questMarker=value!=='decoration';
     if(value==='campfire'){item.animation='campfire';if(!item.label)item.label='Ognisko';}
    }
+   else if(prop==='drawOrder'&&['npc','scenery'].includes(state.selection?.type)){
+    if(value==='')delete item.drawOrder;
+    else item.drawOrder=Math.round(number(value,-100,100,0));
+   }
    else if(prop==='rotation'&&state.selection?.type==='scenery')item.rotation=[0,90,180,270].includes(Number(value))?Number(value):0;
    else if(prop==='animation'&&state.selection?.type==='scenery')item.animation=value==='campfire'?'campfire':'';
    else item[prop]=String(value).slice(0,150);
@@ -3481,7 +3581,7 @@
   x=Math.round(number(x,0,m.sizeX*32,0));y=Math.round(number(y,0,m.sizeY*32,0));
   if(tool==='spawn'){m.spawn={...m.spawn,x,y,placementTool:'spawn',label:m.spawn?.label||''};state.selection={type:'spawn',index:0}}
   else if(tool==='npc'){m.npc.push({x,y,label:'Nowy NPC',art:'',questId:'',placementTool:'npc',questMarker:true});state.selection={type:'npc',index:m.npc.length-1}}
-  else if(tool==='portal'){m.portals.push({x,y,label:'',placementTool:'portal',to:'',destinationArrival:{x:128,y:128}});state.selection={type:'portals',index:m.portals.length-1}}
+  else if(tool==='portal'){if(m.portals.length>=20)return setStatus('Limit 20 portali na mapę.');m.portals.push({x,y,label:'',placementTool:'portal',to:'',arrivalMode:'portal',destinationArrival:{x:128,y:128}});state.selection={type:'portals',index:m.portals.length-1}}
   else if(tool==='library-prop'){const p=library().find(p=>p.key===state.propKey);if(!p)return;if(p.group==='NPC'){state.showMarkers=true;if(m.npc.length>=60)return setStatus('Limit 60 NPC.');m.npc.push({x,y,label:p.name,art:p.art,questId:'',placementTool:'library-npc',questMarker:false});state.selection={type:'npc',index:m.npc.length-1};saveDraft();draw();return}state.showProps=true;if(m.scenery.filter(p=>!isEdge(p)).length>=300){setStatus('Limit dekoracji: 300 na mapę.');return}const left=p.snapToTile?Math.floor(x/terrain.TILE)*terrain.TILE:x-Math.round(p.width/2);
    const top=p.snapToTile?Math.floor(y/terrain.TILE)*terrain.TILE:y-p.height;
    m.scenery.push({x:Math.max(0,Math.min(m.sizeX*32-p.width,left)),y:Math.max(0,Math.min(m.sizeY*32-p.height,top)),width:p.width,height:p.height,label:'',effect:p.effect,art:p.art,placementTool:'decoration',questMarker:false});state.selection={type:'scenery',index:m.scenery.length-1};saveDraft();draw();return}
@@ -3520,7 +3620,6 @@
    }
    if(!pin||!stage.contains(pin))return;
    const [type,index]=pin.dataset.gmeSelect.split(':');
-   if(type==='spawn')return;
    state.selection={type,index:Number(index)};
    onCommand('delete-object');
   });
@@ -3633,6 +3732,13 @@
    }
    if(e.target.matches('[data-npc-series]')){state.npcSeries=e.target.value;state.libraryOpen=true;draw();return}
    if(e.target.matches('[data-prop-group]')){state.libraryOpen=true;state.propGroup=e.target.value;state.propSearch='';draw();return}
+   if(e.target.matches('[data-gme-layer-object]')){
+    if(e.target.value){
+     const [type,index]=e.target.value.split(':');
+     state.selection={type,index:Number(index)};
+    }else state.selection=null;
+    draw();return;
+   }
    if(e.target.matches('[data-art-import]')){await importArt(e.target);return}
    if(e.target.matches('[data-height]')){state.height=Number(e.target.value);state.tool='tile-height';draw();return}
    if(e.target.matches('[data-gme-layer]')){state[e.target.dataset.gmeLayer]=e.target.checked;draw();return}if(e.target.matches('[data-gme-zoom]')){state.zoom=Number(e.target.value)||100;draw();return}if(e.target.matches('[data-gme-brush-size]')){state.tileSize=Number(e.target.value)||1;return}if(e.target.matches('[data-gme-grid]')){state.showGrid=e.target.checked;draw();return}const field=e.target.closest('[data-gme-field]');if(field){const path=field.dataset.gmeField;if(setField(path,field.value)){const simpleQuest=(path.startsWith('step.')||path.startsWith('quest.'))&&field.tagName!=='SELECT'&&path!=='quest.id'&&!/\.rewardAmount$|\.rewards\.\d+\.amount$/.test(path)&&!/\.(?:point|teleport)\.(?:x|y|mapLabel)$/.test(path);if(!simpleQuest)draw()}return}
@@ -3655,5 +3761,6 @@
   state.mapId=state.pack.maps[0]?.id||legacyCatalog().maps[0]?.id||null;state.questId=state.pack.quests[0]?.id||null;
   bindEvents();terrain?.onReady(()=>{if(state?.root===view){drawTerrainPreview();drawPickupTerrain();drawStageTerrains()}});draw();
  }
- window.DBIGMMapEditor={open,renderNpcQuest,recordKill,activePoints,activePickups,collectPickup,readDraft:draft,readPublished:currentPublished};
+ window.DBIGMMapEditor={open,renderNpcQuest,recordKill,activePoints,activePickups,collectPickup,readDraft:draft,readPublished:currentPublished,
+  download:report=>publishOriginals('download-js',draft(),report)};
 })();

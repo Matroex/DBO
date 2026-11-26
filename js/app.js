@@ -3,7 +3,7 @@ const menus=[
  {name:'POSTAĆ',options:['Pulpit','Statystyki','Profil Postaci','Walka','Ekwipunek','Misje','Aktywności']},
  {name:'AKTYWNOŚCI',options:['Turniej','Event','Pole bitwy','Trening','Rozwój Duchowy','Szybka podróż']},
  {name:'WZMOCNIENIA',options:['Techniki','Umiejętności','Smocze kule','Ulepszanie','Kowalstwo']},
- {name:'SPOŁECZNOŚĆ',options:['Ranking']},
+ {name:'SPOŁECZNOŚĆ',options:['Ranking','Handel']},
  {name:'GILDIA',page:'Gildia'},
  {name:'POCZTA',page:'Poczta'},
  {name:'BAZA WIEDZY',disabled:true}
@@ -154,7 +154,10 @@ window.DBIRefreshWallet=dbiRefreshHeaderWallet;
 window.addEventListener('storage',dbiRefreshHeaderWallet);
 dbiRefreshHeaderWallet();
 const setLog=t=>{const log=document.querySelector('#log');if(log)log.textContent=t};
+let dbiMarketUpdate=null;
+window.addEventListener('storage',event=>dbiMarketUpdate?.(event));
 function showPage(title,section){
+  if(dbiMarketUpdate){dbiMarketUpdate=null;hideItemPopups()}
   if(title==='Panel GM'&&!dbiIsGameMaster())title='Pulpit';
   nav.dataset.page=title;
   if(dbiActive?.id)sessionStorage.setItem('dboidle_last_page_'+dbiActive.id,JSON.stringify({title,section}));
@@ -183,6 +186,7 @@ function showPage(title,section){
  if(title==='Trening'){renderTraining();opened=null;renderNav();return;}
  if(title==='Misje'){renderMissions();opened=null;renderNav();return;}
  if(title==='Aktywności'){renderDailyActivities();opened=null;renderNav();return;}
+ if(title==='Handel'){renderMarket();opened=null;renderNav();return;}
  if(title==='Ranking'){renderCommunityRanking();opened=null;renderNav();return;}
  if(title==='Turniej'){renderTournament();opened=null;renderNav();return;}
  if(title==='Event'){renderEvent();opened=null;renderNav();return;}
@@ -342,6 +346,28 @@ function dbiRankSorted(){
  return dbiRankCharacters().sort((a,b)=>b.metrics[dbiRankCategory]-a.metrics[dbiRankCategory]||
  b.metrics.level-a.metrics.level||a.character.name.localeCompare(b.character.name,'pl')||
  a.character.id.localeCompare(b.character.id));
+}
+function renderMarket(){
+ const character=dbiCharacters[dbiCharacterIndex],root=document.querySelector('#pageBody');
+ if(!dbiActive?.id||!character)return;
+ hideItemPopups();
+ document.querySelector('#breadcrumb').textContent='SPOŁECZNOŚĆ / HANDEL';
+ dbiMarketUpdate=window.DBIMarketView.open(root,{
+  actor:{id:dbiActive.id,name:character.name},
+  item:itemById,
+  inventoryPages:()=>{
+   const post=window.DBILocalPost,items=post.read(DBI_INV_KEY,[]),layout=post.read(DBI_INV_POS_KEY,null);
+   const positions=dbiInventoryKeepPositions(items,items.map((ref,i)=>layout?.items?.[i]===ref?layout.positions?.[i]??null:null),layout);
+   return inventoryPages(items,positions);
+  },
+  details:tooltipMarkup,
+  refresh:()=>{dbiReloadLocalInventory();dbiRefreshHeaderWallet();hideItemPopups()},
+  inspect(button,item){
+   const show=()=>{const rect=button.getBoundingClientRect();showTooltipItem({clientX:rect.right,clientY:rect.top},item)};
+   for(const event of ['focus','mouseenter','click'])button.addEventListener(event,show);
+   for(const event of ['blur','mouseleave'])button.addEventListener(event,hideItemPopups);
+  }
+ });
 }
 function renderCommunityRanking(){
  hideItemPopups();
@@ -1216,13 +1242,16 @@ window.addEventListener('scroll',dbiNavPositionFlyout,{passive:true,capture:true
 function renderExp(){
  document.querySelector('#level').textContent=level;
  const needed=dbiRequiredExp(level);
- document.querySelector('#expText').textContent=level>=DBI_MAX_LEVEL?'MAX LVL · 500':exp.toLocaleString('pl-PL')+' / '+needed.toLocaleString('pl-PL')+' EXP';
- document.querySelector('#balls').title=document.querySelector('#expText').textContent;
- document.querySelector('#balls').setAttribute('aria-label',document.querySelector('#expText').textContent);
+ const maxLevel=level>=DBI_MAX_LEVEL;
+ document.querySelector('#expText').textContent=maxLevel?'Maksymalny poziom ('+DBI_MAX_LEVEL+')':
+  exp.toLocaleString('pl-PL')+' / '+needed.toLocaleString('pl-PL')+' EXP · Brakuje '+Math.max(0,needed-exp).toLocaleString('pl-PL')+' EXP';
  const balls=document.querySelector('#balls');balls.replaceChildren();
- for(let i=0;i<4;i++){
-  const ball=document.createElement('div');ball.className='ball'+(level>=DBI_MAX_LEVEL||exp>=needed*(i+1)/4?' active':'');ball.textContent='★';
-  ball.title='Smocza kula '+(i+1)+' — '+((i+1)*25)+'% postępu do następnego poziomu';balls.append(ball);
+ const ballCount=10;
+ for(let i=1;i<=ballCount;i++){
+  const ball=document.createElement('span');
+  ball.className='ball'+(maxLevel||exp>=Math.ceil(needed*i/ballCount)?' active':'');
+  ball.setAttribute('aria-hidden','true');
+  ball.textContent='★';balls.append(ball);
  }
 }
 document.querySelector('#expButton').addEventListener('click',()=>{
@@ -1759,16 +1788,18 @@ function dbiPlanCombatFields(character,items){
 }
 const dbiDecodeItemRef=ref=>{
  const value=String(ref||'');
- const [saved,rolls='']=value.split('~b');
- const reinforced=saved.endsWith('~p');
- const raw=(reinforced?saved.slice(0,-2):saved).replace(/^starter-white-belt-plus-one$/,'starter-white-belt~1');
- const match=raw.match(/^(.*)~([0-9])(?:~q([0-4]))?$/);
+ const [encoded,rolls='']=value.split('~b');
+ const [saved,inheritance='']=encoded.replace(/~p$/,'').split('~r');
+ const reinforced=encoded.endsWith('~p');
+ const raw=saved.replace(/^starter-white-belt-plus-one$/,'starter-white-belt~1');
+ const parsed=raw.match(/^(.*)~([0-9]+)(?:~q([0-4]))?$/);
+ const match=parsed&&Number.isSafeInteger(Number(parsed[2]))?parsed:null;
  const bonuses=rolls?rolls.split(',').map(entry=>{const [key,value,pvp]=entry.split(':');return [key,Number(value),Number(pvp)]}):[];
- return {id:match?match[1]:raw,enhancement:match?Number(match[2]):0,quality:match?.[3]===undefined?null:Number(match[3]),reinforced,bonuses};
+ return {id:match?match[1]:raw,enhancement:match?Number(match[2]):0,quality:match?.[3]===undefined?null:Number(match[3]),reinforced,bonuses,inheritance};
 };
-const dbiItemRef=(id,enhancement=0,quality=null,reinforced=false,bonuses=[])=>{
+const dbiItemRef=(id,enhancement=0,quality=null,reinforced=false,bonuses=[],inheritance='')=>{
  const ref=quality!==null?`${id}~${enhancement}~q${quality}`:enhancement>0?`${id}~${enhancement}`:id;
- return ref+(reinforced?'~p':'')+(bonuses.length?'~b'+bonuses.map(entry=>entry.join(':')).join(','):'');
+ return ref+(inheritance?'~r'+inheritance:'')+(reinforced?'~p':'')+(bonuses.length?'~b'+bonuses.map(entry=>entry.join(':')).join(','):'');
 };
 // Ulepszenia skalują wyłącznie bazowe bonusy zapisane w definicji przedmiotu.
 // Nie modyfikujemy katalogu: statystyki są wyliczane z poziomu zapisanego w referencji.
@@ -1789,7 +1820,7 @@ const DBI_UPGRADE_PERCENT_STATS=new Set([
 ]);
 function dbiEnhancedFlatBonus(value,level){
  let result=Number(value);
- for(let i=0;i<level;i++)result=Math.ceil(result*1.5);
+ for(let i=0;i<level&&result<Number.MAX_SAFE_INTEGER;i++)result=Math.min(Number.MAX_SAFE_INTEGER,Math.ceil(result*1.5));
  return result;
 }
 function dbiEnhancedPercentBonus(value,level){
@@ -1797,7 +1828,7 @@ function dbiEnhancedPercentBonus(value,level){
  // Bazowe bonusy 1–5% dochodzą do dokładnie 5% na +9.
  // Bonusy już większe od 5% nie są obniżane przez ulepszanie.
  if(base<=0||base>=5)return base;
- return Math.floor(base+(5-base)*level/9+1e-9);
+ return Math.floor(base+(5-base)*Math.min(level,9)/9+1e-9);
 }
 // Wartości Znaków wyliczamy WYŁĄCZNIE istniejącymi przelicznikami.
 // +0: pierwszy bonus, +5: drugi, +8: trzeci.
@@ -1820,8 +1851,16 @@ function dbiSignBonuses(itemId,level){
  }).filter(Boolean);
 }
 const itemById=ref=>{
- const {id,enhancement,quality,reinforced,bonuses}=dbiDecodeItemRef(ref);
- const base=catalog.find(x=>x.id===id);
+ const {id,enhancement,quality,reinforced,bonuses,inheritance}=dbiDecodeItemRef(ref);
+ let base=catalog.find(x=>x.id===id);
+ if(base&&inheritance){
+  base={...base};
+  for(const entry of inheritance.split(',')){
+   const [key,amount]=entry.split(':'),value=Number(amount);
+   if((DBI_UPGRADE_FLAT_STATS.has(key)||DBI_UPGRADE_PERCENT_STATS.has(key))&&Number.isFinite(value)&&value>0)
+    base[key]=(Number(base[key])||0)+value;
+  }
+ }
  if(!base)return undefined;
  const item={...base,enhancement,quality:QUALITY[quality]??(id.startsWith('royal-500-')?'Pospolity':base.quality)};
  const equippable=DBI_SLOTS.some(([,slot])=>slot===base.slot);
@@ -1963,23 +2002,25 @@ const sums=items=>({attack:items.reduce((a,x)=>a+(Number(x.attack)||0),0),attack
 const TWO_CELL_TYPES=new Set(['bron','zbroja','stroj']);
 function itemTall(id){return TWO_CELL_TYPES.has(itemById(id)?.slot)}
 function fits(cell,tall,used){return cell>=0&&cell<60&&(!tall||Math.floor(cell/6)<9)&&!used.has(cell)&&(!tall||!used.has(cell+6))}
-function inventoryPages(){
+function inventoryPages(items=inventory,positions=inventoryPlacement){
  const pages=[],used=[];
  // Stosy sa tylko sposobem wyswietlania: zapis i operacje na pojedynczej sztuce pozostaja bez zmian.
  const firstIndex=new Map(),stackCounts=new Map();
- inventory.forEach((ref,index)=>{
+ items.forEach((ref,index)=>{
   if(!firstIndex.has(ref))firstIndex.set(ref,index);
   stackCounts.set(ref,(stackCounts.get(ref)||0)+1);
  });
  const reserve=(page,cell,tall)=>{used[page]??=new Set();used[page].add(cell);if(tall)used[page].add(cell+6)};
  // Najpierw zachowujemy pozycje przesuniętych ręcznie przedmiotów.
- inventory.forEach((id,index)=>{if(firstIndex.get(id)!==index)return;const pos=inventoryPlacement[index];if(!pos)return;const tall=itemTall(id);used[pos.page]??=new Set();if(fits(pos.cell,tall,used[pos.page]))reserve(pos.page,pos.cell,tall);else inventoryPlacement[index]=null});
- inventory.forEach((id,index)=>{
+ items.forEach((id,index)=>{if(firstIndex.get(id)!==index)return;const pos=positions[index];if(!pos)return;const tall=itemTall(id);used[pos.page]??=new Set();if(fits(pos.cell,tall,used[pos.page]))reserve(pos.page,pos.cell,tall);else positions[index]=null});
+ items.forEach((id,index)=>{
   if(firstIndex.get(id)!==index)return;
-  const item=itemById(id),tall=itemTall(id);let pos=inventoryPlacement[index];
-  if(!pos){let found=false;for(let page=0;!found;page++){used[page]??=new Set();for(let cell=0;cell<60;cell++)if(fits(cell,tall,used[page])){pos={page,cell};inventoryPlacement[index]=pos;reserve(page,cell,tall);found=true;break}}}
+  const item=itemById(id),tall=itemTall(id);let pos=positions[index];
+  if(!pos){let found=false;for(let page=0;!found;page++){used[page]??=new Set();for(let cell=0;cell<60;cell++)if(fits(cell,tall,used[page])){pos={page,cell};positions[index]=pos;reserve(page,cell,tall);found=true;break}}}
   pages[pos.page]??=[];pages[pos.page].push({index,id,item,cell:pos.cell,tall,count:stackCounts.get(id)||1});
- });dbiSaveInventoryPositions();return pages;
+ });
+ if(positions===inventoryPlacement)dbiSaveInventoryPositions();
+ return pages;
 }
 function renderInventoryGrid(){
  const entries=inventoryPages()[inventoryTab]||[];
@@ -2001,7 +2042,7 @@ function moveItem(index,page,cell){
 const DBI_USABLE_SLOTS=new Set(['uzytkowy','użytkowy']);
 // Skrzynia bossa jest przedmiotem otwieranym niezależnie od zapisanego slotu.
 
-function dbiIsUsableItem(item){return !!item&&!DBI_TOURNAMENT_CHESTS.some(chest=>chest.id===item.id)&&(item.id==='quest-starter-gift'||item.id==='skrzynia-lesnego-wojownika'||DBI_USABLE_SLOTS.has(item.slot))}
+function dbiIsUsableItem(item){return !!item&&(Object.hasOwn(window.DBIContent?.read().chests||{},item.id)||!DBI_TOURNAMENT_CHESTS.some(chest=>chest.id===item.id)&&(item.id==='quest-starter-gift'||item.id==='skrzynia-lesnego-wojownika'||DBI_USABLE_SLOTS.has(item.slot)))}
 const DBI_STARTER_GIFT_CONTENTS=['starter-blue-kimono','starter-red-staff','starter-white-belt','starter-black-boots','senzu-bean-bag','senzu-bean-bag'];
 const DBI_ZEN_KEY='dboidle_zen_effects_v1_'+String(dbiActive?.id||'test');
 let dbiZenEffects={};
@@ -2013,6 +2054,25 @@ window.DBIZen={active:dbiZenActive,expiry:type=>Number(dbiZenEffects[type]||0),c
 function dbiOpenUsableItem(index){
  const item=itemById(inventory[index]);
  if(!dbiIsUsableItem(item))return false;
+ const contents=window.DBIContent?.read().chests?.[item.id];
+ if(Array.isArray(contents)){
+  if(contents.some(row=>!itemById(row.id))){
+   renderEquipment('Brakuje definicji jednej z nagród skrzyni.');return false;
+  }
+  const won=contents.filter(row=>row.chance>0&&Math.random()*100<row.chance);
+  const items=inventory.slice(),positions=inventoryPlacement.slice();
+  items.splice(index,1);positions.splice(index,1);
+  for(const row of won)for(let i=0;i<row.qty;i++){items.push(row.id);positions.push(null)}
+  if(new Set(items).size>Math.max(400,new Set(inventory).size)){
+   renderEquipment('Brak miejsca w ekwipunku na zawartość skrzyni.');return false;
+  }
+  if(!dbiSaveInventoryTransaction(items,positions,[])){
+   renderEquipment('Nie udało się zapisać otwarcia skrzyni.');return false;
+  }
+  hideItemPopups();
+  renderEquipment(won.length?'Zdobyto '+won.map(row=>itemById(row.id).name+' ×'+row.qty).join(', ')+'.':'Skrzynia była pusta.');
+  return true;
+ }
  if(item.id==='skrzynia-lesnego-wojownika'){
   if(!itemById('george')){renderEquipment('Nie znaleziono przedmiotu George w katalogu.');return false}
   // Zamiana jednej skrzyni na jednego George'a w tym samym miejscu ekwipunku.
@@ -2599,36 +2659,93 @@ function dbiUpgradeExcluded(item){
  const slot=normalize(item?.slot),name=normalize(item?.name);
  return DBI_UPGRADE_EXCLUDED.some(x=>slot===x||name===x||name.startsWith(x+' '));
 }
+const DBI_SAIYAN_UPGRADE_TIERS=[
+ {prefix:'sayan-50-',stepOffset:10,chanceFactor:.9,powder:'common',
+  early:['dna-sayan','ogon-sayan'],late:['kosmiczna-plytka','kapsula-kosmiczna-sayan'],
+  reforge:{dust:100,reforger:5}},
+ {prefix:'sayan-250-',stepOffset:20,chanceFactor:.8,powder:'rare',
+  early:['material-sayan','kamienna-inskrypcja-starozytnych-sayan'],late:['krwisty-krysztal','ksiezycowy-pyl','sztuczny-ksiezyc'],
+  reforge:{dust:200,reforger:20}},
+ {prefix:'royal-500-',stepOffset:30,chanceFactor:.6,powder:'epic',
+  early:['sayanski-metal','sayanska-ruda'],late:['skrawek-sayanskiej-duszy','iskra-super-sayana','sayanska-duma']}
+];
 function dbiUpgradeRequirements(level,item){
- if(!Number.isInteger(level)||level<0||level>=10)return null;
+ const tier=DBI_SAIYAN_UPGRADE_TIERS.find(entry=>item?.id?.startsWith(entry.prefix)),royal=tier&&!tier.reforge;
+ if(!Number.isSafeInteger(level)||level<0||level>=Number.MAX_SAFE_INTEGER||(!royal&&level>=10))return null;
  const skills=dbiSkillBonuses();
- const req={chance:Math.min(100,DBI_UPGRADE_CHANCES[level]+dbiGuildBonus().smith+skills.upgrade+dbiSmithCheckpointBonus('upgrade')+dbiMainBonus('upgradeChancePct')+Math.max(0,Number(window.DBISpiritual?.currentBonuses?.()?.upgrade)||0)),dust:level===9?10:1,
-  reforger:level===9?1:0,materials:[]};
- if(!dbiUpgradeExcluded(item)){
+ const bonus=dbiGuildBonus().smith+skills.upgrade+dbiSmithCheckpointBonus('upgrade')+dbiMainBonus('upgradeChancePct')+Math.max(0,Number(window.DBISpiritual?.currentBonuses?.()?.upgrade)||0);
+ const reforging=level===9&&!royal;
+ const baseline=DBI_UPGRADE_CHANCES[Math.min(level,8)];
+ const penalty=royal?Math.max(0,level-8)*5:0;
+ const chance=reforging?100:Math.min(100,Math.max(royal?1:0,(tier?baseline*tier.chanceFactor:baseline)+bonus-penalty));
+ const whiteSet=DBI_REFORGE_RECIPES.saiyan[item?.id]?.startsWith('sayan-50-');
+ const gold=tier||whiteSet?5000*((tier?.stepOffset??0)+level+1):0;
+ const req={chance,gold,dust:reforging?(tier?.reforge.dust??10):1,dustId:'dragon-ball-dust',reforger:reforging?(tier?.reforge.reforger??1):0,materials:[]};
+ if(tier){
+  if(!(reforging&&tier.powder==='common'))req.dustId+='-'+tier.powder;
+  if(!reforging){
+   const elite=tier.powder!=='common';
+   const scale=count=>{const basic=Math.ceil(count*1.5);return elite?Math.ceil(basic*1.25):basic};
+   req.dust=scale(req.dust);
+   if(level>=3){
+    const late=level>=7,quantity=late?Math.min(level-6,2):Math.max(1,level-3);
+    req.materials=(late?tier.late:tier.early).map(id=>({id,count:scale(quantity)}));
+   }
+  }
+ }else if(!dbiUpgradeExcluded(item)){
   const quantity=level-3;
   if(level>=4&&level<=6)req.materials=[{id:'quest-turtle-stone',count:quantity},{id:'small-dragon-balls',count:quantity}];
   if(level>=7&&level<=8)req.materials=[{id:'red-ribbon-badge',count:level-6},{id:'dragon-radar',count:level-6}];
  }
- req.materials=req.materials.map(m=>({...m,count:m.count-skills.materialDiscount-dbiMainBonus('upgradeMaterialDiscount')})).filter(m=>m.count>0);
+ const discount=skills.materialDiscount+dbiMainBonus('upgradeMaterialDiscount');
+ req.materials=req.materials.map(m=>({...m,count:Math.max(tier?1:0,m.count-discount)})).filter(m=>m.count>0);
  return req;
+}
+function dbiUpgradeIngredients(req){
+ return req?[{id:req.dustId,count:req.dust},...req.materials,...(req.reforger?[{id:'upgrade-reforger',count:req.reforger}]:[])]:[];
 }
 function dbiUpgradeMaterialCount(id){
  return inventory.reduce((n,ref)=>n+(dbiDecodeItemRef(ref).id===id?1:0),0);
 }
-function dbiUpgradeConsumeMaterial(id,count){
- let remaining=count;
- for(let i=inventory.length-1;i>=0&&remaining>0;i--){
-  if(dbiDecodeItemRef(inventory[i]).id!==id)continue;
-  inventory.splice(i,1);inventoryPlacement.splice(i,1);remaining--;
+const DBI_REFORGE_RECIPES={
+ saiyan:{
+  'starter-red-staff':'sayan-50-miecz',
+  'white-headband':'sayan-50-opaska',
+  'quest-white-headband':'sayan-50-opaska',
+  'white-earrings':'sayan-50-kolczyki',
+  'white-amulet':'sayan-50-naszyjnik',
+  'starter-blue-kimono':'sayan-50-zbroja',
+  'white-gloves':'sayan-50-rekawice',
+  'starter-white-belt':'sayan-50-pas',
+  'white-ring':'sayan-50-pierscien',
+  'starter-black-boots':'sayan-50-buty',
+  ...Object.fromEntries(DBI_SAYAN_250_ITEMS.map(item=>[item.id.replace('sayan-250-','sayan-50-'),item.id])),
+  'sayan-250-opaska':'royal-500-opaska-krola-saiyan',
+  'sayan-250-naszyjnik':'royal-500-naszyjnik-krola-saiyan',
+  'sayan-250-zbroja':'royal-500-pancerz-krola-saiyan',
+  'sayan-250-miecz':'royal-500-miecz-krola-saiyan',
+  'sayan-250-pas':'royal-500-pas-krola-saiyan',
+  'sayan-250-pierscien':'royal-500-pierscien-krola-saiyan',
+  'sayan-250-rekawice':'royal-500-rekawice-krola-saiyan',
+  'sayan-250-kolczyki':'royal-500-kolczyki-krola-saiyan',
+  'sayan-250-buty':'royal-500-buty-krola-saiyan'
  }
- return remaining===0;
-}
-// Receptury przekucia: kolejne pary źródło → nowy przedmiot dodamy osobno.
-const DBI_REFORGE_RECIPES={'starter-blue-kimono':'saiyan-soldier-armor'};
+};
 function dbiReforgeDestination(item){
  if(!item||Number(item.enhancement)!==9)return null;
- const id=DBI_REFORGE_RECIPES[item.id];
+ const char=dbiCharacters[dbiCharacterIndex];
+ const race=String(char?.race??char?.stats?.race??'').trim().toLowerCase();
+ const recipes=DBI_REFORGE_RECIPES[['sayan','saiyanin'].includes(race)?'saiyan':race];
+ const id=recipes?.[item.id];
  return id&&catalog.some(entry=>entry.id===id)?id:null;
+}
+// Snapshot only the base stats at +9. Plans and chips already have their own fields.
+function dbiReforgeInheritance(ref){
+ const d=dbiDecodeItemRef(ref);
+ const source=itemById(dbiItemRef(d.id,d.enhancement,d.quality,false,[],d.inheritance));
+ return [...DBI_UPGRADE_FLAT_STATS,...DBI_UPGRADE_PERCENT_STATS]
+  .filter(key=>Number.isFinite(source[key])&&source[key]>0)
+  .map(key=>key+':'+Number((source[key]/2).toFixed(4))).join(',');
 }
 function dbiUpgradeAttempt(){
  if(!dbiSkillBonuses().upgrade)return;
@@ -2636,28 +2753,45 @@ function dbiUpgradeAttempt(){
  if(!selected)return;
  const item=itemById(selected.ref),level=Number(item?.enhancement||0);
  const req=dbiUpgradeRequirements(level,item);
- if(!req){dbiUpgradeMessage='Przedmiot osiągnął maksymalny poziom +10.';renderUpgradePanel();return}
+ if(!req){dbiUpgradeMessage='Brak dalszego ulepszenia dla tego przedmiotu.';renderUpgradePanel();return}
  const destination=req.reforger?dbiReforgeDestination(item):null;
  if(req.reforger&&!destination){
-  dbiUpgradeMessage='Dla tego przedmiotu nie ustalono jeszcze wyniku przekucia. Materiały nie zostały zużyte.';
+  dbiUpgradeMessage='Dla tej rasy i przedmiotu nie ma jeszcze receptury przekucia. Materiały nie zostały zużyte.';
   renderUpgradePanel();return;
  }
- const needed=[{id:'dragon-ball-dust',count:req.dust},...req.materials,...(req.reforger?[{id:'upgrade-reforger',count:1}]:[])];
+ const goldKey=dbiSmithGoldKey(),balance=Number(localStorage.getItem(goldKey))||0;
+ if(req.gold&&(!Number.isFinite(balance)||balance<req.gold)){
+  dbiUpgradeMessage='Brakuje złota na ulepszenie. Koszt: '+req.gold.toLocaleString('pl-PL')+'.';
+  renderUpgradePanel();return;
+ }
+ const needed=dbiUpgradeIngredients(req);
  const missing=needed.filter(x=>dbiUpgradeMaterialCount(x.id)<x.count);
  if(missing.length){dbiUpgradeMessage='Brakuje materiałów: '+missing.map(x=>(catalog.find(y=>y.id===x.id)?.name||x.id)+' ('+dbiUpgradeMaterialCount(x.id)+'/'+x.count+')').join(', ')+'.';renderUpgradePanel();return}
- for(const material of needed)dbiUpgradeConsumeMaterial(material.id,material.count);
- const success=req.reforger||Math.random()*100<req.chance;
- if(success){
-  const {id,quality,reinforced,bonuses}=dbiDecodeItemRef(selected.ref);
-  // Przekucie podmienia ID przedmiotu i zeruje ulepszenie, bez duplikowania egzemplarza.
-  dbiUpgradeSelected={...selected,ref:req.reforger?dbiItemRef(destination,0,null,reinforced,bonuses):dbiItemRef(id,level+1,quality,reinforced,bonuses)};
-  dbiSaveUpgradeSlot();
+ const costs=new Map(needed.map(material=>[material.id,material.count]));
+ const items=inventory.slice(),positions=inventoryPlacement.slice();
+ for(let i=items.length-1;i>=0;i--){
+  const id=dbiDecodeItemRef(items[i]).id,left=costs.get(id);
+  if(!left)continue;
+  items.splice(i,1);positions.splice(i,1);costs.set(id,left-1);
  }
- dbiSaveInventory();
+ const success=!!req.reforger||Math.random()*100<req.chance;
+ const {id,quality,reinforced,bonuses,inheritance}=dbiDecodeItemRef(selected.ref);
+ const ref=!success?selected.ref:req.reforger
+  ?dbiItemRef(destination,0,null,reinforced,bonuses,dbiReforgeInheritance(selected.ref))
+  :dbiItemRef(id,level+1,quality,reinforced,bonuses,inheritance);
+ const next={...selected,ref};
+ const writes=[[DBI_UPGRADE_SLOT_KEY,JSON.stringify(next)]];
+ if(req.gold)writes.push([goldKey,String(balance-req.gold)]);
+ if(!dbiSaveInventoryTransaction(items,positions,writes)){
+  dbiUpgradeMessage='Nie udało się zapisać próby ulepszenia.';
+  renderUpgradePanel();return;
+ }
+ dbiUpgradeSelected=next;
+ if(req.gold)dbiRefreshHeaderWallet();
  dbiUpgradeMessage=req.reforger
-  ?'Przekucie udane! Powstała Zbroja Saiyańskiego Żołnierza +0 (obrona +105, maksymalne HP +50).'
+  ?'Przekucie udane! '+itemById(dbiUpgradeSelected.ref).name+' +0.'
   :success?'Ulepszanie udane! Przedmiot osiągnął +'+(level+1)+'.':
-  'Ulepszanie nieudane. Przedmiot pozostał na +'+level+', materiały zostały zużyte.';
+  'Ulepszanie nieudane. Przedmiot pozostał na +'+level+', zużyto '+(req.gold?'materiały i złoto.':'materiały.');
  renderUpgradePanel();
 }
 /* Ulepszanie v6: WYŁĄCZNIE podgląd statystyk podstawowych.
@@ -2669,10 +2803,9 @@ function dbiUpgradeBaseRows(ref,req){
  const decoded=dbiDecodeItemRef(ref);
  const original=catalog.find(entry=>entry.id===decoded.id);
  if(!original)return '<div class="dbi-upgrade-params-empty">Brak definicji przedmiotu.</div>';
- const current=itemById(dbiItemRef(decoded.id,decoded.enhancement,decoded.quality,false,[]));
+ const current=itemById(dbiItemRef(decoded.id,decoded.enhancement,decoded.quality,false,[],decoded.inheritance));
  const targetId=req?.reforger?dbiReforgeDestination(current):decoded.id;
- const nextBase=req?.reforger&&targetId?catalog.find(entry=>entry.id===targetId):original;
- const next=req&&targetId?itemById(dbiItemRef(targetId,req.reforger?0:decoded.enhancement+1,req.reforger?null:decoded.quality,false,[])):null;
+ const next=req&&targetId?itemById(dbiItemRef(targetId,req.reforger?0:decoded.enhancement+1,req.reforger?null:decoded.quality,false,[],req.reforger?dbiReforgeInheritance(ref):decoded.inheritance)):null;
  // Dopuszczamy tylko statystyki obecne już w oryginalnym przedmiocie.
  const defs=[
   ['Wartość ataku',['attackMin','attackMax'],'range'],
@@ -2717,14 +2850,14 @@ function dbiUpgradeBaseRows(ref,req){
    const min=num(obj,keys[0]),max=num(obj,keys[1]);
    return '+'+format(min)+'–'+format(max);
   }
-  const key=keys.find(k=>num(original,k)!==0||num(nextBase,k)!==0)||keys[0];
+  const key=keys.find(k=>num(current,k)!==0||num(next,k)!==0)||keys[0];
   return (num(obj,key)>=0?'+':'')+format(num(obj,key))+(unit==='%'?'%':'');
  };
  const rows=[];
  for(const [label,keys,unit] of defs){
-  if(!keys.some(key=>num(original,key)!==0||num(nextBase,key)!==0))continue;
-  if(label==='Atak'&&(num(original,'attackMin')||num(original,'attackMax')))continue;
-  if(label==='Atak technik'&&(num(original,'techniqueAttackMin')||num(original,'techniqueAttackMax')))continue;
+  if(!keys.some(key=>num(current,key)!==0||num(next,key)!==0))continue;
+  if(label==='Atak'&&(num(current,'attackMin')||num(current,'attackMax')))continue;
+  if(label==='Atak technik'&&(num(current,'techniqueAttackMin')||num(current,'techniqueAttackMax')))continue;
   rows.push(`<div class="dbi-upgrade-stat-row"><span class="dbi-upgrade-stat-name">${esc(label)}</span><span class="dbi-upgrade-stat-before">${esc(display(current,keys,unit))}</span><span class="dbi-upgrade-stat-arrow" aria-hidden="true">»</span><strong class="dbi-upgrade-stat-after">${esc(display(next,keys,unit))}</strong></div>`);
  }
  // Znaki otrzymują kolejne własne bonusy na progach +5 i +8. To nadal bazowe
@@ -2761,6 +2894,7 @@ function renderUpgradePanel(){
    .dbi-upgrade-layout{display:grid;grid-template-columns:minmax(270px,1fr) minmax(360px,440px);gap:26px;align-items:start}
    .dbi-upgrade-work{display:flex;flex-direction:column;align-items:flex-start;gap:15px}
    .dbi-upgrade-main{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
+   .dbi-reforge-result{display:flex;align-items:center;gap:10px;margin:8px 0}.dbi-reforge-result .dbi-item-image{width:52px;height:52px;object-fit:contain}.dbi-reforge-result p{margin:0}.dbi-reforge-result small{display:block;margin-top:4px;color:#c9bd9b}
    .dbi-upgrade-target{display:flex;flex-direction:column;align-items:center;gap:8px;width:210px;color:#d8c49f}
    .dbi-upgrade-target .dbi-upgrade-slot{box-sizing:border-box;width:190px;height:190px;min-width:190px;min-height:190px;border:1px solid #927346;background:#101e2b;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
    .dbi-upgrade-target .dbi-upgrade-slot.drop-target{outline:3px solid #e4b667;outline-offset:3px}
@@ -2780,13 +2914,7 @@ function renderUpgradePanel(){
    .dbi-upgrade-inv h3{margin:0 0 12px;color:#e5bb75;font-size:15px}
    .dbi-upgrade-inv .inv-tabs{display:flex;gap:4px;margin-bottom:12px}
    .dbi-upgrade-inv .inv-tab{flex:1;min-width:0;padding:8px 0}
-   .dbi-upgrade-inv .inv-scroll{height:550px;overflow:auto}
-   /* Stałe wymiary 6×10 także dla całkowicie pustej karty.
-      Globalne .inv-grid ma width:max-content i max-width:100%,
-      co przy kolumnach 1fr zapadało się do kilku pikseli. */
-   .dbi-upgrade-inv .inv-grid{--dbi-cell:60px;--dbi-gap:4px;display:grid;grid-template-columns:repeat(6,var(--dbi-cell));grid-template-rows:repeat(10,var(--dbi-cell));grid-auto-rows:var(--dbi-cell);gap:var(--dbi-gap);width:max-content;max-width:none;min-width:0;align-content:start;justify-content:start;position:relative}
    .dbi-upgrade-inv .inv-grid>.inv-cell{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;aspect-ratio:auto;overflow:hidden}
-   .dbi-upgrade-inv .inv-scroll{height:550px;min-height:0;overflow:auto;container-type:normal}
    .dbi-upgrade-inv .inv-drop-preview{position:absolute;z-index:5;box-sizing:border-box;pointer-events:none}
    .dbi-upgrade-inv .inv-cell{box-sizing:border-box}
    .dbi-upgrade-inv .inv-cell{min-width:0;min-height:0}
@@ -2801,22 +2929,27 @@ function renderUpgradePanel(){
  const chosen=dbiUpgradeSelected?itemById(dbiUpgradeSelected.ref):null;
  const eligible=chosen&&DBI_SLOTS.some(slot=>slot[1]===chosen.slot);
  const req=eligible?dbiUpgradeRequirements(Number(chosen.enhancement||0),chosen):null;
- const dustCount=dbiUpgradeMaterialCount('dragon-ball-dust');
- const reforgerCount=dbiUpgradeMaterialCount('upgrade-reforger');
+ const ingredients=dbiUpgradeIngredients(req);
+ const goldBalance=Number(localStorage.getItem(dbiSmithGoldKey()))||0;
+ const enoughGold=!req?.gold||(Number.isFinite(goldBalance)&&goldBalance>=req.gold);
  const unlocked=dbiSkillBonuses().upgrade>0;
- const ready=unlocked&&!!req&&(!req.reforger||!!dbiReforgeDestination(chosen))&&dustCount>=req.dust&&reforgerCount>=req.reforger&&req.materials.every(m=>dbiUpgradeMaterialCount(m.id)>=m.count);
+ const reforgeItem=req?.reforger?itemById(dbiReforgeDestination(chosen)):null;
+ const ready=unlocked&&!!req&&enoughGold&&(!req.reforger||!!reforgeItem)&&ingredients.every(m=>dbiUpgradeMaterialCount(m.id)>=m.count);
  dbiUpgradeTab=inventoryTab;
  const gridHtml=renderInventoryGrid();
  // Dane tylko do podglądu: nie zmieniają wymagań ani zapisu ulepszania.
  const baseStatPreview=dbiUpgradeBaseRows(dbiUpgradeSelected?.ref,req);
- const materialCards=[{name:'Smoczy pył',image:'assets/items/pyl-smoczych-kul.png',owned:dustCount,required:req?.dust??null},
-  ...(req?.reforger?[{id:'upgrade-reforger',name:'Przekuwacz',image:'assets/items/przekuwacz.png',owned:reforgerCount,required:1}]
-  :req?.materials.map(material=>{const info=catalog.find(entry=>entry.id===material.id);return {id:material.id,name:info?.name||material.id,image:info?.image||'',owned:dbiUpgradeMaterialCount(material.id),required:material.count}})||[])];
+ const materialCards=(req?ingredients:[{id:'dragon-ball-dust',count:null}]).map(({id,count})=>{
+  const item=catalog.find(entry=>entry.id===id);
+  return {name:id==='dragon-ball-dust'?'Smoczy pył':item?.name||id,
+   image:item?.image||(id==='dragon-ball-dust'?'assets/items/pyl-smoczych-kul.png':''),
+   quality:id.startsWith('dragon-ball-dust-')?item?.quality:'',owned:dbiUpgradeMaterialCount(id),required:count};
+ });
  while(materialCards.length<3)materialCards.push(null);
- const materialCardHtml=materialCards.slice(0,3).map((material,index)=>material
-  ?`<div class="dbi-upgrade-mat-tile${index===0?' dbi-upgrade-dust':' dbi-material-slot'}" title="${esc(material.name)}: ${material.owned}${material.required===null?'':' / '+material.required}">
+ const materialCardHtml=materialCards.map((material,index)=>material
+  ?`<div class="dbi-upgrade-mat-tile${index===0?' dbi-upgrade-dust':' dbi-material-slot'}" title="${esc(material.name)}${material.quality?' · '+esc(material.quality):''}: ${material.owned}${material.required===null?'':' / '+material.required}">
      ${material.image?`<img src="${esc(material.image)}" alt="" draggable="false">`:'<span class="dbi-upgrade-mat-no-icon" aria-hidden="true">✧</span>'}
-     <span class="dbi-upgrade-mat-meta"><b>${esc(material.name)}</b><small class="${material.required!==null&&material.owned<material.required?'is-missing':''}">${material.owned}${material.required===null?'':' / '+material.required}</small></span>
+     <span class="dbi-upgrade-mat-meta"><b>${esc(material.name)}${material.quality?' · '+esc(material.quality):''}</b><small class="${material.required!==null&&material.owned<material.required?'is-missing':''}">${material.owned}${material.required===null?'':' / '+material.required}</small></span>
    </div>`
   :`<div class="dbi-upgrade-mat-tile dbi-upgrade-mat-blank" aria-label="Dodatkowy materiał nie jest wymagany"><span class="dbi-upgrade-mat-no-icon" aria-hidden="true">—</span><span class="dbi-upgrade-mat-meta"><b>Nie wymagany</b><small>—</small></span></div>`).join('');
  document.querySelector('#pageBody').innerHTML=`<section class="dbi-upgrade${/^(?:Ulepszanie udane!|Przekucie udane!)/.test(dbiUpgradeMessage)?' dbi-upgrade-success':''}"><h2>Ulepszanie</h2><hr><div class="dbi-upgrade-layout">
@@ -2833,23 +2966,23 @@ function renderUpgradePanel(){
     <section class="dbi-upgrade-card dbi-upgrade-params">
      <h3><span>Parametry</span></h3>
      <div class="dbi-upgrade-params-levels"><span>Bonusy bazowe przedmiotu</span><strong>${eligible?'+'+Number(chosen.enhancement||0)+' » '+(req?.reforger?'+0':req?'+'+(Number(chosen.enhancement||0)+1):'MAX'):'—'}</strong></div>
-     <div class="dbi-upgrade-stat-list">${baseStatPreview}</div>
+     <div class="dbi-upgrade-stat-list">${req?.reforger?(reforgeItem?'<div class="dbi-reforge-result">'+dbiItemArt(reforgeItem)+'<p><strong>'+esc(reforgeItem.name)+' +0</strong><small>Wymagany poziom '+reforgeItem.requiredLevel+'</small></p></div>':'<p>Brak receptury dla tej rasy i przedmiotu.</p>'):''}${baseStatPreview}</div>
     </section>
     <section class="dbi-upgrade-card dbi-upgrade-chance">
-     <h3><span>Szansa powodzenia</span><strong>${req?req.chance+'%':eligible?'MAX':'—'}</strong></h3>
+     <h3><span>Szansa powodzenia</span><strong>${req?req.chance.toLocaleString('pl-PL',{maximumFractionDigits:2})+'%':eligible?'MAX':'—'}</strong></h3>
      <div class="dbi-upgrade-progress" role="meter" aria-label="Szansa powodzenia" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${req?Math.max(0,Math.min(100,req.chance)):0}"><span style="width:${req?Math.max(0,Math.min(100,req.chance)):0}%"></span></div>
     </section>
     <section class="dbi-upgrade-card dbi-upgrade-cost">
      <h3><span>Koszt ulepszenia</span></h3>
-     <div class="dbi-upgrade-cost-row"><span><img src="assets/ui/gold.png" alt=""> Złoto</span><strong>Nie jest wymagane</strong></div>
+     <div class="dbi-upgrade-cost-row"><span><img src="assets/ui/gold.png" alt=""> Złoto</span><strong style="${enoughGold?'':'color:#ffad96!important'}">${req?.gold?req.gold.toLocaleString('pl-PL')+(enoughGold?'':' · Za mało złota'):'Nie jest wymagane'}</strong></div>
     </section>
     <section class="dbi-upgrade-card dbi-upgrade-materials-card">
      <h3><span>Wymagane materiały</span></h3>
-     <div class="dbi-upgrade-material-list">${materialCardHtml}</div>
+     <div class="dbi-upgrade-material-list${DBI_SAIYAN_UPGRADE_TIERS.some(tier=>chosen?.id.startsWith(tier.prefix))?' dbi-upgrade-tier-materials':''}${materialCards.length>3?' dbi-upgrade-four-materials':''}">${materialCardHtml}</div>
     </section>
    </div>
   </div>
-  <button class="dbi-upgrade-action" id="dbiUpgradeAction" ${ready?'':'disabled'} title="${!unlocked?'Wymaga Podstawowego Kowalstwa':req?.reforger?(dbiReforgeDestination(chosen)?'Przekuj przedmiot na nową zbroję +0':'Nie ustalono jeszcze przedmiotu wynikowego'):!ready?'Brakuje wymaganych materiałów':'Ulepsz przedmiot'}">${req?.reforger?'Przekuj':'Ulepsz'} <span aria-hidden="true">»</span></button>
+  <button class="dbi-upgrade-action" id="dbiUpgradeAction" ${ready?'':'disabled'} title="${!unlocked?'Wymaga Podstawowego Kowalstwa':!enoughGold?'Brakuje złota':req?.reforger?(reforgeItem?'Przekuj na '+esc(reforgeItem.name)+' +0':'Brak receptury dla tej rasy i przedmiotu'):!ready?'Brakuje wymaganych materiałów':'Ulepsz przedmiot'}">${req?.reforger?'Przekuj':'Ulepsz'} <span aria-hidden="true">»</span></button>
   <p class="dbi-upgrade-note" role="status" id="dbiUpgradeStatus">${esc(dbiUpgradeMessage||'Wybierz wyposażenie dwuklikiem albo przeciągnij je do kapsuły.')}</p>
  </div>
  <aside class="dbi-upgrade-inv"><h3>Ekwipunek</h3><div class="inv-tabs">${['I','II','III','IV','V','VI'].map((label,i)=>`<button type="button" class="inv-tab ${i===dbiUpgradeTab?'active':''}" data-tab="${i}">${label}</button>`).join('')}</div><div class="inv-scroll"><div class="inv-grid">${gridHtml}</div></div><div class="inv-actions"><button type="button" data-upgrade-action="Sortuj">Sortuj</button><button type="button" data-upgrade-action="Zaznacz">Zaznacz</button><button type="button" data-upgrade-action="Zablokuj">Zablokuj</button></div></aside>
@@ -2965,9 +3098,9 @@ function dbiSmithAttempt(){
   return;
  }
  const {index,ref}=dbiSmithSelection;
- const {id,enhancement,reinforced,bonuses}=dbiDecodeItemRef(ref);
+ const {id,enhancement,reinforced,bonuses,inheritance}=dbiDecodeItemRef(ref);
  const success=Math.random()*100<recipe.chance;
- const result=success?dbiItemRef(id,enhancement,recipe.tier,reinforced,bonuses):ref;
+ const result=success?dbiItemRef(id,enhancement,recipe.tier,reinforced,bonuses,inheritance):ref;
  const needed=new Map(recipe.materials.map(m=>[m.id,m.count]));
  const items=[],positions=[];
  let newIndex=0;
@@ -3065,8 +3198,8 @@ function dbiSmithQualityBaseView(selected,recipe){
  const decoded=dbiDecodeItemRef(ref);
  const original=catalog.find(item=>item.id===decoded.id);
  if(!original)return '<p class="dbi-forge-no-params">Brak definicji przedmiotu.</p>';
- const current=itemById(dbiItemRef(decoded.id,decoded.enhancement,decoded.quality,false,[]));
- const next=recipe?itemById(dbiItemRef(decoded.id,decoded.enhancement,recipe.tier,false,[])):null;
+ const current=itemById(dbiItemRef(decoded.id,decoded.enhancement,decoded.quality,false,[],decoded.inheritance));
+ const next=recipe?itemById(dbiItemRef(decoded.id,decoded.enhancement,recipe.tier,false,[],decoded.inheritance)):null;
  const defs=[
   ['Atak',['attack','physicalAttack','attackPower'],''],
   ['Wartość ataku',['attackMin','attackMax'],'range'],
@@ -3087,13 +3220,13 @@ function dbiSmithQualityBaseView(selected,recipe){
  const fmt=(n)=>n.toLocaleString('pl-PL',{maximumFractionDigits:2});
  const rows=[];
  for(const [name,keys,unit] of defs){
-  if(!keys.some(k=>val(original,k)!==0))continue;
-  if(name==='Atak'&&(val(original,'attackMin')||val(original,'attackMax')))continue;
-  if(name==='Atak technik'&&(val(original,'techniqueAttackMin')||val(original,'techniqueAttackMax')))continue;
+  if(!keys.some(k=>val(current,k)!==0))continue;
+  if(name==='Atak'&&(val(current,'attackMin')||val(current,'attackMax')))continue;
+  if(name==='Atak technik'&&(val(current,'techniqueAttackMin')||val(current,'techniqueAttackMax')))continue;
   const format=(item)=>{
    if(!item)return '—';
    if(unit==='range')return fmt(val(item,keys[0]))+'–'+fmt(val(item,keys[1]));
-   const key=keys.find(k=>val(original,k)!==0)||keys[0];
+   const key=keys.find(k=>val(current,k)!==0)||keys[0];
    const number=val(item,key);
    return (number>0?'+':'')+fmt(number)+(unit==='%'?'%':'');
   };
@@ -3360,8 +3493,8 @@ function dbiApplyReinforcement(planIndex,targetIndex){
  let message=chip?'Nie udało się dodać bonusu. Zużyto jeden Czip dodania.':'Nie udało się dodać bonusu. Zużyto jeden Plan wzmocnień.';
  if(success){
   const entry=dbiRollPlanBonus(available);
-  const {id,enhancement,quality,reinforced}=dbiDecodeItemRef(inventory[targetIndex]);
-  items[targetIndex]=dbiItemRef(id,enhancement,quality,reinforced,[...target.planBonuses,entry]);
+  const {id,enhancement,quality,reinforced,inheritance}=dbiDecodeItemRef(inventory[targetIndex]);
+  items[targetIndex]=dbiItemRef(id,enhancement,quality,reinforced,[...target.planBonuses,entry],inheritance);
   message='Dodano bonus: '+dbiPlanLabel(entry)+'.';
  }
  return dbiSaveAppliedScroll(items,positions,planIndex)?message:'Nie udało się zapisać wzmocnienia.';
@@ -3419,9 +3552,9 @@ function dbiApplyChangeScroll(sourceIndex,targetIndex){
  const pool=[...dbiRerollPool(target,sourceId)];
  const count=target.planBonuses.length+Number(!!target.reinforced);
  const bonuses=dbiRollReplacementBonuses(pool,count);
- const {id,enhancement,quality}=dbiDecodeItemRef(inventory[targetIndex]);
+ const {id,enhancement,quality,inheritance}=dbiDecodeItemRef(inventory[targetIndex]);
  const items=inventory.slice(),positions=inventoryPlacement.slice();
- items[targetIndex]=dbiItemRef(id,enhancement,quality,false,bonuses);
+ items[targetIndex]=dbiItemRef(id,enhancement,quality,false,bonuses,inheritance);
  return dbiSaveAppliedScroll(items,positions,sourceIndex)
   ?'Przelosowano bonusy: '+bonuses.map(dbiPlanLabel).join(' · ')+'.'
   :'Nie udało się zapisać zmiany bonusów.';
@@ -3723,11 +3856,11 @@ function dbiGmGrantItems(id,enhancement,quantity){
  if(!dbiSaveInventoryTransaction(items,positions,[]))return 'Nie udało się zapisać przedmiotów w inwentarzu.';
  return 'Dodano do inwentarza: '+item.name+' +'+enhancement+' ×'+count+'.';
 }
-function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w tej przeglądarce.'){
+function renderGM(message='',activeSection='items',selectedItem=null){
  if(!dbiIsGameMaster())return;
  dbiRegisterBuiltInItems(DBI_ROYAL_500_CATALOG);
- document.querySelector('#breadcrumb').textContent='PANEL GM / KATALOG';
- document.querySelector('#pageBody').innerHTML=`<div class="gm-layout"><section class="eq-panel"><h2>PANEL GM · PRZEDMIOTY</h2><p><a href="gm.html">Poczta i zarządzanie innymi postaciami</a></p><p class="eq-caption">${catalog.length} definicji w katalogu · lokalny tryb developerski</p><div class="gm-actions"><button type="button" id="gmOpenWorldCreator">🗺 Kreator map i questów</button><button id="gmNew">+ Nowy przedmiot</button><button id="gmExport">Eksport JSON</button><button type="button" id="gmExportTestCharacters">Eksport postaci testowych</button><label class="gm-import">Import JSON<input id="gmImport" type="file" accept=".json,application/json" hidden></label></div><div class="dbi-gm-filters"><input id="gmSearch" type="search" placeholder="Szukaj przedmiotu po nazwie lub ID" aria-label="Szukaj przedmiotu"><select id="gmSlotFilter"><option value="">Wszystkie kategorie</option>${DBI_SLOTS.map(([label,id])=>`<option value="${esc(id)}">${esc(label)}</option>`).join('')}</select></div><div class="gm-list" id="gmCatalogList">${catalog.map(x=>`<div class="dbi-gm-catalog-row" data-gm-slot="${esc(x.slot)}" data-gm-query="${esc((x.name+' '+x.id).toLocaleLowerCase('pl'))}"><button type="button" class="gm-item" data-edit="${esc(x.id)}"><span>${dbiItemArt(x)} ${esc(x.name)}</span><small>${esc(x.id)} · ${esc(x.slot)} · ${Number(x.requiredLevel)||1} LVL${itemTall(x.id)?' · 2 kratki':''}</small></button><label class="dbi-gm-enhancement-label">+<select class="dbi-gm-enhancement" aria-label="Poziom ulepszenia">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField()}<button type="button" class="dbi-gm-quickgrant" data-grant-id="${esc(x.id)}" title="Dodaj do inwentarza">+ Dodaj</button></div>`).join('')}</div><p id="gmMessage" role="status">${esc(message)}</p></section><section class="eq-panel"><h2>EDYTOR PRZEDMIOTU</h2><form id="gmForm" class="gm-form"><label>ID (unikalne)<input name="id" required maxlength="60" pattern="[a-zA-Z0-9_-]+" placeholder="np. bron-002"></label><label>Nazwa<input name="name" required maxlength="80"></label><label>Slot<select name="slot">${slotOptions}</select></label><label>Jakość<select name="quality">${QUALITY.map(q=>`<option value="${q}">${q}</option>`).join('')}</select></label><label>Ikona / emoji<input name="icon" maxlength="12" value="⚔️"></label><label>Atak<input name="attack" type="number" min="0" max="999999" value="0"></label><label>Obrona<input name="defense" type="number" min="0" max="999999" value="0"></label><label>Ki<input name="ki" type="number" min="0" max="999999" value="0"></label><label class="gm-wide">Opis<textarea name="description" rows="3" maxlength="500"></textarea></label><div class="gm-actions gm-wide"><button type="submit">Zapisz przedmiot</button><label class="dbi-gm-enhancement-label">Ulepszenie +<select id="gmEditorEnhancement">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField('gmEditorQuantity')}<button type="button" id="gmGrant">Dodaj do inwentarza</button><button type="button" id="gmDelete" class="gm-danger">Usuń z katalogu</button></div></form></section></div>`;
+ document.querySelector('#breadcrumb').textContent='PANEL GM';
+ document.querySelector('#pageBody').innerHTML=`<div class="gm-workbench">${window.DBIGmContentEditor.navigation(activeSection)}<div class="gm-layout" id="gmItemWorkspace"><section class="eq-panel gm-catalog-panel"><h2>Katalog przedmiotów <small>${catalog.length}</small></h2><div class="gm-actions gm-catalog-actions"><button id="gmNew">+ Nowy przedmiot</button><button id="gmExport">Eksport JSON</button><button type="button" id="gmExportTestCharacters">Eksport postaci testowych</button><label class="gm-import">Import JSON<input id="gmImport" type="file" accept=".json,application/json" hidden></label></div><div class="dbi-gm-filters"><input id="gmSearch" type="search" placeholder="Szukaj przedmiotu po nazwie lub ID" aria-label="Szukaj przedmiotu"><select id="gmSlotFilter"><option value="">Wszystkie kategorie</option>${DBI_SLOTS.map(([label,id])=>`<option value="${esc(id)}">${esc(label)}</option>`).join('')}</select></div><div class="gm-list" id="gmCatalogList">${catalog.map(x=>`<div class="dbi-gm-catalog-row" data-gm-slot="${esc(x.slot)}" data-gm-query="${esc((x.name+' '+x.id).toLocaleLowerCase('pl'))}"><button type="button" class="gm-item" data-edit="${esc(x.id)}"><span>${dbiItemArt(x)} ${esc(x.name)}</span><small>${esc(x.id)} · ${esc(x.slot)} · ${Number(x.requiredLevel)||1} LVL${itemTall(x.id)?' · 2 kratki':''}</small></button><label class="dbi-gm-enhancement-label">+<select class="dbi-gm-enhancement" aria-label="Poziom ulepszenia">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField()}<button type="button" class="dbi-gm-quickgrant" data-grant-id="${esc(x.id)}" title="Dodaj do inwentarza">+ Dodaj</button></div>`).join('')}</div><p id="gmMessage" role="status">${esc(message)}</p></section><section class="eq-panel"><h2>Edytor przedmiotu</h2><div class="gm-visual gm-item-preview" id="gmItemPreview"></div><form id="gmForm" class="gm-form"><label>ID (unikalne)<input name="id" required maxlength="60" pattern="[a-zA-Z0-9_\\-]+" placeholder="np. bron-002"></label><label>Nazwa<input name="name" required maxlength="80"></label><label>Kategoria<select name="slot">${slotOptions}${[['materiał','Materiał'],['pozostałe','Pozostałe'],['quest','Przedmiot zadania'],['użytkowy','Użytkowy']].map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}</select></label><label>Jakość<select name="quality">${QUALITY.map(q=>`<option value="${q}">${q}</option>`).join('')}</select></label><label>Ikona / emoji<input name="icon" maxlength="12" value="⚔️"></label><label class="gm-wide">Grafika w folderze assets<input name="image" placeholder="assets/items/przedmiot.png" maxlength="150"></label><label>Wymagany poziom<input name="requiredLevel" type="number" min="1" max="999999" value="1"></label><label>HP<input name="hp" type="number" min="0" max="999999" value="0"></label><label>Atak<input name="attack" type="number" min="0" max="999999" value="0"></label><label>Obrona<input name="defense" type="number" min="0" max="999999" value="0"></label><label>Ki<input name="ki" type="number" min="0" max="999999" value="0"></label><label class="gm-wide">Opis<textarea name="description" rows="3" maxlength="500"></textarea></label><div class="gm-actions gm-wide"><button type="submit">Zapisz przedmiot</button><label class="dbi-gm-enhancement-label">Ulepszenie +<select id="gmEditorEnhancement">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField('gmEditorQuantity')}<button type="button" id="gmGrant">Dodaj do inwentarza</button><button type="button" id="gmDelete" class="gm-danger">Usuń z katalogu</button></div></form></section></div></div>`;
 
  document.querySelector('#gmExportTestCharacters').onclick=dbiDownloadTestExport;
  // GM: dokładne wartości walut i bazowych statystyk aktywnej postaci.
@@ -3768,12 +3901,28 @@ function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w te
  };
  gmExtra.append(dungeonSection);
  // Teleport GM: wybór z rejestru map; zapis pozycji dla aktywnej postaci.
- const gmLocations=window.DBIWorld?.locations||[];
+ const gmLocations=(window.DBIWorld?.locations||[]).filter(loc=>loc.spawn);
  const gmTeleportSection=document.createElement('section');
  gmTeleportSection.className='eq-panel';
  gmTeleportSection.innerHTML=`<h2>GM · TELEPORTACJA</h2><p class="eq-caption">Przenieś aktywną postać do wybranej lokacji. Teleport GM nie zalicza misji ani nie odblokowuje fabularnych podróży.</p><form id="gmTeleportForm" class="dbi-gm-form"><label>Lokacja<select name="location" required>${gmLocations.map(loc=>`<option value="${esc(loc.id)}">${esc(loc.name)}</option>`).join('')}</select></label><button type="submit">Teleportuj i otwórz mapę</button><p id="gmTeleportInfo" role="status"></p></form>`;
  gmExtra.append(gmTeleportSection);
- document.querySelector('#pageBody').append(gmExtra);
+ gmExtra.id='gmCharacterWorkspace';
+ document.querySelector('.gm-workbench').append(gmExtra);
+ window.DBIGmContentEditor.locationSearch(gmTeleportSection.querySelector('select'));
+ function selectSection(section){
+  const items=section==='items';
+  document.querySelector('#gmItemWorkspace').hidden=!items;
+  gmExtra.hidden=items;
+  gmExtra.classList.toggle('gm-teleport-only',section==='teleport');
+  for(const card of gmExtra.children)card.hidden=section==='teleport'?card!==gmTeleportSection:card===gmTeleportSection;
+  for(const b of document.querySelectorAll('[data-gm-tab-open]'))b.setAttribute('aria-current',b.dataset.gmTabOpen===section?'page':'false');
+ }
+ window.DBIGmContentEditor.bindNavigation(document.querySelector('.gm-workbench'),section=>{
+  if(section==='enemies'||section==='chests')openGmContent(section);
+  else if(section==='maps')window.DBIGMMapEditor?.open?.(document.querySelector('#pageBody'),()=>renderGM());
+  else selectSection(section);
+ });
+ selectSection(activeSection);
  document.querySelector('#gmTeleportForm').onsubmit=e=>{
   e.preventDefault();
   const destination=e.currentTarget.elements.location.value;
@@ -3814,7 +3963,7 @@ function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w te
   saved[i]={...saved[i],stats};localStorage.setItem(key,JSON.stringify(saved));gmChar.stats=stats;
   document.querySelector('#gmStatInfo').textContent='Zapisano statystyki.';
  };
- document.querySelector('#gmOpenWorldCreator')?.addEventListener('click',()=>window.DBIGMMapEditor?.open?.(document.querySelector('#pageBody'),()=>renderGM()));
+
  const gmSearch=document.querySelector('#gmSearch'),gmSlotFilter=document.querySelector('#gmSlotFilter');
  const gmFilter=()=>{const q=gmSearch.value.trim().toLocaleLowerCase('pl'),slot=gmSlotFilter.value;for(const row of document.querySelectorAll('.dbi-gm-catalog-row'))row.hidden=!!((q&&!row.dataset.gmQuery.includes(q))||(slot&&row.dataset.gmSlot!==slot))};
  gmSearch.addEventListener('input',gmFilter);gmSlotFilter.addEventListener('change',gmFilter);
@@ -3825,18 +3974,37 @@ function renderGM(message='Edytujesz lokalny katalog. Zmiany zapisują się w te
   document.querySelector('#gmMessage').textContent=dbiGmGrantItems(button.dataset.grantId,enhancement,quantity);
  });
  const form=document.querySelector('#gmForm');let editing=null;
- function load(id){const x=itemById(id);if(!x)return;editing=id;for(const key of ['id','name','slot','icon','attack','defense','ki','description','quality'])form.elements[key].value=x[key]??'';form.elements.id.readOnly=true;}
+ function previewItem(){
+  const values=form.elements;
+  window.DBIGmContentEditor.visual(document.querySelector('#gmItemPreview'),{
+   name:values.name.value||'Nowy przedmiot',icon:values.icon.value,image:values.image.value,
+   detail:[values.quality.value,'Poziom '+(values.requiredLevel.value||1)].join(' · '),
+   stats:[['Atak',values.attack.value],['Obrona',values.defense.value],['HP',values.hp.value],['KI',values.ki.value]],
+   description:values.description.value
+  });
+  document.querySelectorAll('[data-edit]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.edit===editing)));
+ }
+ function load(id){
+  const x=itemById(id);if(!x)return;
+  editing=id;
+  for(const key of ['id','name','slot','icon','attack','defense','ki','description','quality','image','hp','requiredLevel'])
+   form.elements[key].value=x[key]??(key==='requiredLevel'?1:'');
+  form.elements.id.readOnly=true;
+  previewItem();
+ }
+ form.addEventListener('input',previewItem);
+ if(selectedItem)load(selectedItem);else previewItem();
  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>load(b.dataset.edit));
- document.querySelector('#gmNew').onclick=()=>{form.reset();editing=null;form.elements.id.readOnly=false;};
- form.onsubmit=e=>{e.preventDefault();const f=new FormData(form);const x={id:String(f.get('id')).trim(),name:String(f.get('name')).trim(),slot:String(f.get('slot')),icon:String(f.get('icon')),attack:Number(f.get('attack')),defense:Number(f.get('defense')),ki:Number(f.get('ki')),description:String(f.get('description')),quality:String(f.get('id')).startsWith('royal-500-')?'Pospolity':String(f.get('quality'))};if(!/^[a-zA-Z0-9_-]+$/.test(x.id)||!x.name||!DBI_SLOTS.some(s=>s[1]===x.slot)||['attack','defense','ki'].some(k=>!Number.isFinite(x[k])||x[k]<0||x[k]>999999))return (document.querySelector('#gmMessage').textContent='Sprawdź dane przedmiotu.');if(DBI_REMOVED_ITEM_IDS.has(x.id))return (document.querySelector('#gmMessage').textContent='Ten przedmiot został usunięty z gry.');if(!editing&&itemById(x.id))return (document.querySelector('#gmMessage').textContent='ID już istnieje.');if(editing){catalog[catalog.findIndex(i=>i.id===editing)]={...catalog[catalog.findIndex(i=>i.id===editing)],...x}}else catalog.push(x);dbiSaveCatalog(catalog);renderGM('Zapisano: '+x.name);load(x.id)};
+ document.querySelector('#gmNew').onclick=()=>{form.reset();editing=null;form.elements.id.readOnly=false;previewItem();form.elements.id.focus();};
+ form.onsubmit=e=>{e.preventDefault();const f=new FormData(form);const x={id:String(f.get('id')).trim(),name:String(f.get('name')).trim(),slot:String(f.get('slot')),icon:String(f.get('icon')),image:String(f.get('image')).trim(),hp:Number(f.get('hp')),requiredLevel:Number(f.get('requiredLevel')),attack:Number(f.get('attack')),defense:Number(f.get('defense')),ki:Number(f.get('ki')),description:String(f.get('description')),quality:String(f.get('id')).startsWith('royal-500-')?'Pospolity':String(f.get('quality'))};if(!/^[a-zA-Z0-9_-]+$/.test(x.id)||!x.name||![...DBI_SLOTS.map(row=>row[1]),'materiał','pozostałe','quest','użytkowy'].includes(x.slot)||(x.image&&!window.DBIGmContentEditor.imagePath(x.image)&&x.image!==itemById(editing)?.image)||['attack','defense','ki','hp'].some(k=>!Number.isFinite(x[k])||x[k]<0||x[k]>999999))return (document.querySelector('#gmMessage').textContent='Sprawdź dane przedmiotu.');if(DBI_REMOVED_ITEM_IDS.has(x.id))return (document.querySelector('#gmMessage').textContent='Ten przedmiot został usunięty z gry.');if(!editing&&itemById(x.id))return (document.querySelector('#gmMessage').textContent='ID już istnieje.');if(editing){catalog[catalog.findIndex(i=>i.id===editing)]={...catalog[catalog.findIndex(i=>i.id===editing)],...x}}else catalog.push(x);dbiSaveGmCatalog();renderGM('Zapisano: '+x.name,'items',x.id)};
  document.querySelector('#gmGrant').onclick=()=>{
   const enhancement=Number(document.querySelector('#gmEditorEnhancement').value)||0;
   const quantity=document.querySelector('#gmEditorQuantity').value;
   document.querySelector('#gmMessage').textContent=dbiGmGrantItems(editing||form.elements.id.value,enhancement,quantity);
  };
- document.querySelector('#gmDelete').onclick=()=>{if(!editing)return;const id=editing;catalog=catalog.filter(x=>x.id!==id);inventoryPlacement=inventoryPlacement.filter((_,i)=>dbiDecodeItemRef(inventory[i]).id!==id);inventory=inventory.filter(x=>dbiDecodeItemRef(x).id!==id);Object.values(equipped).forEach(set=>Object.keys(set).forEach(slot=>{if(dbiDecodeItemRef(set[slot]).id===id)delete set[slot]}));dbiSaveCatalog(catalog);renderGM('Usunięto: '+id)};
+ document.querySelector('#gmDelete').onclick=()=>{if(!editing)return;const id=editing;catalog=catalog.filter(x=>x.id!==id);inventoryPlacement=inventoryPlacement.filter((_,i)=>dbiDecodeItemRef(inventory[i]).id!==id);inventory=inventory.filter(x=>dbiDecodeItemRef(x).id!==id);Object.values(equipped).forEach(set=>Object.keys(set).forEach(slot=>{if(dbiDecodeItemRef(set[slot]).id===id)delete set[slot]}));dbiSaveGmCatalog();renderGM('Usunięto: '+id)};
  document.querySelector('#gmExport').onclick=()=>{const blob=new Blob([JSON.stringify(catalog,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dragonball-items.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
- document.querySelector('#gmImport').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||data.some(x=>!x||typeof x.id!=='string'||!/^[\w-]+$/.test(x.id)||typeof x.name!=='string'||!DBI_SLOTS.some(s=>s[1]===x.slot))||new Set(data.map(x=>x.id)).size!==data.length)throw Error('Niepoprawny katalog');catalog=data.filter(x=>x.id!=='starter-white-belt-plus-one'&&!DBI_REMOVED_ITEM_IDS.has(x.id)).map(x=>({id:x.id,name:x.name,slot:x.slot,icon:String(x.icon||''),attack:Number(x.attack)||0,defense:Number(x.defense)||0,ki:Number(x.ki)||0,description:String(x.description||''),quality:QUALITY.includes(x.quality)?x.quality:'Pospolity',image:typeof x.image==='string'?x.image:undefined,requiredLevel:Math.max(1,Number(x.requiredLevel)||1)}));for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';dbiRegisterBuiltInItems([...DBI_SAYAN_50_ITEMS,...DBI_ROYAL_500_CATALOG,DBI_REINFORCEMENT_PLANS,DBI_CHANGE_SCROLL,DBI_ADDITION_CHIP,DBI_UPDATING_CHIP]);dbiSaveCatalog(catalog);renderGM('Zaimportowano '+catalog.length+' przedmiotów.')}catch(err){document.querySelector('#gmMessage').textContent='Błąd importu: '+err.message}};
+ document.querySelector('#gmImport').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||data.some(x=>!x||typeof x.id!=='string'||!/^[\w-]+$/.test(x.id)||typeof x.name!=='string'||!DBI_SLOTS.some(s=>s[1]===x.slot))||new Set(data.map(x=>x.id)).size!==data.length)throw Error('Niepoprawny katalog');catalog=data.filter(x=>x.id!=='starter-white-belt-plus-one'&&!DBI_REMOVED_ITEM_IDS.has(x.id)).map(x=>({id:x.id,name:x.name,slot:x.slot,icon:String(x.icon||''),attack:Number(x.attack)||0,defense:Number(x.defense)||0,hp:Number(x.hp)||0,ki:Number(x.ki)||0,description:String(x.description||''),quality:QUALITY.includes(x.quality)?x.quality:'Pospolity',image:typeof x.image==='string'?x.image:undefined,requiredLevel:Math.max(1,Number(x.requiredLevel)||1)}));for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';dbiRegisterBuiltInItems([...DBI_SAYAN_50_ITEMS,...DBI_SAYAN_250_ITEMS,...DBI_ROYAL_500_CATALOG,DBI_REINFORCEMENT_PLANS,DBI_CHANGE_SCROLL,DBI_ADDITION_CHIP,DBI_UPDATING_CHIP]);dbiSaveGmCatalog();renderGM('Zaimportowano '+catalog.length+' przedmiotów.')}catch(err){document.querySelector('#gmMessage').textContent='Błąd importu: '+err.message}};
 }
 
 // Zamknij menu akcji po kliknięciu poza nim.
@@ -4022,22 +4190,36 @@ for(const item of [
 const dbiGloryBelt=catalog.find(item=>item.id==='quest-glory-belt');
 if(dbiGloryBelt){dbiGloryBelt.image='assets/items/pas-chwaly.png';dbiSaveCatalog(catalog)}
 // Miasto pod Górami: brakujące artefakty dla Poszukiwacza skarbów.
-// Przedmioty bez grafik używają wbudowanych ikon; ich obrazy dodamy później.
+// Artefakty z grafikami oraz awaryjnymi ikonami tekstowymi.
 // Nie przypisujemy im żadnych wymyślonych bonusów ani zawartości skrzyń.
 const DBI_TOWN_QUEST_ITEMS=[
- {id:'quest-old-staff',name:'Stara Laska',icon:'🪄',slot:'quest'},
- {id:'quest-golden-dragon-coin',name:'Złota Smocza Moneta',icon:'🪙',slot:'quest'},
- {id:'quest-hermit-glasses',name:'Okulary Starego Pustelnika',icon:'👓',slot:'quest'},
- {id:'quest-sayan-battle-outfit',name:'Ubranie Bojowe Sayan',icon:'🥋',slot:'quest'},
- {id:'quest-babidi-mark',name:'Znak Babidiego',icon:'✴️',slot:'quest'},
+ {id:'quest-old-staff',name:'Stara Laska',icon:'🪄',slot:'quest',image:'assets/items/quest-old-staff.png'},
+ {id:'quest-golden-dragon-coin',name:'Złota Smocza Moneta',icon:'🪙',slot:'quest',image:'assets/items/quest-golden-dragon-coin.png'},
+ {id:'quest-hermit-glasses',name:'Okulary Starego Pustelnika',icon:'👓',slot:'quest',image:'assets/items/quest-hermit-glasses.png'},
+ {id:'quest-sayan-battle-outfit',name:'Ubranie Bojowe Sayan',icon:'🥋',slot:'quest',image:'assets/items/quest-sayan-battle-outfit.png'},
+ {id:'quest-babidi-mark',name:'Znak Babidiego',icon:'✴️',slot:'quest',image:'assets/items/quest-babidi-mark.png'},
  {id:'quest-potara-earrings',name:'Kolczyki Potara',icon:'💎',slot:'quest'},
- {id:'quest-ki-energy',name:'Energia KI',icon:'🔷',slot:'materiał'},
+ {id:'quest-ki-energy',name:'Energia KI',icon:'🔷',slot:'quest',image:'assets/items/quest-ki-energy.png'},
  {id:'quest-material-chest',name:'Skrzynia Materiałów',icon:'📦',slot:'quest'}
 ];
 for(const definition of DBI_TOWN_QUEST_ITEMS){
- if(!catalog.some(item=>item.id===definition.id))catalog.push({...definition,requiredLevel:1,quality:'Pospolity',attack:0,defense:0,ki:0,description:'Przedmiot związany ze zleceniami w Mieście pod Górami.'});
+ const existing=catalog.find(item=>item.id===definition.id);
+ if(!existing)catalog.push({...definition,requiredLevel:1,quality:'Pospolity',attack:0,defense:0,ki:0,description:'Przedmiot związany ze zleceniami w Mieście pod Górami.'});
+ else {
+  if(definition.image)existing.image=definition.image;
+  if(definition.id==='quest-ki-energy')existing.slot=definition.slot;
+ }
 }
 dbiSaveCatalog(catalog);
+
+if(Array.isArray(window.DBI_GM_WORLD_DATA?.gmCatalog)){
+ let publishedCatalog=window.DBI_GM_WORLD_DATA.gmCatalog;
+ try{
+  const local=JSON.parse(localStorage.getItem(dbiGmCatalogKey()));
+  if(Array.isArray(local))publishedCatalog=local;
+ }catch{}
+ catalog=publishedCatalog.filter(item=>item&&typeof item.id==='string'&&!DBI_REMOVED_ITEM_IDS.has(item.id));
+}
 
 // Przekazanie premii i nagród jest transakcją na dotychczasowych zapisach.
 // Pozycje pozostałych sztuk w Ekwipunku są chronione przez dbiSaveInventoryTransaction().
@@ -4398,7 +4580,7 @@ function dbiClaimEditorQuestRewards(characterId,quest,stage,rewards,item,need,up
    if(upgrade.policy&&dbiEditorUpgradeDestination(decoded,upgrade.target,upgrade.requiredFrom,upgrade.requiredTo,upgrade.policy)!==upgrade.to)return fail('Przedmiot nie spełnia zasad ulepszenia tego etapu.');
    // Preserve the exact encoded reinforcement and rolls, including legacy bonus formats.
    const suffix=ref.match(/(?:~p)?(?:~b.*)?$/)[0];
-   refs[index]=dbiItemRef(decoded.id,upgrade.to,decoded.quality)+suffix;
+   refs[index]=dbiItemRef(decoded.id,upgrade.to,decoded.quality,false,[],decoded.inheritance)+suffix;
   }
   if(item){
    if(!Number.isSafeInteger(need)||need<1)return fail('Nieprawidłowa liczba przedmiotów do oddania.');
@@ -4765,3 +4947,27 @@ function refreshAtlasVitals(){
 }
 refreshAtlasVitals();
 setInterval(refreshAtlasVitals,1500);
+
+function dbiGmCatalogKey(){
+ const pack=window.DBI_GM_WORLD_DATA;
+ return Array.isArray(pack?.gmCatalog)?DBI_KEY+':'+pack.revision:DBI_KEY;
+}
+function dbiSaveGmCatalog(){
+ localStorage.setItem(dbiGmCatalogKey(),JSON.stringify(catalog));
+}
+window.DBIGmPublicationCatalog=()=>catalog;
+
+function openGmContent(section){
+ window.DBIGmContentEditor.open(document.querySelector('#pageBody'),section,{
+  items:()=>catalog,
+  itemExists:id=>!!itemById(id)||DBI_REMOVED_ITEM_IDS.has(id),
+  catalogWrite:items=>[dbiGmCatalogKey(),items],
+  useCatalog:items=>{catalog=items},
+  back:section=>renderGM('',section),
+  maps:()=>window.DBIGMMapEditor?.open?.(document.querySelector('#pageBody'),()=>renderGM())
+ });
+}
+if(dbiIsGameMaster()&&['#gm-items','#gm-chests','#gm-enemies'].includes(location.hash)){
+ showPage('Panel GM','GM');
+ if(location.hash!=='#gm-items')openGmContent(location.hash.slice(4));
+}
