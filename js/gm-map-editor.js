@@ -104,7 +104,7 @@
  // One catalogue renderer for item rewards and hand-in requirements.
  function questItemMarkup(id,{amount=1,have=null,enhancement=null,note=''}={}){
   const item=rewardDef(id),name=item?.name||'Nieznany przedmiot ('+String(id||'brak ID')+')';
-  const image=typeof item?.image==='string'&&item.image.startsWith('assets/')&&!item.image.includes('..')&&/\.(png|webp|jpe?g|gif|svg)$/i.test(item.image)?item.image:'';
+  const image=item?.image&&window.DBIGmContentEditor?.imagePath(item.image)?item.image:'';
   const level=enhancement===null?'':' +'+number(enhancement,0,9,0),label=name+level;
   const icon=esc(item?.icon||'📦'),need=Math.max(1,Math.floor(Number(amount)||1));
   const count=have===null?'×'+need:Math.max(0,Math.floor(Number(have)||0))+'/'+need;
@@ -145,13 +145,14 @@
   if(!Array.isArray(st.rewards))st.rewards=stepRewards(st).map(r=>({...r}));
   delete st.rewardType;delete st.rewardItem;delete st.rewardAmount;return st.rewards;
  }
- const rewardTypes=()=>[['item','Przedmiot'],['gold','Złoto'],['premium','Premium'],['exp','Doświadczenie postaci'],...Object.entries(statNames).map(([id,label])=>['stat-'+id,label]),['stat-all','Wszystkie pięć statystyk']];
+ const rewardTypes=()=>[['item','Przedmiot'],['gold','Złoto'],['premium','Zeni'],['exp','Doświadczenie postaci'],...Object.entries(statNames).map(([id,label])=>['stat-'+id,label]),['stat-all','Wszystkie pięć statystyk']];
  const rewardMax=type=>type==='item'?4000:type==='exp'?999999999:999999;
  function validReward(r){return !!r&&rewardTypes().some(([id])=>id===r.type)&&Number.isSafeInteger(Number(r.amount))&&Number(r.amount)>=1&&Number(r.amount)<=rewardMax(r.type)&&(r.type!=='item'||typeof r.item==='string'&&r.item&&(!window.DBIWorldInventory?.editorItems||!!rewardDef(r.item)));}
  function rewardMarkup(r){
   if(!r)return '';
   if(r.type==='item')return rewardItemMarkup(r.item,r.amount);
   const amount=number(r.amount,1,rewardMax(r.type),1),label=rewardTypes().find(([id])=>id===r.type)?.[1]||'Nieznana nagroda';
+  if(r.type==='premium')return '<img class="dbi-zeni-icon" src="assets/ui/zeni.png" alt="">'+amount+' Zeni';
   return esc(String(r.type||'').startsWith('stat-')?'+'+amount+' · '+label:amount+' '+(r.type==='exp'?'EXP':label));
  }
  function rewardsView(st,i){
@@ -2856,8 +2857,6 @@
    output['data/gm-world-published.json']=JSON.stringify(deployed,null,2)+'\n';
    if(test){await window.DBINativeEditor.preview(tab,output,seed);setStatus(questTest?'Quest od początku w odizolowanej karcie — prawdziwy postęp nie jest zmieniany.':'Projekt uruchomiony w odizolowanej karcie testowej.');}
    else{
-    // The legacy data script loads the same publication when the game runs from disk.
-    output['data/gm-world-published.js']='window.DBI_GM_WORLD_DATA=JSON.parse('+JSON.stringify(JSON.stringify(deployed))+');\n';
     let versioned=false;
     if(native){
      try{
@@ -2874,7 +2873,7 @@
      }catch(e){console.warn('Kreator GM: eksport bez index.html:',e.message)}
     }
     window.DBINativeEditor.saveZip(output);
-    report('Pobrano ZIP z mapami, questami, przedmiotami, skrzyniami i ustawieniami przeciwników. Rozpakuj wszystkie pliki do folderu gry z zachowaniem ścieżek.'+(native&&!versioned?' Odśwież stronę skrótem Ctrl+F5.':''));
+    report('Pobrano ZIP z publikacją w data/gm-world-published.json. Rozpakuj pliki do folderu gry z zachowaniem ścieżek. Gra wczyta publikację przez HTTP/HTTPS.'+(native&&!versioned?' Odśwież stronę skrótem Ctrl+F5.':''));
    }
   }catch(e){tab?.close();report('Nie udało się przygotować zmian: '+e.message)}
  }

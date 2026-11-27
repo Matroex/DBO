@@ -8,7 +8,7 @@
  const statsForm=byId('stats'),grantForm=byId('grant');
  const fields=[['level','Poziom',500],['exp','EXP',Number.MAX_SAFE_INTEGER],
   ['strength','Siła'],['speed','Szybkość'],['endurance','Wytrzymałość'],['intelligence','Inteligencja'],['ki','KI'],
-  ['gold','Złoto'],['dragon','Smocze Monety'],['premium','Premium']];
+  ['gold','Złoto'],['dragon','Smocze Monety'],['premium','Zeni']];
  const attrs=new Set(['strength','speed','endurance','intelligence','ki']);
  function option(value,text){return new Option(text,value)}
  for(const [key,label,max=999999999999] of fields){

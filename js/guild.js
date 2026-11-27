@@ -8,6 +8,7 @@ const read=()=>{try{const d=JSON.parse(localStorage.getItem(KEY)||'[]');return A
 const write=d=>localStorage.setItem(KEY,JSON.stringify(d));
 const current=()=>({id:String(dbiActive?.id||''),name:String(dbiCharacters?.[dbiCharacterIndex]?.name||'Postać'),account:String(dbiSession?.name||'').toLowerCase()});
 const goldKey=id=>'dboidle_gold_v1_'+id;
+const zeniIcon='<img class="dbi-zeni-icon" src="assets/ui/zeni.png" alt="">';
 const premiumKey=id=>'dboidle_premium_v1_'+id;
 const wallet=(id,key)=>Math.max(0,Number(localStorage.getItem(key(id)))||0);
 const findMine=(guilds,id)=>guilds.find(g=>g.members.some(m=>m.id===id));
@@ -53,7 +54,7 @@ setInterval(heartbeat,30000);
 function memberPanel(g,people,actor){
  const grant=allowed(g,actor,'grant'),manage=allowed(g,actor,'manage');
  return '<h3>Członkowie ('+g.members.length+')</h3><p class="guild-member-count">Liczba członków '+g.members.length+'/'+capacity(g)+'</p><div class="guild-member-scroll"><table class="guild-member-table"><thead><tr>'+
- ['Postać','Poziom','Ranga w gildii','Wkład w złocie','Wkład w premium','Uprawnienia','Status',''].map(label=>'<th>'+label+'</th>').join('')+
+ ['Postać','Poziom','Ranga w gildii','Wkład w złocie','Wkład w Zeni','Uprawnienia','Status',''].map(label=>'<th>'+label+'</th>').join('')+
  '</tr></thead><tbody>'+g.members.map(m=>{
   const character=people.find(c=>c.id===m.id)||m;
   const portrait=character.avatar||character.portrait||'';
@@ -66,7 +67,7 @@ function memberPanel(g,people,actor){
   const id=esc(m.id);
   const amount=v=>(Number(v)||0).toLocaleString('pl-PL');
   const controls=Object.entries(rights).map(([key,title])=>`<label><input type="checkbox" name="permission" value="${key}" ${allowed(g,m.id,key)?'checked':''} ${grant&&allowed(g,actor,key)?'':'disabled'}> ${title}</label>`).join('');
-  return `<tr><td><span class="guild-member-name"><b class="guild-member-avatar">${picture}</b>${esc(character.name)}</span></td><td>${esc(character.level??'—')}</td><td>${leader?'Przywódca':'Członek'}</td><td>${amount(m.contributions?.gold)}</td><td>${amount(m.contributions?.premium)}</td><td><span class="guild-right-count" title="${count} z 7" aria-label="Uprawnienia: ${count} z 7">${'<i></i>'.repeat(count)}<small>${count}/7</small></span></td><td><span class="guild-status-dot" role="img" aria-label="${label}" title="${label}" data-member-status="${id}" data-state="${state}" data-ban="${banned}"></span></td><td>${editable?`<button type="button" data-edit-member aria-haspopup="dialog">Edytuj</button>`:''}`+
+  return `<tr><td><span class="guild-member-name"><b class="guild-member-avatar">${picture}</b>${esc(character.name)}</span></td><td>${esc(character.level??'—')}</td><td>${leader?'Przywódca':'Członek'}</td><td>${amount(m.contributions?.gold)}</td><td>${zeniIcon}${amount(m.contributions?.premium)}</td><td><span class="guild-right-count" title="${count} z 7" aria-label="Uprawnienia: ${count} z 7">${'<i></i>'.repeat(count)}<small>${count}/7</small></span></td><td><span class="guild-status-dot" role="img" aria-label="${label}" title="${label}" data-member-status="${id}" data-state="${state}" data-ban="${banned}"></span></td><td>${editable?`<button type="button" data-edit-member aria-haspopup="dialog">Edytuj</button>`:''}`+
   (editable?`<dialog class="guild-member-dialog" aria-label="Uprawnienia · ${esc(character.name)}"><button type="button" class="guild-dialog-close" aria-label="Zamknij okno">×</button><form class="guild-right-form" data-member="${id}"><fieldset><legend>Uprawnienia · ${esc(character.name)}</legend>${controls}</fieldset><div>${grant?'<button>Zapisz uprawnienia</button>':''} ${manage?`<button type="button" class="guild-kick" data-kick="${id}">Wyrzuć</button>`:''} ${actor===g.leaderId?`<button type="button" data-promote="${id}">Przekaż przywództwo</button>`:''}</div></form></dialog>`:'')+'</td></tr>';
  }).join('')+'</tbody></table></div>';
 }
@@ -137,7 +138,7 @@ function treasury(g){
  const expKnown=member?.contributions!=null && Object.prototype.hasOwnProperty.call(member.contributions,'exp');
  const expPaid=expKnown?Math.max(0,Number(member.contributions.exp)||0):null;
  const fmt=n=>Math.max(0,Number(n)||0).toLocaleString('pl-PL');
- const gem='<img src="assets/ui/guild/deposit/premium-gem.svg" alt="" aria-hidden="true">';
+
  const badge='<img src="assets/ui/guild/deposit/exp-badge.svg" alt="" aria-hidden="true">';
  return `<div class="dbi-guild-deposit">
   <aside class="dbi-guild-deposit-sidebar" aria-label="Sekcja bankowa gildii">
@@ -150,8 +151,8 @@ function treasury(g){
     <div class="dbi-guild-deposit-ledger" aria-label="Stan depozytu gildii">
      <div class="dbi-guild-deposit-ledger-row">
       <span class="dbi-guild-deposit-ledger-label">Saldo:</span>
-      <strong class="dbi-guild-deposit-amount">${gem}<span>${fmt(balance(g))}</span></strong>
-      <small>(Waluta Premium)</small>
+      <strong class="dbi-guild-deposit-amount">${zeniIcon}<span>${fmt(balance(g))}</span></strong>
+      <small>(Zeni)</small>
      </div>
      <div class="dbi-guild-deposit-ledger-row">
       <span class="dbi-guild-deposit-ledger-label">Punkty Doświadczenia Planety:</span>
@@ -162,15 +163,15 @@ function treasury(g){
    <section class="dbi-guild-deposit-personal" aria-label="Twoje wpłaty do gildii">
     <h4>Twoje wpłaty (łącznie)</h4>
     <div class="dbi-guild-deposit-personal-rows">
-     <div><span>${gem} Premium</span><strong>${fmt(premiumPaid)}</strong></div>
+     <div><span>${zeniIcon} Zeni</span><strong>${fmt(premiumPaid)}</strong></div>
      <div><span>${badge} Punkty doświadczenia</span><strong>${expKnown?fmt(expPaid):'—'}</strong></div>
     </div>
     ${expKnown?'':'<small>Historia indywidualnych wpłat EXP nie jest zapisywana w obecnym systemie.</small>'}
    </section>
    <div class="dbi-guild-deposit-contributions" aria-label="Przekazywanie zasobów do depozytu">
     <form data-deposit="premium" class="dbi-guild-deposit-form">
-     <label for="dbiGuildDepositPremium" class="dbi-guild-deposit-form-label">Przekaż ${gem}<span>Premium</span></label>
-     <input id="dbiGuildDepositPremium" name="amount" type="number" step="1" min="1" placeholder="Ilość do wpisania" aria-label="Ilość Premium do wpłaty" required>
+     <label for="dbiGuildDepositPremium" class="dbi-guild-deposit-form-label">Przekaż ${zeniIcon}<span>Zeni</span></label>
+     <input id="dbiGuildDepositPremium" name="amount" type="number" step="1" min="1" placeholder="Ilość do wpisania" aria-label="Ilość Zeni do wpłaty" required>
      <button type="submit"><img src="assets/ui/guild/deposit/icon-deposit.svg" alt="" aria-hidden="true">Wpłać</button>
     </form>
     <form data-deposit="exp" class="dbi-guild-deposit-form">
@@ -207,14 +208,14 @@ function bindEconomy(root,shown){
     return 'Przekazano '+credit+' EXP do depozytu.';
    }
    const key=premiumKey(id),before=wallet(id,premiumKey);
-   if(amount>before)throw Error('Za mało Premium na postaci.');
+   if(amount>before)throw Error('Za mało Zeni na postaci.');
    if(!Number.isSafeInteger(balance(g)+amount))throw Error('Przekroczono limit salda.');
    const member=g.members.find(m=>m.id===id);
    member.contributions={...member.contributions,premium:(member.contributions?.premium||0)+amount};
    g.premiumBalance=balance(g)+amount;
    localStorage.setItem(key,String(before-amount));
    try{save()}catch(err){localStorage.setItem(key,String(before));throw err}
-   return 'Wpłacono '+amount+' Premium.';
+   return 'Wpłacono '+amount+' Zeni.';
   });
  });
  root.querySelectorAll('[data-build]').forEach(button=>button.onclick=()=>transact((g,id,save)=>{
@@ -222,7 +223,7 @@ function bindEconomy(root,shown){
   if(!def||!g.planetKey||!allowed(g,id,'upgrade'))throw Error('Brak możliwości ulepszenia.');
   const lvl=buildingLevel(g,key);
   if(lvl>=def[2]||lvl!==Number(button.dataset.level))throw Error('Poziom obiektu uległ zmianie.');
-  if(balance(g)<20)throw Error('Potrzeba 20 Premium w depozycie.');
+  if(balance(g)<20)throw Error('Potrzeba 20 Zeni w depozycie.');
   g.premiumBalance=balance(g)-20;g.buildings={...g.buildings,[key]:lvl+1};
   save();return def[1]+' · poziom '+(lvl+1);
  }));
@@ -231,7 +232,7 @@ function bindEconomy(root,shown){
   const selected=planetTypes[Number(root.querySelector('[data-gp-choice]').value)];
   transact((g,id,save)=>{
    if(g.planetKey||!selected||!allowed(g,id,'upgrade'))throw Error('Brak możliwości zakupu planety.');
-   if(balance(g)<200)throw Error('Potrzeba 200 Premium w depozycie.');
+   if(balance(g)<200)throw Error('Potrzeba 200 Zeni w depozycie.');
    g.premiumBalance=balance(g)-200;g.planetKey=selected[0];save();return 'Zakupiono planetę '+selected[1]+'.';
   });
  };
@@ -286,7 +287,7 @@ function planetView(g){
  if(!preview)return `<section class="gp gp-shop"><div class="gp-card gp-picker">${picture}
  <label>Planety możliwe do zakupu<select data-gp-choice>${planetTypes.map(([,label],i)=>`<option value="${i}" ${i===index?'selected':''}>${label}</option>`).join('')}</select></label></div>
  <div class="gp-offer"><strong>Gildia aktualnie nie posiada żadnej planety</strong>
- <div>Koszt planety: <b>200 Premium</b> <button type="button" data-gp-preview>Kup</button></div></div></section>`;
+ <div>Koszt planety: <b>${zeniIcon}200 Zeni</b> <button type="button" data-gp-preview>Kup</button></div></div></section>`;
  const bonuses=next=>{
   const tier=Math.min(50,level+Number(next)),b=guildBonuses(tier);
   const rows=[['Maksymalne HP',b.hp||b.hpPct],['Wszystkie statystyki',b.stats||b.statsPct],
@@ -298,9 +299,9 @@ function planetView(g){
   }).join('');
   return `<section class="gp-card gp-bonus"><header>${next?(level===50?'Poziom maksymalny':'Następny poziom · '+tier):'Aktualne bonusy · '+tier}</header><ul>${next&&level===50?'':list}</ul></section>`;
  };
- const objects=(label,defs)=>`<section class="gp-objects gp-card"><header>${label}</header><div><table><thead><tr><th>Nazwa obiektu</th><th>Poziom obiektu</th><th></th><th>Koszt Premium</th><th>Aktualny bonus</th></tr></thead><tbody>${defs.map(([key,name,max,rate,unit])=>{
+ const objects=(label,defs)=>`<section class="gp-objects gp-card"><header>${label}</header><div><table><thead><tr><th>Nazwa obiektu</th><th>Poziom obiektu</th><th></th><th>Koszt Zeni</th><th>Aktualny bonus</th></tr></thead><tbody>${defs.map(([key,name,max,rate,unit])=>{
   const lvl=buildingLevel(g,key);
-  return `<tr><td>${name}</td><td>${lvl}/${max}</td><td><button data-build="${key}" data-level="${lvl}" ${lvl>=max||!allowed(g,current().id,'upgrade')?'disabled':''}>${lvl===max?'Maks.':lvl?'Ulepsz':'Kup'}</button></td><td>20 Premium</td><td>+${(lvl*rate).toLocaleString('pl-PL')} ${unit}</td></tr>`;
+  return `<tr><td>${name}</td><td>${lvl}/${max}</td><td><button data-build="${key}" data-level="${lvl}" ${lvl>=max||!allowed(g,current().id,'upgrade')?'disabled':''}>${lvl===max?'Maks.':lvl?'Ulepsz':'Kup'}</button></td><td>${zeniIcon}20 Zeni</td><td>+${(lvl*rate).toLocaleString('pl-PL')} ${unit}</td></tr>`;
  }).join('') }</tbody></table></div></section>`;
  return `<section class="gp"><div class="gp-overview"><div class="gp-card gp-picture">${picture}</div><div class="gp-detail">
  <div class="gp-level"><b>Poziom ${level}</b><div>Rozwój planety<div class="gp-track"></div></div></div>
@@ -371,7 +372,7 @@ function render(){
  document.querySelector('#breadcrumb').textContent='GILDIA';
  const me=current(),guilds=read(),g=findMine(guilds,me.id);
  const pending=guilds.filter(g=>g.invites.includes(me.id));
- root.innerHTML=`<section class="dbi-guild"><header class="dbi-guild-title">Gildia</header>${notice?`<p class="dbi-guild-alert">${esc(notice)}</p>`:''}${error?`<p class="dbi-guild-alert error">${esc(error)}</p>`:''}${g?panelMain(g):`<div class="dbi-guild-create-area"><form id="dbiGuildCreate" class="dbi-guild-create"><h2>Załóż gildię</h2><label>Nazwa gildii<input name="guildName" minlength="3" maxlength="30" placeholder="Nazwa gildii" required></label><label>Skrót gildii (maks. 5 znaków)<input name="guildTag" maxlength="5" placeholder="TAG" required></label><label>Waluta założenia<select name="guildPayment"><option value="gold">10 000 000 złota (masz: ${wallet(me.id,goldKey).toLocaleString('pl-PL')})</option><option value="premium">30 Klejnotów (masz: ${wallet(me.id,premiumKey)})</option></select></label><button type="submit">Stwórz</button></form>${pending.length?`<div class="dbi-guild-pending"><h3>Zaproszenia do gildii</h3>${pending.map(x=>`<div><strong>${esc(x.name)} [${esc(x.tag)}]</strong><button data-accept="${esc(x.id)}">Akceptuj</button><button data-decline="${esc(x.id)}">Odrzuć</button></div>`).join('')}</div>`:''}</div>`}${confirmLeave?`<div class="dbi-guild-dialog"><div><h3>Opuścić gildię?</h3><p>${g?.leaderId===me.id?'Gildia zostanie rozwiązana, jeśli jesteś jej jedynym członkiem.':'Utracisz członkostwo w gildii.'}</p><button id="dbiGuildLeaveYes">Potwierdź</button><button id="dbiGuildLeaveNo">Anuluj</button></div></div>`:''}</section>`;
+ root.innerHTML=`<section class="dbi-guild"><header class="dbi-guild-title">Gildia</header>${notice?`<p class="dbi-guild-alert">${esc(notice)}</p>`:''}${error?`<p class="dbi-guild-alert error">${esc(error)}</p>`:''}${g?panelMain(g):`<div class="dbi-guild-create-area"><form id="dbiGuildCreate" class="dbi-guild-create"><h2>Załóż gildię</h2><label>Nazwa gildii<input name="guildName" minlength="3" maxlength="30" placeholder="Nazwa gildii" required></label><label>Skrót gildii (maks. 5 znaków)<input name="guildTag" maxlength="5" placeholder="TAG" required></label><label>${zeniIcon}Waluta założenia<select name="guildPayment"><option value="gold">10 000 000 złota (masz: ${wallet(me.id,goldKey).toLocaleString('pl-PL')})</option><option value="premium">30 Zeni (masz: ${wallet(me.id,premiumKey)})</option></select></label><button type="submit">Stwórz</button></form>${pending.length?`<div class="dbi-guild-pending"><h3>Zaproszenia do gildii</h3>${pending.map(x=>`<div><strong>${esc(x.name)} [${esc(x.tag)}]</strong><button data-accept="${esc(x.id)}">Akceptuj</button><button data-decline="${esc(x.id)}">Odrzuć</button></div>`).join('')}</div>`:''}</div>`}${confirmLeave?`<div class="dbi-guild-dialog"><div><h3>Opuścić gildię?</h3><p>${g?.leaderId===me.id?'Gildia zostanie rozwiązana, jeśli jesteś jej jedynym członkiem.':'Utracisz członkostwo w gildii.'}</p><button id="dbiGuildLeaveYes">Potwierdź</button><button id="dbiGuildLeaveNo">Anuluj</button></div></div>`:''}</section>`;
  bindPlanet(root);
  bindEconomy(root,g);
  root.querySelector('#dbiGuildCreate')?.addEventListener('submit',e=>{e.preventDefault();create(e.currentTarget)});

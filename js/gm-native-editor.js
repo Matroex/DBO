@@ -86,7 +86,7 @@ function tree(value,type){
  return {ast:parse(src).body[0],offset:prefix.length};
 }
 function element(tag,text){const el=document.createElement(tag);if(text!=null)el.textContent=text;return el}
-const labels={kills:'Wymagane pokonania',premium:'Waluta premium',name:'Nazwa',level:'Poziom',art:'Grafika',spawn:'Start',npc:'NPC',scenery:'Obiekty',blocked:'Kolizje',portals:'Portale',portal:'Portal',mobs:'Expowisko',mobNames:'Przeciwnicy',boss:'Boss',text:'Dialog',button:'Przycisk',reward:'Nagroda',give:'Przyznaj',take:'Oddaj',strength:'Siła',endurance:'Wytrzymałość',speed:'Szybkość',intelligence:'Inteligencja',attack:'Atak',defense:'Obrona',sizeX:'Szerokość',sizeY:'Wysokość',label:'Podpis',to:'Cel portalu',arrival:'Punkt docelowy',destinationArrival:'Punkt docelowy',gold:'Złoto'};
+const labels={kills:'Wymagane pokonania',premium:'Zeni',name:'Nazwa',level:'Poziom',art:'Grafika',spawn:'Start',npc:'NPC',scenery:'Obiekty',blocked:'Kolizje',portals:'Portale',portal:'Portal',mobs:'Expowisko',mobNames:'Przeciwnicy',boss:'Boss',text:'Dialog',button:'Przycisk',reward:'Nagroda',give:'Przyznaj',take:'Oddaj',strength:'Siła',endurance:'Wytrzymałość',speed:'Szybkość',intelligence:'Inteligencja',attack:'Atak',defense:'Obrona',sizeX:'Szerokość',sizeY:'Wysokość',label:'Podpis',to:'Cel portalu',arrival:'Punkt docelowy',destinationArrival:'Punkt docelowy',gold:'Złoto'};
 function fields(value,type){
  const {ast,offset}=tree(value,type),rows=[];
  function scan(n,path,parent){

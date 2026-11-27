@@ -5,7 +5,7 @@ window.DBIMarketView=(()=>{
  const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
  const category=(slot)=>({bron:'Broń',zbroja:'Zbroja',rekawice:'Rękawice',pierscien:'Pierścień',uzytkowy:'Użytkowy','użytkowy':'Użytkowy',stroj:'Strój',energia:'Energia KI'})[slot]||(slot?slot[0].toUpperCase()+slot.slice(1):'Przedmiot');
  function name(item){return item.name+(item.enhancement?' +'+item.enhancement:'')}
- function art(item){return item.image&&/^assets\/(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.(?:png|webp|gif|jpe?g)$/i.test(item.image)?'<img src="'+esc(item.image)+'" alt="" loading="lazy">':esc(item.icon||'◇')}
+ function art(item){return item.image&&(/^assets\/(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.(?:png|webp|gif|jpe?g)$/i.test(item.image)||window.DBIContent?.embeddedImage(item.image))?'<img src="'+esc(item.image)+'" alt="" loading="lazy">':esc(item.icon||'◇')}
  function open(root,api){
   let tab='browse',busy=false;
   root.innerHTML=`<section class="dbi-market">

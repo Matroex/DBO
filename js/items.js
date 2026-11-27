@@ -237,6 +237,39 @@ const DBI_NEW_MATERIALS_20261125=[
  }))
 ];
 DBI_DEFAULT_ITEMS.push(...DBI_NEW_MATERIALS_20261125);
+const DBI_ADVENTURE_MATERIALS=[
+ ['skorupa-zolwia','Skorupa żółwia','🐢','Twarda, brązowa skorupa o grubych płytkach.'],
+ ['swieta-woda','Święta Woda','💧','Woda przechowywana w ozdobnej fiolce z długą szyjką.'],
+ ['kuchenka','Kuchenka','🍲','Lekka kuchenka polowa mieszcząca się w bagażu podróżnika.'],
+ ['kapsula-przenosna','Kapsuła przenośna','💊','Kompaktowa kapsuła z przyciskiem i obudową z lekkiego stopu.'],
+ ['kawalek-diamentu','Kawałek Diamentu','💎','Ostry odłamek kryształu o błękitnych refleksach.'],
+ ['posazek-smoka','Posążek smoka','🐉','Jadeitowa figurka wijącego się smoka na kamiennej podstawie.'],
+ ['czastki-ki','Cząstki KI','✨','Skupisko drobin skondensowanej energii KI.'],
+ ['wola-weza','Wola węża','🐍','Talizman o kształcie wężowej maski z zakrzywionymi kłami.'],
+ ['futro-zwierzecia','Futro zwierzęcia','🧶','Gruby płat futra z rudobrązowym włosiem.'],
+ ['zolty-kiel','Żółty Kieł','🦷','Długi, zakrzywiony kieł o żółtawym zabarwieniu.'],
+ ['najwyzsza-moc','Najwyższa moc','⚡','Złoty rdzeń energii otoczony iskrzącą aurą.'],
+ ['czesci-androidow','Części androidów','⚙️','Fragmenty pancerza, mechanizmów i przewodów androida.'],
+ ['kawalek-miecza-z','Kawałek miecza Z','🗡️','Złamany fragment legendarnej klingi z zachowaną rękojeścią.']
+].map(([id,name,icon,description])=>({
+ id,name,icon,description,slot:'materiał',image:'assets/items/'+id+'.png',
+ quality:'Pospolity',requiredLevel:1,attack:0,defense:0,ki:0
+}));
+DBI_DEFAULT_ITEMS.push(...DBI_ADVENTURE_MATERIALS);
+const DBI_SAIYAN_CHI=[
+ ['chi-ciala-100','Chi Ciała',100],['chi-duszy-100','Chi Duszy',100],
+ ['chi-ciala-250','Chi sayańskiego ciała',250],['chi-duszy-250','Chi sayańskiej duszy',250],
+ ['chi-ciala-500','Chi doskonałego ciała',500],['chi-duszy-500','Chi doskonałej duszy',500]
+].map(([id,name,requiredLevel])=>({
+ id,name,requiredLevel,slot:'chi',requiredRace:'saiyan',icon:'✦',quality:'Pospolity',
+ attack:0,defense:0,ki:0,image:'assets/items/'+id+'.png',description:'Chi wyposażane przez wojowników rasy Saiyan.'
+}));
+DBI_DEFAULT_ITEMS.push(...DBI_SAIYAN_CHI);
+
+function dbiAddAdventureItems(items){
+ const ids=new Set(items.map(item=>item.id));
+ for(const item of [...DBI_ADVENTURE_MATERIALS,...DBI_SAIYAN_CHI])if(!ids.has(item.id))items.push({...item});
+}
 // Nowe jakości Pyłu smoczych kul. Odrębne ID gwarantują osobne stosy materiału.
 const DBI_DRAGON_DUST_VARIANTS=[
  ['dragon-ball-dust-common','Zwyczajny','szary'],
@@ -262,6 +295,7 @@ function dbiLoadCatalog(){
  for(const item of DBI_NEW_MATERIALS_20261125){
   if(!items.some(entry=>entry.id===item.id))items.push({...item});
  }
+ dbiAddAdventureItems(items);
  // Uzupełnia także katalogi zapisane przed dodaniem nowych jakości.
  for(const item of DBI_DRAGON_DUST_VARIANTS){
   const index=items.findIndex(entry=>entry.id===item.id);

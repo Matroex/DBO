@@ -889,7 +889,7 @@ function renderTournament(){
  <p>Codzienny turniej eliminacyjny. 32 losowe pozycje startowe, pięć rund i jeden zwycięzca. Wolne miejsca zajmują NPC „Zawodnik Turnieju”. Remisy rozstrzyga losowanie 50/50.</p>
  <div class="dbi-tournament-hours"><span>🕒 Zapisy: <strong>15:00–18:00</strong></span><span>👥 <strong>32 uczestników</strong> w kategorii</span><span>📅 ${date}</span></div></header>
  <div class="dbi-tournament-table-wrap"><table class="dbi-tournament-table"><thead><tr><th>Przedział poziomów</th><th>Liczba miejsc</th><th>Status turnieju</th><th>Zapisy</th></tr></thead><tbody>${rows}</tbody></table></div>
- <div class="dbi-tournament-note">Opłata za zapis: <img class="dbi-gold-icon" src="assets/ui/gold.png" alt="" width="16" height="16">10 000 złota. Walki są automatyczne, bez zmian punktów sławy. Nagrody za zwycięstwo: 50 000 złota, waluta premium (5 / 10 / 13) oraz skrzynka turniejowa odpowiednia do kategorii. Turniej działa obecnie na danych zapisanych w tej przeglądarce.</div>
+ <div class="dbi-tournament-note">Opłata za zapis: <img class="dbi-gold-icon" src="assets/ui/gold.png" alt="" width="16" height="16">10 000 złota. Walki są automatyczne, bez zmian punktów sławy. Nagrody za zwycięstwo: 50 000 złota, <img class="dbi-zeni-icon" src="assets/ui/zeni.png" alt="">5 / 10 / 13 Zeni oraz skrzynka turniejowa odpowiednia do kategorii. Turniej działa obecnie na danych zapisanych w tej przeglądarce.</div>
  ${finished.map(({cat,state})=>`<div class="dbi-tournament-results"><h3>${cat.label} LVL — zwycięzca: ${dbiTournamentEscape(state.winner.name)}</h3>
  <details><summary>Zobacz drabinkę i wyniki pięciu rund</summary>${state.rounds.map((matches,i)=>`<div class="dbi-tournament-round"><h4>${['1/16 finału','1/8 finału','Ćwierćfinały','Półfinały','Finał'][i]}</h4>
  ${matches.map(m=>`<div class="dbi-tournament-match">${dbiTournamentEscape(m.a.name)} vs ${dbiTournamentEscape(m.b.name)} · <strong>${dbiTournamentEscape(m.winnerId===m.a.id?m.a.name:m.b.name)}</strong>${m.draw?' (remis, losowanie)':''}${m.log?.length?`<details><summary>Przebieg walki</summary>${m.log.map(line=>`<div>${dbiTournamentEscape(line)}</div>`).join('')}</details>`:''}</div>`).join('')}</div>`).join('')}</details></div>`).join('')}
@@ -1930,8 +1930,8 @@ window.DBIEquippedSignCombatBonus=(key)=>{
 // Animowane efekty wizualne dla przedmiotów +8 (srebro) i +9 (złoto).
 // Wspólny renderer obsługuje inwentarz, wyposażenie, GM oraz okno ulepszania.
 const dbiItemArt=item=>{
- const art=item?.image&&/^assets\/items\/[a-z0-9-]+\.(?:png|gif)$/.test(item.image)
-  ?`<img class="dbi-item-image${item.id==='starter-black-boots'?' dbi-white-boots-art':item.id==='starter-blue-kimono'?' dbi-white-kimono-art':''}" src="${item.image}" alt="" draggable="false">`:esc(item?.icon||'');
+ const art=item?.image&&window.DBIGmContentEditor.imagePath(item.image)
+  ?`<img class="dbi-item-image${item.id==='starter-black-boots'?' dbi-white-boots-art':item.id==='starter-blue-kimono'?' dbi-white-kimono-art':''}" src="${esc(item.image)}" alt="" draggable="false">`:esc(item?.icon||'');
  const lvl=Number(item?.enhancement||0);
  if(lvl!==8&&lvl!==9)return art;
  return `<span class="dbi-enhance-glow dbi-enhance-${lvl}">${art}<i class="dbi-enhance-stars" aria-hidden="true"></i></span>`;
@@ -2162,7 +2162,7 @@ function tooltipMarkup(item){
  return `<div class="tip-name quality-text-${qi}">${esc(displayName)}</div>
  <div class="tip-icon">${dbiItemArt(item)}</div>
  <div class="tip-level">${levelLocked?'Od Poziomu: ':'Poziom: '}${Number(item.requiredLevel)||1}</div>
- ${item.requiredRace==='saiyan'?'<div class="tip-level">Rasa: Saiyan</div>':''}
+ ${item.requiredRace?'<div class="tip-level">Rasa: '+esc(dbiRaceLabel(item.requiredRace))+'</div>':''}
  <div class="tip-stats">${statLines.join('')||'Brak statystyk podstawowych'}</div>
  <div class="tip-bottom"><span>${esc(item.slot)}</span><strong class="quality-text-${qi}">${esc(q).toUpperCase()}</strong></div>`;
 }
@@ -2670,17 +2670,19 @@ const DBI_SAIYAN_UPGRADE_TIERS=[
   early:['sayanski-metal','sayanska-ruda'],late:['skrawek-sayanskiej-duszy','iskra-super-sayana','sayanska-duma']}
 ];
 function dbiUpgradeRequirements(level,item){
+ const evolution=level===9?dbiConfiguredEvolution(item):null;
+ if(evolution)return {chance:100,gold:evolution.gold??0,reforger:1,materials:evolution.materials};
  const tier=DBI_SAIYAN_UPGRADE_TIERS.find(entry=>item?.id?.startsWith(entry.prefix)),royal=tier&&!tier.reforge;
  if(!Number.isSafeInteger(level)||level<0||level>=Number.MAX_SAFE_INTEGER||(!royal&&level>=10))return null;
  const skills=dbiSkillBonuses();
  const bonus=dbiGuildBonus().smith+skills.upgrade+dbiSmithCheckpointBonus('upgrade')+dbiMainBonus('upgradeChancePct')+Math.max(0,Number(window.DBISpiritual?.currentBonuses?.()?.upgrade)||0);
- const reforging=level===9&&!royal;
+ const reforging=level===9&&(!royal||!!dbiEvolutionEntry(item));
  const baseline=DBI_UPGRADE_CHANCES[Math.min(level,8)];
  const penalty=royal?Math.max(0,level-8)*5:0;
  const chance=reforging?100:Math.min(100,Math.max(royal?1:0,(tier?baseline*tier.chanceFactor:baseline)+bonus-penalty));
  const whiteSet=DBI_REFORGE_RECIPES.saiyan[item?.id]?.startsWith('sayan-50-');
  const gold=tier||whiteSet?5000*((tier?.stepOffset??0)+level+1):0;
- const req={chance,gold,dust:reforging?(tier?.reforge.dust??10):1,dustId:'dragon-ball-dust',reforger:reforging?(tier?.reforge.reforger??1):0,materials:[]};
+ const req={chance,gold,dust:reforging?(tier?.reforge?.dust??10):1,dustId:'dragon-ball-dust',reforger:reforging?(tier?.reforge?.reforger??1):0,materials:[]};
  if(tier){
   if(!(reforging&&tier.powder==='common'))req.dustId+='-'+tier.powder;
   if(!reforging){
@@ -2702,6 +2704,7 @@ function dbiUpgradeRequirements(level,item){
  return req;
 }
 function dbiUpgradeIngredients(req){
+ if(req?.reforger&&req.dust===undefined)return req.materials||[];
  return req?[{id:req.dustId,count:req.dust},...req.materials,...(req.reforger?[{id:'upgrade-reforger',count:req.reforger}]:[])]:[];
 }
 function dbiUpgradeMaterialCount(id){
@@ -2731,13 +2734,25 @@ const DBI_REFORGE_RECIPES={
   'sayan-250-buty':'royal-500-buty-krola-saiyan'
  }
 };
+function dbiCharacterRace(){
+ const char=dbiCharacters[dbiCharacterIndex];
+ return window.DBIContent.raceId(char?.race??char?.stats?.race);
+}
+function dbiEvolutionEntry(item){
+ return item?window.DBIContent.read().evolutions?.[dbiCharacterRace()+':'+item.id]:null;
+}
+function dbiConfiguredEvolution(item){
+ const entry=dbiEvolutionEntry(item);
+ if(!entry||!Array.isArray(entry.materials)||!Number.isSafeInteger(entry.gold)||entry.gold<0)return null;
+ return window.DBIContent.validMaterials(entry.materials,id=>id!==item.id&&!!itemById(id))?entry:null;
+}
 function dbiReforgeDestination(item){
  if(!item||Number(item.enhancement)!==9)return null;
- const char=dbiCharacters[dbiCharacterIndex];
- const race=String(char?.race??char?.stats?.race??'').trim().toLowerCase();
- const recipes=DBI_REFORGE_RECIPES[['sayan','saiyanin'].includes(race)?'saiyan':race];
- const id=recipes?.[item.id];
- return id&&catalog.some(entry=>entry.id===id)?id:null;
+ const race=dbiCharacterRace();
+ const entry=dbiEvolutionEntry(item);
+ const id=entry?.target??DBI_REFORGE_RECIPES[race]?.[item.id];
+ const target=catalog.find(entry=>entry.id===id);
+ return target&&target.id!==item.id&&(!target.requiredRace||window.DBIContent.raceId(target.requiredRace)===race)?id:null;
 }
 // Snapshot only the base stats at +9. Plans and chips already have their own fields.
 function dbiReforgeInheritance(ref){
@@ -3144,7 +3159,7 @@ function dbiSaveInventoryTransaction(items,positions,extraWrites){
  return true;
 }
 const DBI_CRAFT_RECIPES={
- chi:{label:'Chi',material:'smith-chi',outputs:['smith-chi-1','czarna-chi']},
+ chi:{label:'Chi',material:'smith-chi',outputs:window.DBIContent.chiPairs[1]},
  symbol:{label:'Symbol',material:'smith-symbol',outputs:Object.keys(DBI_SIGN_BONUSES)},
  stroj:{label:'Strój treningowy',material:'smith-stroj',outputs:[DBI_TURTLE_OUTFIT_ID]},
  esencja:{label:'Esencja',material:'smith-esencja',outputs:['smith-esencja-1']},
@@ -3154,23 +3169,67 @@ const DBI_CRAFT_GOLD=10000;
 const DBI_CRAFT_CHANCE=90;
 const dbiCraftKey=()=> 'dboidle_craft_pending_v1_'+String(dbiActive?.id||'test');
 const dbiSmithGoldKey=()=> 'dboidle_gold_v1_'+String(dbiActive?.id||'test');
-const dbiCraftSelection={type:'',level:'',race:''};
-function dbiCraftMaterials(recipe){
- return [recipe.material,'smith-ki',window.DBIWorldInventory.smithOreId()];
+const dbiCraftSelection={type:'',level:'',race:'',output:''};
+function dbiCraftOptions(config){
+ if(dbiCraftSelection.type==='chi')return [];
+ return catalog.filter(item=>{
+  const configured=Object.hasOwn(config,item.id)?config[item.id]:null;
+  return configured&&item.slot===dbiCraftSelection.type&&
+   String(item.requiredLevel||1)===dbiCraftSelection.level&&
+   (!(configured?.race||item.requiredRace)||window.DBIContent.raceId(configured?.race||item.requiredRace)===dbiCraftSelection.race);
+ });
+}
+function dbiValidCraftCost(entry){
+ return entry&&Number.isSafeInteger(entry.gold)&&entry.gold>=0&&Number.isFinite(entry.chance)&&entry.chance>0&&entry.chance<=100&&
+  window.DBIContent.validMaterials(entry.materials,id=>!!itemById(id));
+}
+function dbiActiveCraftRecipe(config,options){
+ if(!dbiCraftSelection.race)return null;
+ const {type,level,output}=dbiCraftSelection;
+ const base=level==='1'?DBI_CRAFT_RECIPES[type]:null;
+ let outputs;
+ if(type==='chi'){
+  outputs=Object.hasOwn(window.DBIContent.chiPairs,level)?window.DBIContent.chiPairs[level]:null;
+  if(!outputs||outputs.some(id=>!itemById(id)))return null;
+  if(outputs.some(id=>{
+   const race=window.DBIContent.raceId(itemById(id).requiredRace);
+   return race&&race!==dbiCraftSelection.race;
+  }))return null;
+  const recipeId=outputs.find(id=>Object.hasOwn(config,id));
+  if(recipeId){
+   const entry=config[recipeId],race=window.DBIContent.raceId(entry?.race);
+   return dbiValidCraftCost(entry)&&(!race||race===dbiCraftSelection.race)?{...entry,outputs}:null;
+  }
+  if(!base)return null;
+ }else if(output){
+  if(!options.some(item=>item.id===output))return null;
+  const entry=Object.hasOwn(config,output)?config[output]:null;
+  return dbiValidCraftCost(entry)?{...entry,outputs:[output]}:null;
+ }else{
+  if(!base)return null;
+  outputs=base.outputs.filter(id=>!Object.hasOwn(config,id));
+ }
+ if(!outputs.length)return null;
+ return {gold:DBI_CRAFT_GOLD,chance:DBI_CRAFT_CHANCE,outputs,
+  materials:[base.material,'smith-ki',window.DBIWorldInventory.smithOreId()].map(id=>({id,count:1}))};
 }
 function dbiCraftAttempt(){
- const recipe=DBI_CRAFT_RECIPES[dbiCraftSelection.type];
- if(!recipe||dbiCraftSelection.level!=='1'||!dbiCraftSelection.race||localStorage.getItem(dbiCraftKey()))return;
+ const config=window.DBIContent.read().craftRecipes||{};
+ const recipe=dbiActiveCraftRecipe(config,dbiCraftOptions(config));
+ if(!recipe||localStorage.getItem(dbiCraftKey()))return;
  const goldKey=dbiSmithGoldKey(),gold=Number(localStorage.getItem(goldKey))||0;
- const materials=dbiCraftMaterials(recipe);
- if(gold<DBI_CRAFT_GOLD||materials.some(id=>dbiUpgradeMaterialCount(id)<1)||recipe.outputs.some(id=>!itemById(id)))return;
- const consumed=new Set(materials.map(id=>inventory.findIndex(ref=>dbiDecodeItemRef(ref).id===id)));
- const success=Math.random()*100<DBI_CRAFT_CHANCE;
- const result=success?dbiItemRef(recipe.outputs[Math.floor(Math.random()*recipe.outputs.length)],0,0):'';
+ if(gold<recipe.gold||recipe.materials.some(({id,count})=>dbiUpgradeMaterialCount(id)<count)||recipe.outputs.some(id=>!itemById(id)))return;
+ const needed=new Map(recipe.materials.map(({id,count})=>[id,count])),consumed=new Set();
+ inventory.forEach((ref,index)=>{
+  const id=dbiDecodeItemRef(ref).id,left=needed.get(id);
+  if(left>0){consumed.add(index);needed.set(id,left-1)}
+ });
+ const success=Math.random()*100<recipe.chance;
+ const result=success?dbiItemRef(recipe.outputs.length===1?recipe.outputs[0]:recipe.outputs[Math.floor(Math.random()*recipe.outputs.length)],0,0):'';
  const items=inventory.filter((_,i)=>!consumed.has(i));
  const positions=inventoryPlacement.filter((_,i)=>!consumed.has(i));
  const expAward=dbiSmithExpAward(DBI_SMITH_CRAFT_EXP,dbiCraftSelection.level,success);
- const saved=dbiSaveInventoryTransaction(items,positions,[[goldKey,String(gold-DBI_CRAFT_GOLD)],[dbiCraftKey(),result],...expAward.writes]);
+ const saved=dbiSaveInventoryTransaction(items,positions,[[goldKey,String(gold-recipe.gold)],[dbiCraftKey(),result],...expAward.writes]);
  if(saved){dbiSmithSelection=null;dbiRefreshHeaderWallet()}
  renderBlacksmith(undefined,saved?(success?'Wytworzono przedmiot. Odbierz go lub usuń.':'Próba nieudana. Zużyto składniki i złoto.')+dbiSmithExpMessage(expAward.gained):'Nie udało się zapisać próby.');
 }
@@ -3294,14 +3353,23 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
  const materials=recipe?.materials.map(m=>({...m,owned:dbiUpgradeMaterialCount(m.id),item:itemById(m.id)}))||[];
  const ready=recipe&&gold>=recipe.gold&&materials.every(m=>m.owned>=m.count);
  const qualityCost=recipe?recipe.gold.toLocaleString('pl-PL'):'—';
- const craft=DBI_CRAFT_RECIPES[dbiCraftSelection.type];
+ const craftConfig=window.DBIContent.read().craftRecipes||{};
+ const craftOptions=dbiCraftOptions(craftConfig);
+ const craft=dbiActiveCraftRecipe(craftConfig,craftOptions);
+ const craftTarget=craftOptions.find(item=>item.id===dbiCraftSelection.output);
+ const craftTypes=new Map(Object.entries(DBI_CRAFT_RECIPES).map(([id,entry])=>[id,entry.label]));
+ for(const item of catalog)if(Object.hasOwn(craftConfig,item.id)&&!craftTypes.has(item.slot))
+  craftTypes.set(item.slot,DBI_SLOTS.find(([,slot])=>slot===item.slot)?.[0]||item.slot);
+ const craftLevels=[...new Set([1,100,250,500,...catalog.filter(item=>item.slot===dbiCraftSelection.type&&Object.hasOwn(craftConfig,item.id)).map(item=>item.requiredLevel||1)])].sort((a,b)=>a-b);
  const progress=dbiSmithProgress();
  const progressPercent=progress.needed?Math.floor(progress.exp/progress.needed*100):100;
  const pending=localStorage.getItem(dbiCraftKey());
  const crafted=itemById(pending);
- const craftMaterials=craft&&dbiCraftSelection.level==='1'?dbiCraftMaterials(craft):[];
- const craftReady=!pending&&dbiCraftSelection.race&&craftMaterials.length===3&&gold>=DBI_CRAFT_GOLD&&craftMaterials.every(id=>dbiUpgradeMaterialCount(id)>=1)&&craft.outputs.every(id=>itemById(id));
- const craftSelect=(key,label,entries)=>`<select data-craft-select="${key}" aria-label="${label}"><option value="">${label}</option>${entries.map(([value,name])=>`<option value="${value}" ${dbiCraftSelection[key]===String(value)?'selected':''}>${name}</option>`).join('')}</select>`;
+ const craftMaterials=(craft?.materials||[]).map(m=>({...m,owned:dbiUpgradeMaterialCount(m.id),item:itemById(m.id)}));
+ const craftReady=!pending&&craft&&gold>=craft.gold&&craftMaterials.every(m=>m.owned>=m.count)&&craft.outputs.every(id=>itemById(id));
+ const craftNotice=craftTarget&&!craft?'Receptura dla tego przedmiotu nie została jeszcze ustawiona.':
+  !craft&&!craftOptions.length&&dbiCraftSelection.type&&dbiCraftSelection.level&&dbiCraftSelection.race?'Brak receptury dla tej specyfikacji.':'';
+ const craftSelect=(key,label,entries,placeholder=label)=>`<select data-craft-select="${key}" aria-label="${label}"><option value="">${placeholder}</option>${entries.map(([value,name])=>`<option value="${esc(value)}" ${dbiCraftSelection[key]===String(value)?'selected':''}>${esc(name)}</option>`).join('')}</select>`;
  // TYLKO WIDOK: istniejący komunikat sukcesu/porażki i nowa jakość sterują animacją.
  // Żadnej zmiany w dbiSmithAttempt(), recepturach, losowaniu ani zapisie.
  const smithFxSuccess=dbiSmithView==='quality'&&/^Nowa jakość:/.test(message);
@@ -3329,12 +3397,14 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
      ${dbiSmithView==='craft'?`
        <h3><span aria-hidden="true">⚙</span> Wybierz specyfikację</h3>
        <div class="dbi-smith-selects dbi-forge-selects">
-        <label>Rodzaj przedmiotu${craftSelect('type','Rodzaj przedmiotu',Object.entries(DBI_CRAFT_RECIPES).map(([id,entry])=>[id,entry.label]))}</label>
-        <label>Poziom przedmiotu${craftSelect('level','Poziom przedmiotu',[1,100,250,500].map(n=>[n,n]))}</label>
-        <label>Dla kogo${craftSelect('race','Dla kogo',['Saiyan','Ziemianin','Demon Mrozu','Nameczanin','Majin'].map((name,i)=>[i+1,name]))}</label>
+        <label>Rodzaj przedmiotu${craftSelect('type','Rodzaj przedmiotu',[...craftTypes])}</label>
+        <label>Poziom przedmiotu${craftSelect('level','Poziom przedmiotu',craftLevels.map(n=>[n,n]))}</label>
+        <label>Dla kogo${craftSelect('race','Dla kogo',window.DBIContent.races)}</label>
+        ${craftOptions.length?`<label>Przedmiot${craftSelect('output','Przedmiot',craftOptions.map(item=>[item.id,item.name]),dbiCraftSelection.level==='1'&&Object.hasOwn(DBI_CRAFT_RECIPES,dbiCraftSelection.type)?'Receptura podstawowa':'Wybierz przedmiot')}</label>`:''}
        </div>
-       <div class="dbi-forge-bonus-prob"><span aria-hidden="true">✦</span> Szansa na większą ilość bonusów <strong>${craftMaterials.length?'0%':'—'}</strong></div>
-       <div class="dbi-forge-mode-note">${dbiCraftSelection.level&&dbiCraftSelection.level!=='1'?'Brak receptury dla tego poziomu.':'Wybierz istniejące opcje receptury, aby rozpocząć wytwarzanie.'}</div>
+       ${dbiCraftSelection.type==='chi'&&craft?`<div class="dbi-forge-mode-note">Po udanej próbie: ${craft.outputs.map(id=>esc(itemById(id).name)+' (50%)').join(' lub ')}.</div>`:''}
+       <div class="dbi-forge-bonus-prob"><span aria-hidden="true">✦</span> Szansa na większą ilość bonusów <strong>${craft?'0%':'—'}</strong></div>
+       ${craftNotice?`<div class="dbi-forge-mode-note">${craftNotice}</div>`:''}
       `:`
        <h3><span aria-hidden="true">◇</span> Podnoszenie jakości</h3>
        <div class="dbi-forge-quality-name">${selected?esc(selected.name):'Wybierz przedmiot z Ekwipunku'}</div>
@@ -3353,7 +3423,8 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
       ${dbiSmithView==='craft'?`
        <div id="dbiCraftPreview" class="dbi-smith-preview dbi-forge-item dbi-forge-item-craft">${crafted?
         `<div class="dbi-forge-item-content">${dbiItemArt(crafted)}<span class="dbi-forge-item-caption">${esc(crafted.name)} +0</span></div>`:
-        `<span class="dbi-forge-placeholder">${craft&&dbiCraftSelection.level==='1'&&dbiCraftSelection.race?'Wynik pojawi się po udanym wytworzeniu':'Wybierz specyfikację przedmiotu'}</span>`}</div>
+        craftTarget?`<div class="dbi-forge-item-content">${dbiItemArt(craftTarget)}<span class="dbi-forge-item-caption">${esc(craftTarget.name)} +0</span></div>`:
+        `<span class="dbi-forge-placeholder">${craft?'Wynik pojawi się po udanym wytworzeniu':'Wybierz specyfikację przedmiotu'}</span>`}</div>
        `:`
        <div class="dbi-smith-quality-target dbi-forge-item" id="dbiSmithTarget" title="Dwuklik w ekwipunku lub przeciągnij przedmiot" aria-label="Okienko jakości">${selected?dbiItemArt(selected):'<span class="dbi-forge-placeholder">Włóż przedmiot do kapsuły</span>'}</div>
        `}
@@ -3363,7 +3434,7 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
       <h3><span aria-hidden="true">⬡</span> Wymagane materiały</h3>
       <div class="dbi-forge-resource-line">
        <div class="dbi-smith-materials dbi-forge-materials">
-        ${(dbiSmithView==='craft'?[0,1,2].map(i=>{const id=craftMaterials[i];return id?{id,count:1,owned:dbiUpgradeMaterialCount(id),item:itemById(id)}:null}):[0,1,2].map(i=>materials[i]||null)).map(m=>`
+        ${(dbiSmithView==='craft'?Array.from({length:Math.max(3,craftMaterials.length)},(_,i)=>craftMaterials[i]||null):[0,1,2].map(i=>materials[i]||null)).map(m=>`
          <div class="dbi-forge-material ${m?(m.owned>=m.count?'is-ready':'is-missing'):'is-empty'}">
           <div class="dbi-smith-slot">${m?.item?dbiItemArt(m.item):'<span class="dbi-forge-blank-slot" aria-hidden="true">+</span>'}</div>
           <span class="dbi-forge-material-name">${m?esc(m.item?.name||m.id):'—'}</span>
@@ -3371,8 +3442,8 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
          </div>`).join('')}
        </div>
        <div class="dbi-forge-costs">
-        <div class="dbi-forge-cost"><span>Koszt złota</span><strong>${dbiSmithView==='craft'?(craftMaterials.length?DBI_CRAFT_GOLD.toLocaleString('pl-PL'):'—'):qualityCost}</strong></div>
-        <div class="dbi-forge-cost"><span>Szansa powodzenia</span><strong>${dbiSmithView==='craft'?(craftMaterials.length?DBI_CRAFT_CHANCE+'%':'—'):(recipe?recipe.chance+'%':'—')}</strong></div>
+        <div class="dbi-forge-cost"><span>Koszt złota</span><strong>${dbiSmithView==='craft'?(craft?craft.gold.toLocaleString('pl-PL'):'—'):qualityCost}</strong></div>
+        <div class="dbi-forge-cost"><span>Szansa powodzenia</span><strong>${dbiSmithView==='craft'?(craft?craft.chance+'%':'—'):(recipe?recipe.chance+'%':'—')}</strong></div>
        </div>
       </div>
      </section>
@@ -3380,7 +3451,7 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
       ${dbiSmithView==='craft'?`
        <button type="button" id="dbiCraftCreate" class="dbi-forge-primary ${craftReady?'gold-button':'dbi-smith-disabled'}" ${craftReady?'':'disabled'}>⚒ Wytwórz</button>
        ${pending?`<div class="dbi-smith-preview-buttons dbi-forge-resolve"><button type="button" id="dbiCraftAccept" class="${crafted?'gold-button':'dbi-smith-disabled'}" ${crafted?'':'disabled'}>Akceptuj</button><button type="button" id="dbiCraftDiscard" class="ghost-button">Usuń</button></div>`:''}
-       <p class="dbi-smith-status" id="dbiSmithStatus" role="status">${esc(craftMessage||(dbiCraftSelection.level&&dbiCraftSelection.level!=='1'?'Brak receptury dla tego poziomu.':''))}</p>
+       <p class="dbi-smith-status" id="dbiSmithStatus" role="status">${esc(craftMessage)}</p>
        `:`
        <button type="button" id="dbiSmithUpgrade" class="dbi-forge-primary ${ready?'gold-button':'dbi-smith-disabled'}" ${ready?'':'disabled'}>◇ Podnieś jakość</button>
        <p class="dbi-smith-status" id="dbiSmithStatus" role="status">${esc(message)}</p>
@@ -3452,6 +3523,7 @@ function renderBlacksmith(message='Kliknij przedmiot dwukrotnie lub przeciągnij
  }));
  panel.querySelectorAll('[data-craft-select]').forEach(select=>select.addEventListener('change',()=>{
   dbiCraftSelection[select.dataset.craftSelect]=select.value;
+  if(select.dataset.craftSelect!=='output')dbiCraftSelection.output='';
   renderBlacksmith();
   document.querySelector(`[data-craft-select="${select.dataset.craftSelect}"]`)?.focus();
  }));
@@ -3718,10 +3790,13 @@ function dbiBindSharedInventory(host,{refresh,onClick,onDoubleClick,onContextMen
  });
  host.querySelectorAll('.inv-actions button').forEach(b=>b.onclick=()=>{setMessage(b.dataset.action+' — opcja do późniejszego wdrożenia.');});
 }
+function dbiRaceLabel(value){
+ const id=window.DBIContent.raceId(value);
+ return window.DBIContent.races.find(([race])=>race===id)?.[1]||value;
+}
 function dbiEquipmentRequirement(item){
  if(level<(Number(item.requiredLevel)||1))return 'Wymagany poziom: '+item.requiredLevel;
- const race=String(dbiCharacters[dbiCharacterIndex]?.race||'').toLowerCase();
- if(item.requiredRace==='saiyan'&&!['saiyan','saiyanin','sayan'].includes(race))return 'Wymagana rasa: Saiyan.';
+ if(item.requiredRace&&window.DBIContent.raceId(item.requiredRace)!==dbiCharacterRace())return 'Wymagana rasa: '+dbiRaceLabel(item.requiredRace)+'.';
  return '';
 }
 function renderEquipment(message='Kliknij przedmiot w inwentarzu, aby go założyć.'){
@@ -3857,10 +3932,11 @@ function dbiGmGrantItems(id,enhancement,quantity){
  return 'Dodano do inwentarza: '+item.name+' +'+enhancement+' ×'+count+'.';
 }
 function renderGM(message='',activeSection='items',selectedItem=null){
+ const extraCategories=[['materiał','Materiał'],['pozostałe','Pozostałe'],['quest','Przedmiot zadania'],['użytkowy','Użytkowy']];
  if(!dbiIsGameMaster())return;
  dbiRegisterBuiltInItems(DBI_ROYAL_500_CATALOG);
  document.querySelector('#breadcrumb').textContent='PANEL GM';
- document.querySelector('#pageBody').innerHTML=`<div class="gm-workbench">${window.DBIGmContentEditor.navigation(activeSection)}<div class="gm-layout" id="gmItemWorkspace"><section class="eq-panel gm-catalog-panel"><h2>Katalog przedmiotów <small>${catalog.length}</small></h2><div class="gm-actions gm-catalog-actions"><button id="gmNew">+ Nowy przedmiot</button><button id="gmExport">Eksport JSON</button><button type="button" id="gmExportTestCharacters">Eksport postaci testowych</button><label class="gm-import">Import JSON<input id="gmImport" type="file" accept=".json,application/json" hidden></label></div><div class="dbi-gm-filters"><input id="gmSearch" type="search" placeholder="Szukaj przedmiotu po nazwie lub ID" aria-label="Szukaj przedmiotu"><select id="gmSlotFilter"><option value="">Wszystkie kategorie</option>${DBI_SLOTS.map(([label,id])=>`<option value="${esc(id)}">${esc(label)}</option>`).join('')}</select></div><div class="gm-list" id="gmCatalogList">${catalog.map(x=>`<div class="dbi-gm-catalog-row" data-gm-slot="${esc(x.slot)}" data-gm-query="${esc((x.name+' '+x.id).toLocaleLowerCase('pl'))}"><button type="button" class="gm-item" data-edit="${esc(x.id)}"><span>${dbiItemArt(x)} ${esc(x.name)}</span><small>${esc(x.id)} · ${esc(x.slot)} · ${Number(x.requiredLevel)||1} LVL${itemTall(x.id)?' · 2 kratki':''}</small></button><label class="dbi-gm-enhancement-label">+<select class="dbi-gm-enhancement" aria-label="Poziom ulepszenia">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField()}<button type="button" class="dbi-gm-quickgrant" data-grant-id="${esc(x.id)}" title="Dodaj do inwentarza">+ Dodaj</button></div>`).join('')}</div><p id="gmMessage" role="status">${esc(message)}</p></section><section class="eq-panel"><h2>Edytor przedmiotu</h2><div class="gm-visual gm-item-preview" id="gmItemPreview"></div><form id="gmForm" class="gm-form"><label>ID (unikalne)<input name="id" required maxlength="60" pattern="[a-zA-Z0-9_\\-]+" placeholder="np. bron-002"></label><label>Nazwa<input name="name" required maxlength="80"></label><label>Kategoria<select name="slot">${slotOptions}${[['materiał','Materiał'],['pozostałe','Pozostałe'],['quest','Przedmiot zadania'],['użytkowy','Użytkowy']].map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}</select></label><label>Jakość<select name="quality">${QUALITY.map(q=>`<option value="${q}">${q}</option>`).join('')}</select></label><label>Ikona / emoji<input name="icon" maxlength="12" value="⚔️"></label><label class="gm-wide">Grafika w folderze assets<input name="image" placeholder="assets/items/przedmiot.png" maxlength="150"></label><label>Wymagany poziom<input name="requiredLevel" type="number" min="1" max="999999" value="1"></label><label>HP<input name="hp" type="number" min="0" max="999999" value="0"></label><label>Atak<input name="attack" type="number" min="0" max="999999" value="0"></label><label>Obrona<input name="defense" type="number" min="0" max="999999" value="0"></label><label>Ki<input name="ki" type="number" min="0" max="999999" value="0"></label><label class="gm-wide">Opis<textarea name="description" rows="3" maxlength="500"></textarea></label><div class="gm-actions gm-wide"><button type="submit">Zapisz przedmiot</button><label class="dbi-gm-enhancement-label">Ulepszenie +<select id="gmEditorEnhancement">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField('gmEditorQuantity')}<button type="button" id="gmGrant">Dodaj do inwentarza</button><button type="button" id="gmDelete" class="gm-danger">Usuń z katalogu</button></div></form></section></div></div>`;
+ document.querySelector('#pageBody').innerHTML=`<div class="gm-workbench">${window.DBIGmContentEditor.navigation(activeSection)}<div class="gm-layout" id="gmItemWorkspace"><section class="eq-panel gm-catalog-panel"><h2>Katalog przedmiotów <small>${catalog.length}</small></h2><div class="gm-actions gm-catalog-actions"><button id="gmNew">+ Nowy przedmiot</button><button id="gmExport">Eksport JSON</button><button type="button" id="gmExportTestCharacters">Eksport postaci testowych</button><label class="gm-import">Import JSON<input id="gmImport" type="file" accept=".json,application/json" hidden></label></div><div class="dbi-gm-filters"><input id="gmSearch" type="search" placeholder="Szukaj przedmiotu po nazwie lub ID" aria-label="Szukaj przedmiotu"><select id="gmSlotFilter"><option value="">Wszystkie kategorie</option>${extraCategories.map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}${DBI_SLOTS.map(([label,id])=>`<option value="${esc(id)}">${esc(label)}</option>`).join('')}</select></div><div class="gm-list" id="gmCatalogList">${catalog.map(x=>`<div class="dbi-gm-catalog-row" data-gm-slot="${esc(x.slot)}" data-gm-query="${esc((x.name+' '+x.id).toLocaleLowerCase('pl'))}"><button type="button" class="gm-item" data-edit="${esc(x.id)}"><span>${dbiItemArt(x)} ${esc(x.name)}</span><small>${esc(x.id)} · ${esc(x.slot)} · ${Number(x.requiredLevel)||1} LVL${itemTall(x.id)?' · 2 kratki':''}</small></button><label class="dbi-gm-enhancement-label">+<select class="dbi-gm-enhancement" aria-label="Poziom ulepszenia">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField()}<button type="button" class="dbi-gm-quickgrant" data-grant-id="${esc(x.id)}" title="Dodaj do inwentarza">+ Dodaj</button></div>`).join('')}</div><p id="gmMessage" role="status">${esc(message)}</p></section><section class="eq-panel"><h2>Edytor przedmiotu</h2><div class="gm-visual gm-item-preview" id="gmItemPreview"></div><form id="gmForm" class="gm-form"><label>ID (unikalne)<input name="id" required maxlength="60" pattern="[a-zA-Z0-9_\\-]+" placeholder="np. bron-002"></label><label>Nazwa<input name="name" required maxlength="80"></label><label>Kategoria<select name="slot">${slotOptions}${extraCategories.map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}</select></label><label>Jakość<select name="quality">${QUALITY.map(q=>`<option value="${q}">${q}</option>`).join('')}</select></label><label>Ikona / emoji<input name="icon" maxlength="12" value="⚔️"></label><label class="gm-wide">Grafika w folderze assets<input name="image" placeholder="assets/items/przedmiot.png" maxlength="150"></label><label class="gm-wide">Wgraj ikonę PNG, WebP lub JPEG<input name="imageUpload" type="file" accept="image/png,image/webp,image/jpeg"></label><label>Wymagana rasa<select name="requiredRace"><option value="">Dowolna</option>${window.DBIContent.races.map(([id,label])=>`<option value="${id}">${label}</option>`).join('')}</select></label><label>Wymagany poziom<input name="requiredLevel" type="number" min="1" max="999999" value="1"></label><label>HP<input name="hp" type="number" min="0" max="999999" value="0"></label><label>Atak<input name="attack" type="number" min="0" max="999999" value="0"></label><label>Obrona<input name="defense" type="number" min="0" max="999999" value="0"></label><label>Ki<input name="ki" type="number" min="0" max="999999" value="0"></label><label class="gm-wide">Opis<textarea name="description" rows="3" maxlength="500"></textarea></label><div class="gm-actions gm-wide"><button type="submit">Zapisz przedmiot</button><label class="dbi-gm-enhancement-label">Ulepszenie +<select id="gmEditorEnhancement">${Array.from({length:DBI_ENHANCEMENT_MAX+1},(_,i)=>`<option value="${i}">${i}</option>`).join("")}</select></label>${dbiGmGrantQuantityField('gmEditorQuantity')}<button type="button" id="gmGrant">Dodaj do inwentarza</button><button type="button" id="gmDelete" class="gm-danger">Usuń z katalogu</button></div></form></section></div></div>`;
 
  document.querySelector('#gmExportTestCharacters').onclick=dbiDownloadTestExport;
  // GM: dokładne wartości walut i bazowych statystyk aktywnej postaci.
@@ -3872,7 +3948,7 @@ function renderGM(message='',activeSection='items',selectedItem=null){
  gmExtra.innerHTML=`<section class="eq-panel"><h2>GM · WALUTY</h2><p class="eq-caption">Postać: ${esc(gmChar.name||'—')}</p><form id="gmMoneyForm" class="dbi-gm-form">
  <label>Złoto<input type="number" name="gold" min="0" max="999999999999" step="1" required value="${Math.max(0,Number(localStorage.getItem(gmKeys.gold))||0)}"></label>
  <label>Smocze Monety<input type="number" name="dragon" min="0" max="999999999999" step="1" required value="${Math.max(0,Number(gmWallet().coins)||0)}"></label>
- <label>Waluta premium<input type="number" name="premium" min="0" max="999999999999" step="1" required value="${Math.max(0,Number(localStorage.getItem(gmKeys.premium))||0)}"></label>
+ <label><img class="dbi-zeni-icon" src="assets/ui/zeni.png" alt="">Zeni<input type="number" name="premium" min="0" max="999999999999" step="1" required value="${Math.max(0,Number(localStorage.getItem(gmKeys.premium))||0)}"></label>
  <button type="submit">Ustaw waluty</button><p id="gmMoneyInfo" role="status"></p></form></section>
  <section class="eq-panel"><h2>GM · STATYSTYKI</h2><p class="eq-caption">Ustawiasz wartości bazowe. Bonusy z ekwipunku są doliczane osobno.</p><form id="gmStatForm" class="dbi-gm-form">
  ${DBI_STAT_GROUPS.map(([group,defs])=>`<fieldset><legend>${esc(group)}</legend><div class="dbi-gm-stat-grid">${defs.map(([label,keys,suffix])=>`<label>${esc(label)}${suffix?' ('+suffix+')':''}<input type="number" step="any" data-gm-stat="${esc(keys[0])}" value="${gmStatVal(keys)}" required></label>`).join('')}</div></fieldset>`).join('')}
@@ -3918,7 +3994,7 @@ function renderGM(message='',activeSection='items',selectedItem=null){
   for(const b of document.querySelectorAll('[data-gm-tab-open]'))b.setAttribute('aria-current',b.dataset.gmTabOpen===section?'page':'false');
  }
  window.DBIGmContentEditor.bindNavigation(document.querySelector('.gm-workbench'),section=>{
-  if(section==='enemies'||section==='chests')openGmContent(section);
+  if(['enemies','chests','smith'].includes(section))openGmContent(section);
   else if(section==='maps')window.DBIGMMapEditor?.open?.(document.querySelector('#pageBody'),()=>renderGM());
   else selectSection(section);
  });
@@ -3973,11 +4049,11 @@ function renderGM(message='',activeSection='items',selectedItem=null){
   const quantity=row.querySelector('.dbi-gm-grant-quantity').value;
   document.querySelector('#gmMessage').textContent=dbiGmGrantItems(button.dataset.grantId,enhancement,quantity);
  });
- const form=document.querySelector('#gmForm');let editing=null;
+ const form=document.querySelector('#gmForm');let editing=null,uploadedImage='',imageRead=0;
  function previewItem(){
   const values=form.elements;
   window.DBIGmContentEditor.visual(document.querySelector('#gmItemPreview'),{
-   name:values.name.value||'Nowy przedmiot',icon:values.icon.value,image:values.image.value,
+   name:values.name.value||'Nowy przedmiot',icon:values.icon.value,image:values.image.value||uploadedImage,
    detail:[values.quality.value,'Poziom '+(values.requiredLevel.value||1)].join(' · '),
    stats:[['Atak',values.attack.value],['Obrona',values.defense.value],['HP',values.hp.value],['KI',values.ki.value]],
    description:values.description.value
@@ -3987,16 +4063,69 @@ function renderGM(message='',activeSection='items',selectedItem=null){
  function load(id){
   const x=itemById(id);if(!x)return;
   editing=id;
-  for(const key of ['id','name','slot','icon','attack','defense','ki','description','quality','image','hp','requiredLevel'])
+  for(const key of ['id','name','slot','icon','attack','defense','ki','description','quality','hp','requiredLevel'])
    form.elements[key].value=x[key]??(key==='requiredLevel'?1:'');
+  imageRead++;
+  form.elements.imageUpload.value='';
+  uploadedImage=window.DBIContent.embeddedImage(x.image)?x.image:'';
+  form.elements.image.value=uploadedImage?'':x.image||'';
+  form.elements.requiredRace.value=window.DBIContent.raceId(x.requiredRace);
   form.elements.id.readOnly=true;
   previewItem();
  }
  form.addEventListener('input',previewItem);
  if(selectedItem)load(selectedItem);else previewItem();
  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>load(b.dataset.edit));
- document.querySelector('#gmNew').onclick=()=>{form.reset();editing=null;form.elements.id.readOnly=false;previewItem();form.elements.id.focus();};
- form.onsubmit=e=>{e.preventDefault();const f=new FormData(form);const x={id:String(f.get('id')).trim(),name:String(f.get('name')).trim(),slot:String(f.get('slot')),icon:String(f.get('icon')),image:String(f.get('image')).trim(),hp:Number(f.get('hp')),requiredLevel:Number(f.get('requiredLevel')),attack:Number(f.get('attack')),defense:Number(f.get('defense')),ki:Number(f.get('ki')),description:String(f.get('description')),quality:String(f.get('id')).startsWith('royal-500-')?'Pospolity':String(f.get('quality'))};if(!/^[a-zA-Z0-9_-]+$/.test(x.id)||!x.name||![...DBI_SLOTS.map(row=>row[1]),'materiał','pozostałe','quest','użytkowy'].includes(x.slot)||(x.image&&!window.DBIGmContentEditor.imagePath(x.image)&&x.image!==itemById(editing)?.image)||['attack','defense','ki','hp'].some(k=>!Number.isFinite(x[k])||x[k]<0||x[k]>999999))return (document.querySelector('#gmMessage').textContent='Sprawdź dane przedmiotu.');if(DBI_REMOVED_ITEM_IDS.has(x.id))return (document.querySelector('#gmMessage').textContent='Ten przedmiot został usunięty z gry.');if(!editing&&itemById(x.id))return (document.querySelector('#gmMessage').textContent='ID już istnieje.');if(editing){catalog[catalog.findIndex(i=>i.id===editing)]={...catalog[catalog.findIndex(i=>i.id===editing)],...x}}else catalog.push(x);dbiSaveGmCatalog();renderGM('Zapisano: '+x.name,'items',x.id)};
+ document.querySelector('#gmNew').onclick=()=>{form.reset();editing=null;uploadedImage='';imageRead++;form.elements.id.readOnly=false;previewItem();form.elements.id.focus();};
+ form.elements.imageUpload.onchange=async()=>{
+  const file=form.elements.imageUpload.files[0];
+  if(!file)return;
+  const token=++imageRead;
+  const message=document.querySelector('#gmMessage');
+  try{
+   if(!['image/png','image/webp','image/jpeg'].includes(file.type)||file.size>10000000)throw Error('Wybierz PNG, WebP lub JPEG do 10 MB.');
+   const bitmap=await createImageBitmap(file);
+   try{
+    if(token!==imageRead)return;
+    const scale=Math.min(1,192/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+    canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+    const embedded=canvas.toDataURL('image/webp',0.9);
+    if(!window.DBIContent.embeddedImage(embedded))throw Error('Nie udało się przygotować ikony.');
+    uploadedImage=embedded;
+    form.elements.image.value='';
+    previewItem();
+    message.textContent='Ikona jest gotowa. Zapisz przedmiot, aby dołączyć ją do ZIP-a.';
+   }finally{bitmap.close()}
+  }catch(error){
+   if(token===imageRead)message.textContent=error.message;
+  }
+ };
+ form.onsubmit=event=>{
+  event.preventDefault();
+  const fields=new FormData(form),value=key=>String(fields.get(key)??'').trim();
+  const id=value('id'),name=value('name'),slot=value('slot'),image=value('image')||uploadedImage;
+  const requiredRace=value('requiredRace'),requiredLevel=Number(fields.get('requiredLevel'));
+  const message=document.querySelector('#gmMessage');
+  const stats=Object.fromEntries(['attack','defense','ki','hp'].map(key=>[key,Number(fields.get(key))]));
+  if(!/^[a-zA-Z0-9_-]+$/.test(id)||!name||![...DBI_SLOTS.map(row=>row[1]),...extraCategories.map(([key])=>key)].includes(slot)||
+    (image&&!window.DBIGmContentEditor.imagePath(image))||Object.values(stats).some(n=>!Number.isFinite(n)||n<0||n>999999)){
+   message.textContent='Sprawdź dane przedmiotu.';return;
+  }
+  if(DBI_REMOVED_ITEM_IDS.has(id)||(!editing&&itemById(id))){
+   message.textContent='To ID jest niedostępne.';return;
+  }
+  const next={id,name,slot,image,requiredRace,requiredLevel,icon:value('icon'),description:value('description'),
+   quality:id.startsWith('royal-500-')?'Pospolity':value('quality'),...stats};
+  const updated=editing?catalog.map(item=>item.id===editing?{...item,...next}:item):[...catalog,next];
+  try{
+   dbiSaveGmCatalog(updated);
+   catalog=updated;
+   renderGM('Zapisano: '+name,'items',id);
+  }catch(error){message.textContent='Nie udało się zapisać przedmiotu: '+error.message}
+ };
  document.querySelector('#gmGrant').onclick=()=>{
   const enhancement=Number(document.querySelector('#gmEditorEnhancement').value)||0;
   const quantity=document.querySelector('#gmEditorQuantity').value;
@@ -4004,7 +4133,7 @@ function renderGM(message='',activeSection='items',selectedItem=null){
  };
  document.querySelector('#gmDelete').onclick=()=>{if(!editing)return;const id=editing;catalog=catalog.filter(x=>x.id!==id);inventoryPlacement=inventoryPlacement.filter((_,i)=>dbiDecodeItemRef(inventory[i]).id!==id);inventory=inventory.filter(x=>dbiDecodeItemRef(x).id!==id);Object.values(equipped).forEach(set=>Object.keys(set).forEach(slot=>{if(dbiDecodeItemRef(set[slot]).id===id)delete set[slot]}));dbiSaveGmCatalog();renderGM('Usunięto: '+id)};
  document.querySelector('#gmExport').onclick=()=>{const blob=new Blob([JSON.stringify(catalog,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dragonball-items.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
- document.querySelector('#gmImport').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||data.some(x=>!x||typeof x.id!=='string'||!/^[\w-]+$/.test(x.id)||typeof x.name!=='string'||!DBI_SLOTS.some(s=>s[1]===x.slot))||new Set(data.map(x=>x.id)).size!==data.length)throw Error('Niepoprawny katalog');catalog=data.filter(x=>x.id!=='starter-white-belt-plus-one'&&!DBI_REMOVED_ITEM_IDS.has(x.id)).map(x=>({id:x.id,name:x.name,slot:x.slot,icon:String(x.icon||''),attack:Number(x.attack)||0,defense:Number(x.defense)||0,hp:Number(x.hp)||0,ki:Number(x.ki)||0,description:String(x.description||''),quality:QUALITY.includes(x.quality)?x.quality:'Pospolity',image:typeof x.image==='string'?x.image:undefined,requiredLevel:Math.max(1,Number(x.requiredLevel)||1)}));for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';dbiRegisterBuiltInItems([...DBI_SAYAN_50_ITEMS,...DBI_SAYAN_250_ITEMS,...DBI_ROYAL_500_CATALOG,DBI_REINFORCEMENT_PLANS,DBI_CHANGE_SCROLL,DBI_ADDITION_CHIP,DBI_UPDATING_CHIP]);dbiSaveGmCatalog();renderGM('Zaimportowano '+catalog.length+' przedmiotów.')}catch(err){document.querySelector('#gmMessage').textContent='Błąd importu: '+err.message}};
+ document.querySelector('#gmImport').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||data.some(x=>!x||typeof x.id!=='string'||!/^[\w-]+$/.test(x.id)||typeof x.name!=='string'||!DBI_SLOTS.some(s=>s[1]===x.slot)&&!extraCategories.some(([id])=>id===x.slot))||new Set(data.map(x=>x.id)).size!==data.length)throw Error('Niepoprawny katalog');catalog=data.filter(x=>x.id!=='starter-white-belt-plus-one'&&!DBI_REMOVED_ITEM_IDS.has(x.id)).map(x=>({id:x.id,name:x.name,slot:x.slot,icon:String(x.icon||''),attack:Number(x.attack)||0,defense:Number(x.defense)||0,hp:Number(x.hp)||0,ki:Number(x.ki)||0,description:String(x.description||''),quality:QUALITY.includes(x.quality)?x.quality:'Pospolity',image:typeof x.image==='string'?x.image:undefined,requiredRace:window.DBIContent.raceId(x.requiredRace),requiredLevel:Math.max(1,Number(x.requiredLevel)||1)}));for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';dbiRegisterBuiltInItems([...DBI_SAYAN_50_ITEMS,...DBI_SAYAN_250_ITEMS,...DBI_ROYAL_500_CATALOG,DBI_REINFORCEMENT_PLANS,DBI_CHANGE_SCROLL,DBI_ADDITION_CHIP,DBI_UPDATING_CHIP]);dbiSaveGmCatalog();renderGM('Zaimportowano '+catalog.length+' przedmiotów.')}catch(err){document.querySelector('#gmMessage').textContent='Błąd importu: '+err.message}};
 }
 
 // Zamknij menu akcji po kliknięciu poza nim.
@@ -4219,6 +4348,7 @@ if(Array.isArray(window.DBI_GM_WORLD_DATA?.gmCatalog)){
   if(Array.isArray(local))publishedCatalog=local;
  }catch{}
  catalog=publishedCatalog.filter(item=>item&&typeof item.id==='string'&&!DBI_REMOVED_ITEM_IDS.has(item.id));
+ dbiAddAdventureItems(catalog);
 }
 
 // Przekazanie premii i nagród jest transakcją na dotychczasowych zapisach.
@@ -4786,15 +4916,7 @@ function dbiDailyRead(){
 function dbiDailyBossWins(data){
  const characterId=String(dbiActive?.id||'test');
  const day=data.day.split('-').map(Number).join('-');
- let saved=null;
- try{saved=JSON.parse(localStorage.getItem('dboidle_forest_boss_wins_daily_v1_'+characterId)||'null')}catch{}
- let wins=0;
- if(saved?.day===day)wins=Math.max(0,Math.min(3,Math.floor(Number(saved.used)||0)));
- else if(!saved){
-  const lastWin=Number(localStorage.getItem('dboidle_forest_boss_victory_v1_'+characterId))||0;
-  const date=new Date(lastWin);
-  if(lastWin>0&&[date.getFullYear(),date.getMonth()+1,date.getDate()].join('-')===day)wins=1;
- }
+ const wins=window.DBIWorld?.dailyBossWins(characterId,day)||0;
  return Math.max(Number(data.bosses)||0,wins);
 }
 function dbiDailySave(data){localStorage.setItem(DBI_DAILY_KEY,JSON.stringify(data))}
@@ -4952,14 +5074,16 @@ function dbiGmCatalogKey(){
  const pack=window.DBI_GM_WORLD_DATA;
  return Array.isArray(pack?.gmCatalog)?DBI_KEY+':'+pack.revision:DBI_KEY;
 }
-function dbiSaveGmCatalog(){
- localStorage.setItem(dbiGmCatalogKey(),JSON.stringify(catalog));
+function dbiSaveGmCatalog(items=catalog){
+ localStorage.setItem(dbiGmCatalogKey(),JSON.stringify(items));
 }
 window.DBIGmPublicationCatalog=()=>catalog;
 
 function openGmContent(section){
  window.DBIGmContentEditor.open(document.querySelector('#pageBody'),section,{
   items:()=>catalog,
+  isEquipment:item=>DBI_SLOTS.some(([,slot])=>slot===item.slot),
+  defaultEvolution:(race,id)=>DBI_REFORGE_RECIPES[race]?.[id],
   itemExists:id=>!!itemById(id)||DBI_REMOVED_ITEM_IDS.has(id),
   catalogWrite:items=>[dbiGmCatalogKey(),items],
   useCatalog:items=>{catalog=items},
@@ -4967,7 +5091,7 @@ function openGmContent(section){
   maps:()=>window.DBIGMMapEditor?.open?.(document.querySelector('#pageBody'),()=>renderGM())
  });
 }
-if(dbiIsGameMaster()&&['#gm-items','#gm-chests','#gm-enemies'].includes(location.hash)){
+if(dbiIsGameMaster()&&['#gm-items','#gm-chests','#gm-enemies','#gm-smith'].includes(location.hash)){
  showPage('Panel GM','GM');
  if(location.hash!=='#gm-items')openGmContent(location.hash.slice(4));
 }

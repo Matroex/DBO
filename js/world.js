@@ -60,7 +60,7 @@ const townJourneyRules={level:60,premium:10};
 function originalJourneyDone(id){return readNorthQuest('journey',id).stage>=16&&readTownJourney(id).stage>=5;}
 const TOWN_TREASURE_TASKS={
  1:{symbol:'🪄',id:'quest-old-staff',name:'Stara Laska',text:'Wspaniale! Pierwszy skarb jakiego szukam to stara laska, jeżeli wpadnie Ci w ręce to przynieś mi ją.',button:'Znalazłem Laskę!',reward:[['reinforcement-plans',10,'Plany wzmocnień'],['change-scroll',20,'Zwój zmiany']]},
- 2:{symbol:'🪙',id:'quest-golden-dragon-coin',name:'Złota Smocza Moneta',text:'Świetna robota, teraz szukam Złotej Smoczej Monety.',button:'Znalazłem Monetę!',reward:[['premium',50,'Waluta premium']]},
+ 2:{symbol:'🪙',id:'quest-golden-dragon-coin',name:'Złota Smocza Moneta',text:'Świetna robota, teraz szukam Złotej Smoczej Monety.',button:'Znalazłem Monetę!',reward:[['premium',50,'Zeni']]},
  3:{symbol:'👓',id:'quest-hermit-glasses',name:'Okulary Starego Pustelnika',text:'Świetna robota! Jesteś prawdziwym poszukiwaczem, teraz mam dla Ciebie coś dużego, Okulary Starego Pustelnika.',button:'Mam Okulary!',reward:[['techniqueDamageBonusPct',1,'+1% do obrażeń ataku technik']]},
  4:{symbol:'🥋',id:'quest-sayan-battle-outfit',name:'Ubranie Bojowe Sayan',text:'Jesteś niesamowity, z tobą chyba zbiorę wszystkie rzeczy, których szukam od lat. Następne zlecenie to coś specjalnego, Ubranie Bojowe Sayan!',button:'Mam to!',reward:[['quest-ki-energy',1,'Energia KI']]},
  5:{symbol:'✴️',id:'quest-babidi-mark',name:'Znak Babidiego',text:'No brawo, teraz mam dla Ciebie coś specjalnego! Znak Babidiego!',button:'Mam znak!',reward:[['addition-chip',10,'Czip dodania'],['updating-chip',20,'Czip aktualizujący']]},
@@ -858,6 +858,34 @@ const DBI_WORLD_LOCATIONS=Object.freeze([
    chest:{id:'skrzynia-lesnego-wojownika',name:'Skrzynia Leśnego Wojownika',image:'assets/items/skrzynia-lesnego-wojownika.png'}}
  };
 
+const bossDailyLimit=3;
+const bossDailyKey=id=>'dboidle_forest_boss_wins_daily_v1_'+String(id||'test');
+function bossDay(now){
+ const date=new Date(now);
+ return [date.getFullYear(),date.getMonth()+1,date.getDate()].join('-');
+}
+function bossDailyLedger(id){
+ let saved;
+ try{saved=JSON.parse(localStorage.getItem(bossDailyKey(id))||'null')}catch{}
+ if(saved?.byBoss)return saved.byBoss;
+ // The shared legacy count had no boss ID. Carry it over to the original forest boss.
+ const lastWin=Number(localStorage.getItem('dboidle_forest_boss_victory_v1_'+String(id||'test')))||0;
+ return {centralForest:{day:saved?.day||(lastWin?bossDay(lastWin):''),used:saved?.used??(lastWin?1:0),lastWin}};
+}
+function bossDailyUsed(entry,day){
+ return entry?.day===day?Math.max(0,Math.min(bossDailyLimit,Math.floor(Number(entry.used)||0))):0;
+}
+function dailyBossWins(id,day){
+ return Object.values(bossDailyLedger(id)).reduce((total,entry)=>total+bossDailyUsed(entry,day),0);
+}
+function recordBossVictory(id,location,now){
+ const ledger=bossDailyLedger(id),day=bossDay(now);
+ const used=bossDailyUsed(ledger[location],day);
+ if(used>=bossDailyLimit)return false;
+ ledger[location]={day,used:used+1,lastWin:now};
+ localStorage.setItem(bossDailyKey(id),JSON.stringify({byBoss:ledger}));
+ return true;
+}
 const starterMobs={
  laguna:[{level:1,name:'Kukła Treningowa'}],
  island:[{level:3,name:'Uczeń Mistrza'}]
@@ -2403,24 +2431,12 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   const ch=hero(),green=at<Number(window.DBIZen?.expiry?.('green'))&&at>=Number(window.DBIZen?.expiry?.('green'))-600000;
   return Math.max(100,interval(ch.speed)/(1+Math.max(0,(Number(ch.attackSpeedPct)||0)+(green?100:0))/100));
  };
- const bossVictoryKey='dboidle_forest_boss_victory_v1_'+String(id||'test');
- const bossWait=()=>Math.max(0,(Number(localStorage.getItem(bossVictoryKey))||0)+Math.max(0,30-spiritBonus('boss')-gearBonus('bossRespawnMinutes'))*60000-Date.now());
- const bossDailyKey='dboidle_forest_boss_wins_daily_v1_'+String(id||'test');
- const bossDailyLimit=3;
- function bossDay(now){
-  const date=new Date(now);
-  return [date.getFullYear(),date.getMonth()+1,date.getDate()].join('-');
+ function bossAvailability(){
+  const entry=bossDailyLedger(id)[player.location],now=Date.now();
+  const wait=Math.max(0,(Number(entry?.lastWin)||0)+Math.max(0,30-spiritBonus('boss')-gearBonus('bossRespawnMinutes'))*60000-now);
+  return {wait,remaining:bossDailyLimit-bossDailyUsed(entry,bossDay(now))};
  }
- function bossWinsToday(now=Date.now()){
-  const day=bossDay(now);
-  let saved;
-  try{saved=JSON.parse(localStorage.getItem(bossDailyKey)||'null')}catch{}
-  const lastWin=Number(localStorage.getItem(bossVictoryKey))||0;
-  const legacyWin=!saved&&lastWin>0&&bossDay(lastWin)===day?1:0;
-  const used=saved?.day===day?Math.max(0,Math.min(bossDailyLimit,Math.floor(Number(saved.used)||0))):legacyWin;
-  return {day,used};
- }
- const canFightBoss=()=>bossWait()===0&&bossWinsToday().used<bossDailyLimit;
+ const canFightBoss=()=>{const {wait,remaining}=bossAvailability();return wait===0&&remaining>0};
  let bossClockSecond=-1;
  function updateBossCountdown(force=false){
   const button=side.querySelector('#forestBossFight');
@@ -2428,10 +2444,10 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   const second=Math.floor(Date.now()/1000);
   if(!force&&second===bossClockSecond)return;
   bossClockSecond=second;
-  const left=Math.ceil(bossWait()/1000);
+  const {wait,remaining}=bossAvailability();
+  const left=Math.ceil(wait/1000);
   const minutes=String(Math.floor(left/60)).padStart(2,'0');
   const seconds=String(left%60).padStart(2,'0');
-  const remaining=bossDailyLimit-bossWinsToday().used;
   const counter=side.querySelector('#forestBossAttempts');
   const counterLabel=`Pozostałe zwycięstwa dzisiaj: ${remaining}/${bossDailyLimit} · reset o 00:00`;
   if(counter&&counter.textContent!==counterLabel)counter.textContent=counterLabel;
@@ -2549,7 +2565,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    button='Pewnie!';
   }else if(stage===2){
    text='<p>Dziękuje Ci. Dzięki tobie bezpiecznie dotarliśmy do miasta, oto należyta zapłata.</p>';
-   reward=townRewardLine('', 'Waluta premium ×'+townJourneyRules.premium,'💎');button='Dziękuje bardzo.';
+   reward=townRewardLine('assets/ui/zeni.png','Zeni ×'+townJourneyRules.premium);button='Dziękuje bardzo.';
   }else if(stage===3){
    text='<p>Nagle miasto zostało zaatakowane przez armię czerwoną w poszukiwaniu smoczych kul. Ludzie biegają i są napadani przez żołnierzy. A ty nie możesz na to tylko stać i patrzeć.</p>';
    const lvl=characterLevel();goal={text:'Osiągnij poziom '+townJourneyRules.level+' ('+Math.min(lvl,townJourneyRules.level)+'/'+townJourneyRules.level+')',done:lvl>=townJourneyRules.level};
@@ -2597,7 +2613,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    const quantity=window.DBIWorldInventory?.countQuestItem?.(task.id)||0;
    const taskImage=townItemVisual(task.id);
    goal={text:(taskImage?'<img class="world-quest-chest" width="26" src="'+taskImage+'" alt="">':'<span aria-hidden="true">'+task.symbol+'</span>')+' Oddaj '+escapeText(task.name)+' ('+Math.min(1,quantity)+'/1)',done:quantity>=1};disabled=quantity<1;
-   reward=task.reward.map(([key,count,name])=>townRewardLine(townItemVisual(key),escapeText(name)+(key==='techniqueDamageBonusPct'?'':' ×'+count),key==='premium'?'💎':key==='techniqueDamageBonusPct'?'⚡':key==='quest-ki-energy'?'🔷':key==='quest-material-chest'?'📦':'✦')).join('');
+   reward=task.reward.map(([key,count,name])=>townRewardLine(key==='premium'?'assets/ui/zeni.png':townItemVisual(key),escapeText(name)+(key==='techniqueDamageBonusPct'?'':' ×'+count),key==='techniqueDamageBonusPct'?'⚡':key==='quest-ki-energy'?'🔷':key==='quest-material-chest'?'📦':'✦')).join('');
    button=task.button;
   }else if(stage===7){
    text='<p>No pięknie! Muszę zaktualizować swoją listę potrzebnych rzeczy, wróć do mnie za jakiś czas.</p>';
@@ -3089,9 +3105,9 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    return;
   }
   if(battle.boss){
-   const wins=bossWinsToday(next);
-   if(wins.used>=bossDailyLimit){finishBattle('Dzienny limit zwycięstw wykorzystany.');return}
-   try{localStorage.setItem(bossDailyKey,JSON.stringify({...wins,used:wins.used+1}))}
+   try{
+    if(!recordBossVictory(id,battle.location,next)){finishBattle('Dzienny limit zwycięstw wykorzystany.');return}
+   }
    catch{finishBattle('Nie udało się zapisać zwycięstwa.');return}
   }
        target.rewarded=true;battle.kills++;window.DBIGMMapEditor?.recordKill?.(id,target.name,battle.location);if(!battle.storySoldier){window.DBIPulpit?.add?.(id,battle.boss?'bosses':'battlePoints',battle.boss?1:1+spiritBonus('battlePoints')+gearBonus('battlePointsBonus'));}if(battle.storySoldier){woodcutter.won=true;saveWoodcutter();finishBattle('Pokonano Żołnierza Czerwonej Wstęgi!');return;}if(battle.boss&&target.name==='Leśny Wojownik (Boss)'&&fisherman.stage===2){fisherman.bossKills=1;saveFisherman();}if(battle.location==='centralForest'&&['Leśny Wojownik','Leśny Wojownik (Silny)','Leśny Wojownik (Super)'].includes(target.name)&&fisherman.stage===1){fisherman.kills=Math.min(fishermanRules.kills,fisherman.kills+1);saveFisherman();}if(battle.location==='mountain'&&['Zamachowiec Góry','Zamachowiec Góry (Silny)','Zamachowiec Góry (Super)'].includes(target.name)&&wandererQuest.state==='accepted'){wandererQuest.kills=Math.min(wandererRules.kills,wandererQuest.kills+1);saveWanderer();}if(battle.location==='island')addIslandQuestKills(1);else if(battle.location==='laguna')addQuestKills(1);else if(battle.location==='forest'&&['Dzikie zwierzę','Dzikie zwierzę (Silny)','Dzikie zwierzę (Super)'].includes(target.name)&&roshi.stage===2){roshi.kills=Math.min(roshiRules.kills,roshi.kills+1);saveForest();}window.DBIDaily?.record('kills',1);
@@ -3102,7 +3118,6 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
         const boss=battleBoss(),loot=boss.drops?lootItems(boss.drops,true):[{...boss.chest,icon:'📦',sell:0,sellable:false}];
         battle.loot.push(...loot);
         if(Math.random()<Math.min(1,(gearBonus('doubleBossRewardsChance')+(skills().doubleBossDrop||0))/100))battle.loot.push(...loot.map(item=>({...item})));
-        localStorage.setItem(bossVictoryKey,String(next));
         finishBattle('Pokonano: '+battleBoss().name+'!');return;
        }
        battle.gold+=monsterGold(target.gold??battleMobLevel(target)*5,true);
@@ -3626,7 +3641,7 @@ function dbiLegacyEditorCatalog(){
   entry('legacy-town-journey','Pierwsza Podróż — Miasto pod Górami',['mountainTown'],'Podróżnik / Miasto','Kontynuacja rozpoczęta po zakończeniu północnej części fabuły.',[
    {dialog:'Pomocy!!! Czy ktoś może mi pomóc!!!! On próbuje mnie okraść!!!!',requirement:'Pokonaj Zabójcę (poziom 80)',button:'Walcz / Już po nim'},
    {dialog:'Jesteś niesamowicie silny chłopcze, dziękuje Ci za pomoc! Zmierzam w kierunku najbliższego miasta! Nie zechciałbyś mi towarzyszyć jako ochroniarz? Oczywiście zapłacę za twoją pracę.',button:'Pewnie!'},
-   {dialog:'Dziękuje Ci. Dzięki tobie bezpiecznie dotarliśmy do miasta, oto należyta zapłata.',reward:'Waluta premium ×'+townJourneyRules.premium,button:'Dziękuje bardzo.'},
+   {dialog:'Dziękuje Ci. Dzięki tobie bezpiecznie dotarliśmy do miasta, oto należyta zapłata.',reward:'Zeni ×'+townJourneyRules.premium,button:'Dziękuje bardzo.'},
    {dialog:'Nagle miasto zostało zaatakowane przez armię czerwoną w poszukiwaniu smoczych kul.',requirement:'Osiągnij poziom 60',button:'Chyba czas pokonać tę armię'},
    {dialog:'Rozmowa z Prezydentem i Generałem miasta o Armii Czerwonej Wstęgi.',button:'Wyruszajmy!'}
   ]),
@@ -3639,5 +3654,5 @@ function dbiLegacyEditorCatalog(){
  return {maps:catalogue.sort((a,b)=>DBI_WORLD_LOCATIONS.findIndex(e=>e.id===a.id)-DBI_WORLD_LOCATIONS.findIndex(e=>e.id===b.id)),quests};
 }
 
- window.DBIWorld={editorQuestTargets,resolveEditorQuestPoint,originalJourneyDone,lagoonRules,masterRules,roshiRules,wandererRules,townJourneyRules,townTreasureTask:stage=>TOWN_TREASURE_TASKS[stage],npcSize,mapDrawOrder,editorMobVariants,validEditorEnemy,mobPortrait,enemyPortraitImg,defaultEnemyPortrait:DEFAULT_ENEMY_PORTRAIT,questOpponentMarkup,questOpponentStyles,start,stop,setNearbyPlayers(players){active?.setNearbyPlayers(players)},isMobBattleRunning,useZen:useSavedZen,locations:DBI_WORLD_LOCATIONS,gmEncounters,gmEncounterDefaults,legacyEditorData:dbiLegacyEditorCatalog,gmTeleport,dungeonLimit,gmSetDungeonLimit};window.addEventListener('pagehide',stop);
+ window.DBIWorld={editorQuestTargets,resolveEditorQuestPoint,originalJourneyDone,lagoonRules,masterRules,roshiRules,wandererRules,townJourneyRules,townTreasureTask:stage=>TOWN_TREASURE_TASKS[stage],npcSize,mapDrawOrder,editorMobVariants,validEditorEnemy,mobPortrait,enemyPortraitImg,defaultEnemyPortrait:DEFAULT_ENEMY_PORTRAIT,questOpponentMarkup,questOpponentStyles,start,stop,setNearbyPlayers(players){active?.setNearbyPlayers(players)},isMobBattleRunning,useZen:useSavedZen,locations:DBI_WORLD_LOCATIONS,gmEncounters,gmEncounterDefaults,dailyBossWins,legacyEditorData:dbiLegacyEditorCatalog,gmTeleport,dungeonLimit,gmSetDungeonLimit};window.addEventListener('pagehide',stop);
 })();

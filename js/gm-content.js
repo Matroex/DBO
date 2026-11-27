@@ -32,5 +32,22 @@ window.DBIContent=(()=>{
   if(location==='highTowerForest')rows.push('small-dragon-balls','red-ribbon-badge');
   return rows.map(id=>reward(id));
  }
- return {read,save,chests,normalDrops};
+ const races=[['saiyan','Saiyan'],['ziemianin','Ziemianin'],['demon-mrozu','Demon Mrozu'],['nameczanin','Nameczanin'],['majin','Majin']];
+ const chiPairs={
+  1:['smith-chi-1','czarna-chi'],
+  100:['chi-ciala-100','chi-duszy-100'],
+  250:['chi-ciala-250','chi-duszy-250'],
+  500:['chi-ciala-500','chi-duszy-500']
+ };
+ function raceId(value){
+  const id=String(value??'').trim().toLowerCase().replace(/\s+/g,'-');
+  if(id==='człowiek')return 'ziemianin';
+  return ['sayan','saiyanin','sayanin'].includes(id)?'saiyan':id;
+ }
+ function validMaterials(rows,hasItem){
+  return Array.isArray(rows)&&rows.length<=30&&new Set(rows.map(row=>row?.id)).size===rows.length&&
+   rows.every(row=>row&&hasItem(row.id)&&Number.isSafeInteger(row.count)&&row.count>=1&&row.count<=4000);
+ }
+ const embeddedImage=value=>typeof value==='string'&&value.length<=400000&&/^data:image\/(?:png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value);
+ return {read,save,chests,normalDrops,races,chiPairs,raceId,validMaterials,embeddedImage};
 })();

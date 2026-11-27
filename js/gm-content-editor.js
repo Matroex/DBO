@@ -4,8 +4,8 @@ window.DBIGmContentEditor=(()=>{
  const rewards=[['level','Poziom'],['gold','Złoto'],['exp','EXP']];
  const option=(value,label)=>new Option(label,value);
  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const imagePath=path=>/^assets\/(?:[^/\\.]+\/)*[^/\\]+\.(?:png|webp|jpe?g|gif|svg)$/i.test(path)&&!path.includes('..');
- const tabs=[['items','Przedmioty'],['chests','Skrzynie'],['enemies','Moby i bossowie'],['character','Postać'],['teleport','Teleport GM'],['maps','Kreator map i questów']];
+ const imagePath=path=>window.DBIContent.embeddedImage(path)||(/^assets\/(?:[^/\\.]+\/)*[^/\\]+\.(?:png|webp|jpe?g|gif|svg)$/i.test(path)&&!path.includes('..'));
+ const tabs=[['items','Przedmioty'],['chests','Skrzynie'],['enemies','Moby i bossowie'],['smith','Kowalstwo i ewolucje'],['character','Postać'],['teleport','Teleport GM'],['maps','Kreator map i questów']];
  function navigation(active){
   return '<header class="gm-workbench-header"><h1>Panel GM</h1><a href="gm.html">Postacie i poczta</a></header>'+
    '<nav class="gm-workbench-nav" aria-label="Sekcje panelu GM">'+tabs.map(([id,label])=>'<button type="button" '+(id==='maps'?'id="gmOpenWorldCreator" ':'')+'data-gm-tab-open="'+id+'" aria-current="'+(active===id?'page':'false')+'">'+label+'</button>').join('')+
@@ -98,13 +98,14 @@ window.DBIGmContentEditor=(()=>{
  }
  function open(root,section,api){
   if(!window.DBIGmAccess.hasSession())return;
+  if(section==='smith')return openSmith(root,api);
   const enemies=section==='enemies',service=window.DBIContent;
   root.innerHTML=`<div class="gm-workbench">${navigation(section)}<section class="dbi-admin gm-content"><header class="dbi-admin-head"><h2>${enemies?'Moby i bossowie':'Skrzynie'}</h2></header>
    <div class="gm-content-columns"><aside><label>Szukaj <input type="search" class="gm-content-search" placeholder="Nazwa lub ID"></label>
    <label>${enemies?'Mob lub boss':'Skrzynia'}<select class="gm-content-picker"></select></label></aside>
    <div><div class="gm-visual gm-content-preview" hidden></div><div class="gm-content-form"></div><p class="gm-content-status" role="status"></p></div></div></section></div>`;
   bindNavigation(root,destination=>{
-   if(destination==='chests'||destination==='enemies')open(root,destination,api);
+   if(['chests','enemies','smith'].includes(destination))open(root,destination,api);
    else if(destination==='maps')api.maps();
    else api.back(destination);
   });
@@ -203,6 +204,116 @@ window.DBIGmContentEditor=(()=>{
   choices();render();
   picker.onchange=()=>render();
   search.oninput=()=>choices(picker.value);
+ }
+ function openSmith(root,api){
+  const service=window.DBIContent;
+  root.innerHTML='<div class="gm-workbench">'+navigation('smith')+
+   '<section class="dbi-admin gm-content"><header class="dbi-admin-head"><h2>Kowalstwo i ewolucje</h2></header>'+
+   '<div class="gm-content-fields"><label>Rodzaj ustawień<select data-smith-mode><option value="craft">Wytwarzanie</option><option value="evolution">Ewolucja z +9 do +0</option></select></label>'+
+   '<label>Przedmiot<select data-smith-item></select></label><label data-smith-race-label>Rasa<select data-smith-race></select></label></div>'+
+   '<form class="gm-content-form"><div class="gm-content-fields" data-smith-fields></div>'+
+   '<fieldset data-smith-materials><legend>Składniki</legend><div class="gm-content-rows"></div><button type="button" class="ghost-button" data-add-material>+ Dodaj składnik</button></fieldset>'+
+   '<div class="gm-content-fields"><button type="submit" class="gold-button">Zapisz recepturę</button><button type="button" class="ghost-button" data-remove-smith>Usuń własną recepturę</button></div></form>'+
+   '<p class="gm-content-status" role="status"></p></section></div>';
+  bindNavigation(root,destination=>{
+   if(destination==='smith')return;
+   if(['chests','enemies'].includes(destination))open(root,destination,api);
+   else if(destination==='maps')api.maps();
+   else api.back(destination);
+  });
+  const items=api.items().slice().sort((a,b)=>a.name.localeCompare(b.name,'pl'));
+  const catalog=new Map(items.map(item=>[item.id,item]));
+  const chiPairs=new Map(Object.entries(service.chiPairs).map(([level,ids])=>[ids[0],{level,ids}]));
+  const equipment=items.filter(api.isEquipment);
+  const mode=root.querySelector('[data-smith-mode]'),item=root.querySelector('[data-smith-item]'),race=root.querySelector('[data-smith-race]');
+  const form=root.querySelector('form'),fieldsRoot=form.querySelector('[data-smith-fields]'),fieldset=form.querySelector('fieldset'),rows=form.querySelector('.gm-content-rows');
+  const status=root.querySelector('[role=status].gm-content-status'),remove=form.querySelector('[data-remove-smith]');
+  const itemOptions=list=>list.map(entry=>option(entry.id,entry.name+' · '+entry.id));
+  const isEvolution=()=>mode.value==='evolution';
+  const group=()=>isEvolution()?'evolutions':'craftRecipes';
+  const key=()=>isEvolution()?race.value+':'+item.value:item.value;
+  const currentPair=()=>isEvolution()?null:chiPairs.get(item.value);
+  function addMaterial(row={}){
+   const line=document.createElement('div');line.className='gm-content-row';
+   line.innerHTML='<label>Składnik<select required></select></label><label>Liczba sztuk<input type="number" min="1" max="4000" step="1" required></label><button type="button" class="ghost-button">Usuń</button>';
+   const select=line.querySelector('select');
+   select.append(option('','Wybierz przedmiot'),...itemOptions(items));
+   if(row.id&&!catalog.has(row.id))select.append(option(row.id,row.id+' · brak w katalogu'));
+   select.value=row.id||'';
+   line.querySelector('input').value=row.count??1;
+   line.querySelector('button').onclick=()=>line.remove();
+   rows.append(line);
+  }
+  function render(){
+   const evolution=isEvolution(),active=item.value&&(!evolution||race.value),pair=currentPair();
+   const recipes=active?service.read()[group()]:null;
+   const saved=recipes?.[key()]??(pair?recipes?.[pair.ids[1]]:null);
+   form.hidden=!active;
+   if(!active)return;
+   const fallback=evolution?api.defaultEvolution(race.value,item.value):null;
+   fieldsRoot.innerHTML=evolution?
+    '<label>Przedmiot po ewolucji<select name="target" required></select></label><label><input type="checkbox" name="customCost"> Ustaw własny koszt ewolucji</label><label>Złoto<input name="gold" type="number" min="0" max="999999999" required></label>':
+    '<label>Rasa w kowalstwie<select name="race"></select></label><label>Złoto<input name="gold" type="number" min="0" max="999999999" required></label><label>Szansa powodzenia (%)<input name="chance" type="number" min="0.01" max="100" step="0.01" required></label>';
+   form.elements.gold.value=saved?.gold??(evolution?0:10000);
+   if(evolution){
+    const target=form.elements.target;
+    target.append(option('','Wybierz przedmiot'),...itemOptions(equipment.filter(entry=>entry.id!==item.value)));
+    if(saved?.target&&!catalog.has(saved.target))target.append(option(saved.target,saved.target+' · brak w katalogu'));
+    target.value=saved?.target||fallback||'';
+    const custom=form.elements.customCost;
+    custom.checked=Array.isArray(saved?.materials);
+    custom.onchange=()=>{fieldset.disabled=!custom.checked;form.elements.gold.disabled=!custom.checked};
+    custom.onchange();
+   }else{
+    const selector=form.elements.race;
+    selector.append(option('','Dowolna rasa'),...service.races.map(([id,label])=>option(id,label)));
+    selector.value=saved?.race??service.raceId(catalog.get(item.value).requiredRace);
+    form.elements.chance.value=saved?.chance??90;
+    fieldset.disabled=false;
+   }
+   rows.replaceChildren();
+   (saved?.materials||[]).forEach(addMaterial);
+   remove.disabled=!saved;
+  }
+  function changeMode(){
+   const craftItems=items.filter(entry=>entry.slot!=='chi');
+   const pairOptions=[...chiPairs.values()].filter(({ids})=>ids.every(id=>catalog.has(id))).map(({level,ids})=>
+    option(ids[0],'Chi · poziom '+level+' · '+ids.map(id=>catalog.get(id).name).join(' / ')+' (50/50)'));
+   item.replaceChildren(option('',isEvolution()?'Wybierz wyposażenie wejściowe':'Wybierz przedmiot lub parę Chi'),...itemOptions(isEvolution()?equipment:craftItems),...(isEvolution()?[]:pairOptions));
+   race.replaceChildren(option('','Wybierz rasę'),...service.races.map(([id,label])=>option(id,label)));
+   root.querySelector('[data-smith-race-label]').hidden=!isEvolution();
+   status.textContent='';render();
+  }
+  mode.onchange=changeMode;
+  item.onchange=race.onchange=()=>{status.textContent='';render()};
+  form.querySelector('[data-add-material]').onclick=()=>{if(rows.children.length<30)addMaterial()};
+  async function update(removeEntry){
+   const section=group(),id=key(),source=item.value,evolution=isEvolution(),pair=currentPair();
+   const data=evolution?{target:form.elements.target.value}:{race:form.elements.race.value,chance:form.elements.chance.valueAsNumber};
+   if(!evolution||form.elements.customCost.checked){
+    data.gold=form.elements.gold.valueAsNumber;
+    data.materials=[...rows.children].map(row=>({id:row.querySelector('select').value,count:row.querySelector('input').valueAsNumber}));
+   }
+   try{
+    if(!removeEntry){
+     if(data.materials&&!service.validMaterials(data.materials,itemId=>catalog.has(itemId)&&(!evolution||itemId!==source)))throw Error('Wybierz osobne składniki z katalogu. Przedmiot wejściowy ewolucji jest zużywany automatycznie.');
+     const required=service.raceId(catalog.get(evolution?data.target:source)?.requiredRace);
+     if(required&&required!==(evolution?race.value:data.race))throw Error('Rasa receptury musi odpowiadać rasie przedmiotu wynikowego.');
+    }
+    await service.save(latest=>{
+     const existing=Object.assign(Object.create(null),latest[section]);
+     if(pair)delete existing[pair.ids[1]];
+     if(removeEntry)delete existing[id];
+     else existing[id]=data;
+     latest[section]=existing;
+    });
+    status.textContent=removeEntry?'Usunięto własną recepturę. Wbudowana receptura, jeśli istnieje, jest znów aktywna.':'Zapisano recepturę. Zostanie dołączona do ZIP-a.';
+    render();
+   }catch(error){status.textContent=error.message}
+  }
+  form.onsubmit=event=>{event.preventDefault();void update(false)};
+  remove.onclick=()=>void update(true);
+  changeMode();
  }
  return {open,navigation,bindNavigation,visual,imagePath,locationSearch};
 })();
