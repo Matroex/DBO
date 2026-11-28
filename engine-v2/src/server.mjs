@@ -4,16 +4,20 @@ import { pathToFileURL } from 'node:url';
 import { AuthService } from './auth/service.mjs';
 import { authHandler } from './auth/http.mjs';
 import pg from 'pg';
+import {CharacterService} from './character/service.mjs';
+import {characterHandler} from './character/http.mjs';
 export function makeServer({pool}={}) {
- const auth=pool?authHandler(new AuthService(pool)):null;
+ const service=pool?new AuthService(pool):null;
+ const auth=service?authHandler(service):null;
+ const characters=service?characterHandler(service,new CharacterService(pool)):null;
  return createServer({requestTimeout:15000,headersTimeout:10000},async(req,res)=>{
   let result;
   try{
    const path=new URL(req.url??'/','http://localhost').pathname;
    if(path==='/api/v1/ready'&&req.method==='GET'){
     if(!pool)result={status:503,body:{status:'not_ready'}};
-    else{try{await pool.query('SELECT 1 FROM schema_migrations WHERE version=$1',['003_content_guardrails']).then(r=>{if(!r.rowCount)throw Error('migration missing');});result={status:200,body:{status:'ready'}};}catch{result={status:503,body:{status:'not_ready'}};}}
-   }else result=(auth?await auth(req,path):null)??route(req.method??'',path);
+    else{try{await pool.query('SELECT 1 FROM schema_migrations WHERE version=$1',['005_race_availability']).then(r=>{if(!r.rowCount)throw Error('migration missing');});result={status:200,body:{status:'ready'}};}catch{result={status:503,body:{status:'not_ready'}};}}
+   }else result=(auth?await auth(req,path):null)??(characters?await characters(req,path):null)??route(req.method??'',path);
   }catch{result={status:500,body:{error:'internal_error'}};}
   res.writeHead(result.status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...result.headers});
   res.end(JSON.stringify(result.body));

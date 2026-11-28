@@ -1,0 +1,1 @@
+Development API: GET /api/v1/characters, GET /api/v1/characters/:id, POST /api/v1/characters with name,raceId,optional childCode. Bearer session required. No client-supplied stats or account IDs. Race availability enforced by published content. Not wired to browser creator; starter inventory and other legacy defaults incomplete. No public deployment.
