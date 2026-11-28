@@ -1,0 +1,5 @@
+# Content Studio requirements
+Owner requirement: edit base stats, quests, rewards, enemy stats, loot and mechanics safely without code changes wherever supported.
+Stable definition IDs; editable labels and values; typed validators per kind; cross-reference validation before publication; draft preview; atomic publication; audit actor; immutable published definitions; rollback by selecting prior validated revision, not rewriting history.
+Starter rules are the first typed example, not wired to character creation yet. Defaults extracted from legacy creator and slot logic. Slot bounds 5–10 currently enforced by schema; changing those bounds requires a reviewed migration. Existing characters are not retroactively changed by starter rules.
+Mechanics are versioned parameters and allowlisted effects/conditions, never arbitrary JS or SQL from GM. New effect types require engine code. Quest and loot schemas, validation of references, permissions, preview and publication transaction remain to implement. Database guards alone are not a complete publication service. Rollback does not reverse already granted rewards or economic transactions.

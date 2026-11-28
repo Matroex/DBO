@@ -20,5 +20,6 @@ jobs:
       - run: sh tools/migrate.sh
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/schema.sql
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/character-compat.sql
+      - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/content-schema.sql
       - if: always()
         run: docker compose down -v
