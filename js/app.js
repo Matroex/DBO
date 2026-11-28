@@ -12,7 +12,7 @@ const nav=document.querySelector('#nav');
 const defaultPage=document.querySelector('#pageBody').innerHTML;
 const dropdown=document.querySelector('#dropdown');
 let opened=null,exp=0,level=1;
-const DBI_MAX_LEVEL=500;
+const DBI_MAX_LEVEL=window.DBIGmAccess.maxCharacterLevel;
 // Wymagane EXP na przejście z aktualnego poziomu na następny.
 function dbiRequiredExp(lvl){
  lvl=Math.max(1,Math.floor(Number(lvl)||1));
@@ -2660,7 +2660,7 @@ function dbiUpgradeExcluded(item){
  const slot=normalize(item?.slot),name=normalize(item?.name);
  return DBI_UPGRADE_EXCLUDED.some(x=>slot===x||name===x||name.startsWith(x+' '));
 }
-const DBI_SAIYAN_UPGRADE_TIERS=[
+const DBI_UPGRADE_TIERS=[
  {prefix:'sayan-50-',stepOffset:10,chanceFactor:.9,powder:'common',
   early:['dna-sayan','ogon-sayan'],late:['kosmiczna-plytka','kapsula-kosmiczna-sayan'],
   reforge:{dust:100,reforger:5}},
@@ -2668,22 +2668,37 @@ const DBI_SAIYAN_UPGRADE_TIERS=[
   early:['material-sayan','kamienna-inskrypcja-starozytnych-sayan'],late:['krwisty-krysztal','ksiezycowy-pyl','sztuczny-ksiezyc'],
   reforge:{dust:200,reforger:20}},
  {prefix:'royal-500-',stepOffset:30,chanceFactor:.6,powder:'epic',
-  early:['sayanski-metal','sayanska-ruda'],late:['skrawek-sayanskiej-duszy','iskra-super-sayana','sayanska-duma']}
+  early:['sayanski-metal','sayanska-ruda'],late:['skrawek-sayanskiej-duszy','iskra-super-sayana','sayanska-duma']},
+ ...[100,250,500].map((level,tier)=>({
+  prefix:'earth-'+level+'-',stepOffset:(tier+1)*10,chanceFactor:[.9,.8,.6][tier],
+  powder:['common','rare','epic'][tier],
+  early:['quest-turtle-stone','small-dragon-balls'],late:['red-ribbon-badge','dragon-radar'],
+  reforge:[{dust:100,reforger:5},{dust:200,reforger:20}][tier]
+ }))
 ];
-function dbiUpgradeRequirements(level,item){
+function dbiUpgradeRequirements(level,item,race=dbiCharacterRace(),editing=false){
  if(dbiUpgradeExcluded(item))return null;
- const evolution=level===9?dbiConfiguredEvolution(item):null;
- if(evolution)return {chance:100,gold:evolution.gold??0,reforger:1,materials:evolution.materials};
- const tier=DBI_SAIYAN_UPGRADE_TIERS.find(entry=>item?.id?.startsWith(entry.prefix)),royal=tier&&!tier.reforge;
- if(!Number.isSafeInteger(level)||level<0||level>=Number.MAX_SAFE_INTEGER||(!royal&&level>=10))return null;
+ const tier=DBI_UPGRADE_TIERS.find(entry=>item?.id?.startsWith(entry.prefix)),endless=tier&&!tier.reforge;
+ if(!item||!Number.isSafeInteger(level)||level<0||level>=Number.MAX_SAFE_INTEGER||(!endless&&level>=10))return null;
+ const content=window.DBIContent.read();
+ const custom=content.upgradeRecipes?.[race+':'+item.id+':'+(level+1)];
+ const hasCustom=Number.isFinite(custom?.chance)&&custom.chance>=0&&custom.chance<=100&&
+  window.DBIContent.validMaterials(custom.materials,id=>id!==item.id&&!!itemById(id));
+ const evolution=level===9?content.evolutions?.[race+':'+item.id]:null;
+ const reforging=level===9&&(!endless||!!dbiReforgeTarget(item,race,content));
+ const legacyCost=reforging&&Number.isSafeInteger(evolution?.gold)&&evolution.gold>=0&&
+  window.DBIContent.validMaterials(evolution.materials,id=>id!==item.id&&!!itemById(id));
  const skills=dbiSkillBonuses();
- const bonus=dbiGuildBonus().smith+skills.upgrade+dbiSmithCheckpointBonus('upgrade')+dbiMainBonus('upgradeChancePct')+Math.max(0,Number(window.DBISpiritual?.currentBonuses?.()?.upgrade)||0);
- const reforging=level===9&&(!royal||!!dbiEvolutionEntry(item));
+ const bonus=editing?0:dbiGuildBonus().smith+skills.upgrade+dbiSmithCheckpointBonus('upgrade')+dbiMainBonus('upgradeChancePct')+Math.max(0,Number(window.DBISpiritual?.currentBonuses?.()?.upgrade)||0);
  const baseline=DBI_UPGRADE_CHANCES[Math.min(level,8)];
- const penalty=royal?Math.max(0,level-8)*5:0;
- const chance=reforging?100:Math.min(100,Math.max(royal?1:0,(tier?baseline*tier.chanceFactor:baseline)+bonus-penalty));
- const whiteSet=DBI_REFORGE_RECIPES.saiyan[item?.id]?.startsWith('sayan-50-');
+ const penalty=endless?Math.max(0,level-8)*5:0;
+ const baseChance=hasCustom?custom.chance:reforging?100:Math.max(endless?1:0,(tier?baseline*tier.chanceFactor:baseline)-penalty);
+ const chance=editing?baseChance:Math.min(100,hasCustom?baseChance+bonus:reforging?100:Math.max(endless?1:0,(tier?baseline*tier.chanceFactor:baseline)+bonus-penalty));
+ const whiteSet=DBI_REFORGE_RECIPES.saiyan[item.id]?.startsWith('sayan-50-')||
+  DBI_REFORGE_RECIPES[race]?.[item.id]?.startsWith('earth-100-');
  const gold=tier||whiteSet?5000*((tier?.stepOffset??0)+level+1):0;
+ if(hasCustom||legacyCost)return {chance,gold:legacyCost?evolution.gold:gold,reforger:reforging?1:0,
+  materials:hasCustom?custom.materials:evolution.materials};
  const req={chance,gold,dust:reforging?(tier?.reforge?.dust??10):1,dustId:'dragon-ball-dust',reforger:reforging?(tier?.reforge?.reforger??1):0,materials:[]};
  if(tier){
   if(!(reforging&&tier.powder==='common'))req.dustId+='-'+tier.powder;
@@ -2701,12 +2716,12 @@ function dbiUpgradeRequirements(level,item){
   if(level>=4&&level<=6)req.materials=[{id:'quest-turtle-stone',count:quantity},{id:'small-dragon-balls',count:quantity}];
   if(level>=7&&level<=8)req.materials=[{id:'red-ribbon-badge',count:level-6},{id:'dragon-radar',count:level-6}];
  }
- const discount=skills.materialDiscount+dbiMainBonus('upgradeMaterialDiscount');
+ const discount=editing?0:skills.materialDiscount+dbiMainBonus('upgradeMaterialDiscount');
  req.materials=req.materials.map(m=>({...m,count:Math.max(tier?1:0,m.count-discount)})).filter(m=>m.count>0);
  return req;
 }
 function dbiUpgradeIngredients(req){
- if(req?.reforger&&req.dust===undefined)return req.materials||[];
+ if(req&&req.dust===undefined)return req.materials;
  return req?[{id:req.dustId,count:req.dust},...req.materials,...(req.reforger?[{id:'upgrade-reforger',count:req.reforger}]:[])]:[];
 }
 function dbiUpgradeMaterialCount(id){
@@ -2734,27 +2749,38 @@ const DBI_REFORGE_RECIPES={
   'sayan-250-rekawice':'royal-500-rekawice-krola-saiyan',
   'sayan-250-kolczyki':'royal-500-kolczyki-krola-saiyan',
   'sayan-250-buty':'royal-500-buty-krola-saiyan'
+ },
+ ziemianin:{
+  'starter-red-staff':'earth-100-bron',
+  'white-headband':'earth-100-opaska',
+  'quest-white-headband':'earth-100-opaska',
+  'white-earrings':'earth-100-kolczyki',
+  'white-amulet':'earth-100-naszyjnik',
+  'starter-blue-kimono':'earth-100-zbroja',
+  'white-gloves':'earth-100-rekawice',
+  'starter-white-belt':'earth-100-pas',
+  'white-ring':'earth-100-pierscien',
+  'starter-black-boots':'earth-100-buty',
+  ...Object.fromEntries(DBI_EARTH_EQUIPMENT.flatMap(([slot])=>[
+   ['earth-100-'+slot,'earth-250-'+slot],['earth-250-'+slot,'earth-500-'+slot]
+  ]))
  }
 };
 function dbiCharacterRace(){
  const char=dbiCharacters[dbiCharacterIndex];
  return window.DBIContent.raceId(char?.race??char?.stats?.race);
 }
-function dbiEvolutionEntry(item){
- return item?window.DBIContent.read().evolutions?.[dbiCharacterRace()+':'+item.id]:null;
-}
-function dbiConfiguredEvolution(item){
- const entry=dbiEvolutionEntry(item);
- if(!entry||!Array.isArray(entry.materials)||!Number.isSafeInteger(entry.gold)||entry.gold<0)return null;
- return window.DBIContent.validMaterials(entry.materials,id=>id!==item.id&&!!itemById(id))?entry:null;
-}
-function dbiReforgeDestination(item){
- if(!item||Number(item.enhancement)!==9)return null;
- const race=dbiCharacterRace();
- const entry=dbiEvolutionEntry(item);
- const id=entry?.target??DBI_REFORGE_RECIPES[race]?.[item.id];
+function dbiReforgeTarget(item,race,content=window.DBIContent.read()){
+ if(item.id.startsWith('earth-500-'))return null;
+ const key=race+':'+item.id;
+ const custom=content.upgradeRecipes?.[key+':10'];
+ const id=custom&&Object.hasOwn(custom,'target')?custom.target:
+  content.evolutions?.[key]?.target??DBI_REFORGE_RECIPES[race]?.[item.id];
  const target=catalog.find(entry=>entry.id===id);
  return target&&target.id!==item.id&&(!target.requiredRace||window.DBIContent.raceId(target.requiredRace)===race)?id:null;
+}
+function dbiReforgeDestination(item){
+ return item?.enhancement===9?dbiReforgeTarget(item,dbiCharacterRace()):null;
 }
 // Snapshot only the base stats at +9. Plans and chips already have their own fields.
 function dbiReforgeInheritance(ref){
@@ -2791,7 +2817,7 @@ function dbiUpgradeAttempt(){
   if(!left)continue;
   items.splice(i,1);positions.splice(i,1);costs.set(id,left-1);
  }
- const success=!!req.reforger||Math.random()*100<req.chance;
+ const success=req.chance>=100||Math.random()*100<req.chance;
  const {id,quality,reinforced,bonuses,inheritance}=dbiDecodeItemRef(selected.ref);
  const ref=!success?selected.ref:req.reforger
   ?dbiItemRef(destination,0,null,reinforced,bonuses,dbiReforgeInheritance(selected.ref))
@@ -2805,10 +2831,10 @@ function dbiUpgradeAttempt(){
  }
  dbiUpgradeSelected=next;
  if(req.gold)dbiRefreshHeaderWallet();
- dbiUpgradeMessage=req.reforger
+ dbiUpgradeMessage=success&&req.reforger
   ?'Przekucie udane! '+itemById(dbiUpgradeSelected.ref).name+' +0.'
   :success?'Ulepszanie udane! Przedmiot osiągnął +'+(level+1)+'.':
-  'Ulepszanie nieudane. Przedmiot pozostał na +'+level+', zużyto '+(req.gold?'materiały i złoto.':'materiały.');
+  (req.reforger?'Przekucie nieudane. ':'Ulepszanie nieudane. ')+'Przedmiot pozostał na +'+level+'.';
  renderUpgradePanel();
 }
 /* Ulepszanie v6: WYŁĄCZNIE podgląd statystyk podstawowych.
@@ -2996,7 +3022,7 @@ function renderUpgradePanel(){
     </section>
     <section class="dbi-upgrade-card dbi-upgrade-materials-card">
      <h3><span>Wymagane materiały</span></h3>
-     <div class="dbi-upgrade-material-list${DBI_SAIYAN_UPGRADE_TIERS.some(tier=>chosen?.id.startsWith(tier.prefix))?' dbi-upgrade-tier-materials':''}${materialCards.length>3?' dbi-upgrade-four-materials':''}">${materialCardHtml}</div>
+     <div class="dbi-upgrade-material-list${DBI_UPGRADE_TIERS.some(tier=>chosen?.id.startsWith(tier.prefix))?' dbi-upgrade-tier-materials':''}${materialCards.length>3?' dbi-upgrade-four-materials':''}">${materialCardHtml}</div>
     </section>
    </div>
   </div>
@@ -3948,7 +3974,10 @@ function renderGM(message='',activeSection='items',selectedItem=null){
  const gmWallet=()=>{try{return JSON.parse(localStorage.getItem(gmKeys.dragon)||'{}')||{}}catch{return {}}};
  const gmStatVal=keys=>{for(const obj of [gmChar.stats,gmChar.activeStats,gmChar.passiveStats,gmChar.attributes,gmChar]){const v=dbiStatNumber(obj,keys);if(v!==null)return v}return 0};
  const gmExtra=document.createElement('div');gmExtra.className='dbi-gm-extra';
- gmExtra.innerHTML=`<section class="eq-panel"><h2>GM · WALUTY</h2><p class="eq-caption">Postać: ${esc(gmChar.name||'—')}</p><form id="gmMoneyForm" class="dbi-gm-form">
+ gmExtra.innerHTML=`<section class="eq-panel"><h2>GM · POZIOM POSTACI</h2><p class="eq-caption">Postać: ${esc(gmChar.name||'—')} · Poziom <span id="gmCurrentLevel">${level}</span></p>
+ <form id="gmLevelForm" class="dbi-gm-form"><label>Liczba poziomów<input type="number" name="count" min="1" step="1" value="1" required></label>
+ <button type="submit">Dodaj poziomy</button><p role="status"></p></form></section>
+ <section class="eq-panel"><h2>GM · WALUTY</h2><p class="eq-caption">Postać: ${esc(gmChar.name||'—')}</p><form id="gmMoneyForm" class="dbi-gm-form">
  <label>Złoto<input type="number" name="gold" min="0" max="999999999999" step="1" required value="${Math.max(0,Number(localStorage.getItem(gmKeys.gold))||0)}"></label>
  <label>Smocze Monety<input type="number" name="dragon" min="0" max="999999999999" step="1" required value="${Math.max(0,Number(gmWallet().coins)||0)}"></label>
  <label><img class="dbi-zeni-icon" src="assets/ui/zeni.png" alt="">Zeni<input type="number" name="premium" min="0" max="999999999999" step="1" required value="${Math.max(0,Number(localStorage.getItem(gmKeys.premium))||0)}"></label>
@@ -3997,11 +4026,30 @@ function renderGM(message='',activeSection='items',selectedItem=null){
   for(const b of document.querySelectorAll('[data-gm-tab-open]'))b.setAttribute('aria-current',b.dataset.gmTabOpen===section?'page':'false');
  }
  window.DBIGmContentEditor.bindNavigation(document.querySelector('.gm-workbench'),section=>{
-  if(['enemies','chests','smith'].includes(section))openGmContent(section);
+  if(['enemies','chests','smith','upgrades'].includes(section))openGmContent(section);
   else if(section==='maps')window.DBIGMMapEditor?.open?.(document.querySelector('#pageBody'),()=>renderGM());
   else selectSection(section);
  });
  selectSection(activeSection);
+ document.querySelector('#gmLevelForm').onsubmit=async event=>{
+  event.preventDefault();
+  const form=event.currentTarget,button=form.querySelector('button'),info=form.querySelector('[role="status"]');
+  const count=form.elements.count.valueAsNumber;
+  button.disabled=true;
+  try{
+   await window.DBILocalPost.lock(()=>{
+    if(!dbiActive?.id)throw Error('Brak aktywnej postaci.');
+    const key='dboidle_characters_v1_'+dbiSession.name.toLowerCase();
+    const result=window.DBIGmAccess.grantLevels(key,dbiActive.id,count);
+    dbiCharacters=result.characters;dbiCharacterIndex=result.index;
+    ({level,exp=0}=dbiCharacters[dbiCharacterIndex]);
+    form.closest('section').querySelector('#gmCurrentLevel').textContent=level;
+    renderExp();
+    info.textContent=result.message;
+   });
+  }catch(error){info.textContent=error.message||'Zapis nie powiódł się.'}
+  finally{button.disabled=false}
+ };
  document.querySelector('#gmTeleportForm').onsubmit=e=>{
   e.preventDefault();
   const destination=e.currentTarget.elements.location.value;
@@ -4136,7 +4184,7 @@ function renderGM(message='',activeSection='items',selectedItem=null){
  };
  document.querySelector('#gmDelete').onclick=()=>{if(!editing)return;const id=editing;catalog=catalog.filter(x=>x.id!==id);inventoryPlacement=inventoryPlacement.filter((_,i)=>dbiDecodeItemRef(inventory[i]).id!==id);inventory=inventory.filter(x=>dbiDecodeItemRef(x).id!==id);Object.values(equipped).forEach(set=>Object.keys(set).forEach(slot=>{if(dbiDecodeItemRef(set[slot]).id===id)delete set[slot]}));dbiSaveGmCatalog();renderGM('Usunięto: '+id)};
  document.querySelector('#gmExport').onclick=()=>{const blob=new Blob([JSON.stringify(catalog,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='dragonball-items.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
- document.querySelector('#gmImport').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||data.some(x=>!x||typeof x.id!=='string'||!/^[\w-]+$/.test(x.id)||typeof x.name!=='string'||!DBI_SLOTS.some(s=>s[1]===x.slot)&&!extraCategories.some(([id])=>id===x.slot))||new Set(data.map(x=>x.id)).size!==data.length)throw Error('Niepoprawny katalog');catalog=data.filter(x=>x.id!=='starter-white-belt-plus-one'&&!DBI_REMOVED_ITEM_IDS.has(x.id)).map(x=>({id:x.id,name:x.name,slot:x.slot,icon:String(x.icon||''),attack:Number(x.attack)||0,defense:Number(x.defense)||0,hp:Number(x.hp)||0,ki:Number(x.ki)||0,description:String(x.description||''),quality:QUALITY.includes(x.quality)?x.quality:'Pospolity',image:typeof x.image==='string'?x.image:undefined,requiredRace:window.DBIContent.raceId(x.requiredRace),requiredLevel:Math.max(1,Number(x.requiredLevel)||1)}));for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';dbiRegisterBuiltInItems([...DBI_SAYAN_50_ITEMS,...DBI_SAYAN_250_ITEMS,...DBI_ROYAL_500_CATALOG,DBI_REINFORCEMENT_PLANS,DBI_CHANGE_SCROLL,DBI_ADDITION_CHIP,DBI_UPDATING_CHIP]);dbiSaveGmCatalog();renderGM('Zaimportowano '+catalog.length+' przedmiotów.')}catch(err){document.querySelector('#gmMessage').textContent='Błąd importu: '+err.message}};
+ document.querySelector('#gmImport').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||data.some(x=>!x||typeof x.id!=='string'||!/^[\w-]+$/.test(x.id)||typeof x.name!=='string'||!DBI_SLOTS.some(s=>s[1]===x.slot)&&!extraCategories.some(([id])=>id===x.slot))||new Set(data.map(x=>x.id)).size!==data.length)throw Error('Niepoprawny katalog');catalog=data.filter(x=>x.id!=='starter-white-belt-plus-one'&&!DBI_REMOVED_ITEM_IDS.has(x.id)).map(x=>({id:x.id,name:x.name,slot:x.slot,icon:String(x.icon||''),attack:Number(x.attack)||0,defense:Number(x.defense)||0,hp:Number(x.hp)||0,ki:Number(x.ki)||0,description:String(x.description||''),quality:QUALITY.includes(x.quality)?x.quality:'Pospolity',image:typeof x.image==='string'?x.image:undefined,requiredRace:window.DBIContent.raceId(x.requiredRace),requiredLevel:Math.max(1,Number(x.requiredLevel)||1)}));for(const x of catalog)if(x.id.startsWith('royal-500-'))x.quality='Pospolity';dbiRegisterBuiltInItems([...DBI_SAYAN_50_ITEMS,...DBI_SAYAN_250_ITEMS,...DBI_EARTH_ITEMS,...DBI_ROYAL_500_CATALOG,DBI_REINFORCEMENT_PLANS,DBI_CHANGE_SCROLL,DBI_ADDITION_CHIP,DBI_UPDATING_CHIP]);dbiSaveGmCatalog();renderGM('Zaimportowano '+catalog.length+' przedmiotów.')}catch(err){document.querySelector('#gmMessage').textContent='Błąd importu: '+err.message}};
 }
 
 // Zamknij menu akcji po kliknięciu poza nim.
@@ -4352,6 +4400,7 @@ if(Array.isArray(window.DBI_GM_WORLD_DATA?.gmCatalog)){
  }catch{}
  catalog=publishedCatalog.filter(item=>item&&typeof item.id==='string'&&!DBI_REMOVED_ITEM_IDS.has(item.id));
  dbiAddAdventureItems(catalog);
+ dbiRegisterBuiltInItems(DBI_EARTH_ITEMS);
 }
 
 // Przekazanie premii i nagród jest transakcją na dotychczasowych zapisach.
@@ -5087,6 +5136,12 @@ function openGmContent(section){
   items:()=>catalog,
   isEquipment:item=>DBI_SLOTS.some(([,slot])=>slot===item.slot),
   defaultEvolution:(race,id)=>DBI_REFORGE_RECIPES[race]?.[id],
+  maxUpgrade:item=>DBI_UPGRADE_TIERS.some(tier=>!tier.reforge&&item?.id.startsWith(tier.prefix))?Number.MAX_SAFE_INTEGER:10,
+  upgradeStep:(item,race,targetLevel)=>{
+   const req=dbiUpgradeRequirements(targetLevel-1,item,race,true);
+   return {chance:req.chance,materials:dbiUpgradeIngredients(req),
+    target:targetLevel===10?dbiReforgeTarget(item,race):null};
+  },
   itemExists:id=>!!itemById(id)||DBI_REMOVED_ITEM_IDS.has(id),
   catalogWrite:items=>[dbiGmCatalogKey(),items],
   useCatalog:items=>{catalog=items},
@@ -5094,7 +5149,7 @@ function openGmContent(section){
   maps:()=>window.DBIGMMapEditor?.open?.(document.querySelector('#pageBody'),()=>renderGM())
  });
 }
-if(dbiIsGameMaster()&&['#gm-items','#gm-chests','#gm-enemies','#gm-smith'].includes(location.hash)){
+if(dbiIsGameMaster()&&['#gm-items','#gm-chests','#gm-enemies','#gm-smith','#gm-upgrades'].includes(location.hash)){
  showPage('Panel GM','GM');
  if(location.hash!=='#gm-items')openGmContent(location.hash.slice(4));
 }
