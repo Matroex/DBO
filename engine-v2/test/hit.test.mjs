@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validateCombatRules} from '../dist/domain/combat.js';
+import {resolveHit,stunChance} from '../dist/domain/hit.js';
+const r=validateCombatRules({normalCritPct:120,techniqueCritPct:200,dodgeThreshold:1000000,speedPerDodgePct:10000,techniqueArmorPct:20,minimumDamagePct:10,armorDivisor:2});
+const input={attack:100,armor:0,attackerSpeed:1000000,defenderSpeed:1000000,technique:false,penetrationPct:0,criticalChancePct:0,criticalBonusPct:0,criticalReductionPct:0,averageDamagePct:0,outgoingRacePct:0,incomingRacePct:0,techniqueReductionPct:0,intelligenceReduction:0,guardReduction:0};
+const hit=(patch={},sample=.5)=>resolveHit(r,{...input,...patch},()=>sample);
+test('normal and technique criticals preserve additive bonus',()=>{assert.equal(hit({criticalChancePct:100,criticalBonusPct:1}).damage,121);assert.ok(Math.abs(hit({technique:true,criticalChancePct:100,criticalBonusPct:1}).damage-201)<1e-9);});
+test('dodge precedes damage and critical',()=>{assert.deepEqual(hit({defenderSpeed:2000000,criticalChancePct:100}),{damage:0,critical:false,dodged:true});});
+test('armor penetration and technique armor',()=>{assert.equal(hit({armor:100,penetrationPct:50}).damage,75);assert.equal(hit({armor:100,technique:true}).damage,90);});
+test('guard, critical reduction and race modifiers',()=>{assert.ok(Math.abs(hit({criticalChancePct:100,criticalReductionPct:50,guardReduction:.5}).damage-30)<1e-9);assert.ok(Math.abs(hit({outgoingRacePct:20,incomingRacePct:25}).damage-90)<1e-9);});
+test('forced critical, zero damage and stun resistance',()=>{assert.ok(Math.abs(hit({forcedCriticalMultiplier:1.1}).damage-110)<1e-9);assert.equal(hit({attack:0,criticalChancePct:100}).critical,false);assert.equal(stunChance(50,20),40);});
