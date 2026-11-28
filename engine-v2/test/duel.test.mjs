@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {simulateDuel} from '../dist/domain/duel.js';
+const r={normalCritPct:120,techniqueCritPct:200,dodgeThreshold:1000000,speedPerDodgePct:10000,techniqueArmorPct:20,minimumDamagePct:10,armorDivisor:2};
+const t={kiAttackFactor:.01,intelligenceReductionFactor:.00001,maxIntelligenceReduction:.5,cooldownRounds:13};
+const hit={attack:0,armor:0,attackerSpeed:0,defenderSpeed:0,technique:false,penetrationPct:0,criticalChancePct:0,criticalBonusPct:0,criticalReductionPct:0,averageDamagePct:0,outgoingRacePct:0,incomingRacePct:0,techniqueReductionPct:0,intelligenceReduction:0,guardReduction:0};
+const participant=(patch={},reduction=0)=>({fighter:{hp:100,ki:100,attack:100,armor:0,speed:100,intelligence:0,kiStat:0,techniquePvm:0,techniquePvp:0,techniqueValuePct:0,techniqueDamagePct:0,normal:hit,technique:hit,stunChancePct:0,stunResistancePct:0,bleedTurns:0,bleedDamage:0,stunTurns:0,guardTurns:0,guardReduction:0,lastTechniqueRound:{},...patch},moves:[],enemyStatsReductionPct:reduction});
+const duel=(p,e)=>simulateDuel(r,t,{maxRounds:21},p,e,'pvp',()=>.5);
+test('speed determines first attack and equal speed favors player',()=>{assert.equal(duel(participant(),participant()).outcome,'win');assert.equal(duel(participant(),participant({speed:200})).outcome,'loss');});
+test('draw after 21 rounds and 42 actions',()=>{const x=duel(participant({attack:0}),participant({attack:0}));assert.equal(x.outcome,'draw');assert.equal(x.rounds,21);assert.equal(x.log.length,42);});
+test('opponent reduction applies before initiative without changing original',()=>{const p=participant({speed:100},50),e=participant({speed:150});const x=duel(p,e);assert.equal(x.log[0].side,'player');assert.equal(e.fighter.speed,150);assert.equal(x.enemy.speed,75);});
