@@ -8,7 +8,7 @@ export function validateCombatRules(input:unknown):CombatRules {
 const nonnegative=(n:number)=>{if(!Number.isFinite(n)||n<0)throw Error('Invalid combat value');return n;};
 export function dodgePct(r:CombatRules,defenderSpeed:number,attackerSpeed:number){
  const low=nonnegative(attackerSpeed),diff=Math.max(0,nonnegative(defenderSpeed)-low);
- return Math.min(100,diff>=r.dodgeThreshold?(low===0?100:100*diff/low):diff/r.speedPerDodgePct);
+ return Math.min(100,low>=r.dodgeThreshold?100*diff/low:diff/r.speedPerDodgePct);
 }
 export function criticalMultiplier(r:CombatRules,technique:boolean,bonusPct:number){
  return ((technique?r.techniqueCritPct:r.normalCritPct)+nonnegative(bonusPct))/100;
