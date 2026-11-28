@@ -30,6 +30,7 @@ window.DBICharacterSlots=(()=>{
   });
  }
  function create(account,details){
+  if(!['Saiyan','Ziemianin'].includes(details?.race))throw Error('Ta rasa będzie dostępna wkrótce.');
   return window.DBILocalPost.lock(()=>{
    const roster=characters(account);
    if(roster.length>=limit(account))throw Error('Wykorzystano wszystkie miejsca na postacie.');

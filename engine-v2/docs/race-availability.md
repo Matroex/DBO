@@ -1,0 +1,1 @@
+Race creation is enabled only for Saiyan and Ziemianin. Other races remain defined and existing characters are unaffected. Server availability is read from published race definition creationEnabled; legacy creator uses a temporary explicit allowlist until API integration. No deletion or race conversion. Changes on engine-v2 only.

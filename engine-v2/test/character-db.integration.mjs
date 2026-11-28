@@ -18,8 +18,9 @@ test('character creation uses published content and isolates accounts',async()=>
   assert.equal(await service.get(b.id,c.id),null);
   assert.deepEqual(await service.list(b.id),[]);
   await assert.rejects(service.create(a.id,{name:'Invalid',raceId:'unknown'}));
-  await assert.rejects(service.create(a.id,{name:'warrior',raceId:'majin'}));
-  const outcomes=await Promise.allSettled(Array.from({length:6},(_,i)=>service.create(a.id,{name:'Warrior '+i,raceId:'majin'})));
+  await assert.rejects(service.create(a.id,{name:'warrior',raceId:'ziemianin'}));
+  for(const raceId of ['majin','nameczanin','demon-mrozu'])await assert.rejects(service.create(a.id,{name:'Locked',raceId}),/invalid_character/);
+  const outcomes=await Promise.allSettled(Array.from({length:6},(_,i)=>service.create(a.id,{name:'Warrior '+i,raceId:'ziemianin'})));
   assert.equal(outcomes.filter(x=>x.status==='fulfilled').length,4);
   assert.equal((await service.list(a.id)).length,5);
  }finally{await pool.end();}

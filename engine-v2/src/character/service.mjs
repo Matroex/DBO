@@ -17,7 +17,7 @@ export class CharacterService {
    const {rows:[config]}=await db.query("SELECT r.id,d.data FROM content_revisions r JOIN content_definitions d ON d.revision_id=r.id WHERE r.status='published' AND d.kind='starter_rules' AND d.definition_id='default'");
    if(!config)throw Error('missing_content');
    const rules=validateStarterRules(config.data);
-   const race=await db.query("SELECT 1 FROM content_definitions WHERE revision_id=$1 AND kind='race' AND definition_id=$2",[config.id,input.raceId]);
+   const race=await db.query("SELECT 1 FROM content_definitions WHERE revision_id=$1 AND kind='race' AND definition_id=$2 AND data->'creationEnabled'='true'::jsonb",[config.id,input.raceId]);
    if(!race.rowCount)throw Error('invalid_character');
    const {rows}=await db.query('SELECT slot FROM characters WHERE account_id=$1',[accountId]);
    const used=new Set(rows.map(r=>r.slot));
