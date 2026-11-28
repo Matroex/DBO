@@ -22,7 +22,7 @@ jobs:
       - run: npm install --ignore-scripts --no-audit --no-fund
       - run: npm run build
       - run: docker compose up -d --wait
-      - run: sh tools/migrate.sh
+      - run: node tools/migrate.mjs
       - run: sh tools/migrate.sh
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/schema.sql
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/character-compat.sql

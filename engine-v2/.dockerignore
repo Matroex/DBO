@@ -5,3 +5,7 @@
 !src/**
 !public/
 !public/**
+!tools/
+!tools/migrate.mjs
+!migrations/
+!migrations/**

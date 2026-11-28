@@ -13,5 +13,7 @@ COPY --from=build /app/dist ./dist
 COPY package.json ./
 COPY src ./src
 COPY public ./public
+COPY tools/migrate.mjs ./tools/migrate.mjs
+COPY migrations ./migrations
 USER node
 CMD ["node", "src/server.mjs"]
