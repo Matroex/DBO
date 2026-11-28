@@ -1,4 +1,6 @@
 // Internal helpers. Caller must authorize character and own the transaction.
+// Legacy has at most 100 pages of 60 cells. Engine v2 uses one slot per instance.
+export const defaultBagCapacity=6000;
 async function lockCharacter(c,id){
  const q=await c.query('SELECT id FROM characters WHERE id=$1 FOR UPDATE',[id]);
  if(!q.rowCount)throw Error('Character missing');

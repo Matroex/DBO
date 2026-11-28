@@ -19,12 +19,12 @@ function readCatalog(rows){
  return {definitions,catalog};
 }
 
-async function consumeMaterials(db,characterId,itemId,materials){
+export async function consumeMaterials(db,characterId,itemId,materials){
  const costs=new Map();
  for(const {id,count} of materials)costs.set(id,(costs.get(id)??0n)+BigInt(count));
  if(!costs.size)return;
  const {rows}=await db.query(
-  'SELECT id,definition_id,quantity FROM inventory_items WHERE character_id=$1 AND id<>$2 AND bag_slot IS NOT NULL AND definition_id=ANY($3::text[]) ORDER BY bag_slot DESC FOR UPDATE',
+  'SELECT id,definition_id,quantity FROM inventory_items WHERE character_id=$1 AND id IS DISTINCT FROM $2 AND bag_slot IS NOT NULL AND definition_id=ANY($3::text[]) ORDER BY bag_slot DESC FOR UPDATE',
   [characterId,itemId,[...costs.keys()]]);
  const deductions=[];
  for(const row of rows){

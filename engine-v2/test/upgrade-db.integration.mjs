@@ -121,6 +121,7 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
    await setup.query("INSERT INTO content_definitions(revision_id,kind,definition_id,data) SELECT $1,kind,definition_id,data FROM content_definitions WHERE revision_id=$2",[revisionId,old]);
    await setup.query("INSERT INTO content_definitions(revision_id,kind,definition_id,data) VALUES($1,'recipe','equipment-upgrades',$2)",
     [revisionId,{upgradeRecipes:{'saiyan:sayan-50-miecz:1':{chance:0,materials:[]}}}]);
+   await setup.query("UPDATE content_definitions SET data=jsonb_set(data,'{esencja,chance}','100') WHERE revision_id=$1 AND kind='recipe' AND definition_id='smith-crafting'",[revisionId]);
    await setup.query("UPDATE content_revisions SET status='archived' WHERE id=$1",[old]);
    await setup.query("UPDATE content_revisions SET status='published' WHERE id=$1",[revisionId]);
    await setup.query('COMMIT');
@@ -236,6 +237,43 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   const lost=await failQuality.json();
   assert.deepEqual([lost.success,lost.qualityId,lost.experienceGained,await balance()],[false,'uncommon',0,'0']);
   assert.equal((await pool.query('SELECT experience FROM character_smith_progress WHERE character_id=$1',[characterId])).rows[0].experience,1903);
+  const craftPath=base+'/api/v1/characters/'+characterId+'/crafting';
+  const craftPost=data=>fetch(craftPath,{method:'POST',headers,body:JSON.stringify(data)});
+  const craftView=async()=> (await fetch(craftPath,{headers})).json();
+  const recipes=(await craftView()).recipes;
+  assert.deepEqual(recipes.map(recipe=>recipe.id).sort(),['chi','esencja','scouter','stroj','symbol']);
+  assert.equal(recipes.find(recipe=>recipe.id==='chi').chance,90);
+  const essence=recipes.find(recipe=>recipe.id==='esencja');
+  assert.deepEqual(essence.materials.map(material=>material.id),['smith-esencja','smith-ki','smith-ore']);
+  await pool.query("UPDATE wallets SET balance=20000 WHERE character_id=$1 AND currency_id='gold'",[characterId]);
+  const craftInput={recipeId:essence.id,operationId:randomUUID(),expectedQuote:essence.quoteKey};
+  assert.deepEqual(await (await craftPost(craftInput)).json(),{error:'insufficient_materials'});
+  assert.equal(await balance(),'20000');
+  for(const [index,material] of essence.materials.entries())await add(material.id,10+index,2);
+  const created=await (await craftPost(craftInput)).json();
+  assert.deepEqual([created.success,created.definitionId,created.experienceGained],[true,'smith-esencja-1',0]);
+  assert.deepEqual(await (await craftPost(craftInput)).json(),created);
+  const next={...craftInput,operationId:randomUUID()};
+  assert.deepEqual(await (await craftPost(next)).json(),{error:'craft_pending'});
+  const claim={operationId:craftInput.operationId,action:'claim'};
+  const claimed=await (await craftPost(claim)).json();
+  assert.equal(claimed.status,'claimed');
+  assert.deepEqual(await (await craftPost(claim)).json(),claimed);
+  const inventoryPath=base+'/api/v1/characters/'+characterId+'/inventory';
+  const inventoryPost=data=>fetch(inventoryPath,{method:'POST',headers,body:JSON.stringify(data)});
+  assert.equal((await fetch(inventoryPath)).status,401);
+  assert.equal((await fetch(base+'/api/v1/characters/'+randomUUID()+'/inventory',{headers})).status,404);
+  const inventory=await (await fetch(inventoryPath,{headers})).json();
+  assert.equal(inventory.items.find(row=>row.id===claimed.itemId).definition_id,'smith-esencja-1');
+  const equip=await (await inventoryPost({action:'equip',itemId:claimed.itemId,set:'pvp',slot:'esencja'})).json();
+  assert.equal(equip.items.find(row=>row.id===claimed.itemId).equipment_slot,'pvp:esencja');
+  assert.equal((await inventoryPost({action:'unequip',set:'pvp',slot:'esencja'})).status,200);
+  const move=await (await inventoryPost({action:'move',itemId:claimed.itemId,destination:20})).json();
+  assert.equal(move.items.find(row=>row.id===claimed.itemId).bag_slot,20);
+  assert.equal((await (await craftPost(next)).json()).success,true);
+  assert.equal((await (await craftPost({operationId:next.operationId,action:'discard'})).json()).status,'discarded');
+  assert.equal((await craftView()).pending,null);
+  assert.equal(await balance(),'0');
  }finally{
   try{
    if(characterId){

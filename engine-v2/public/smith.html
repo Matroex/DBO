@@ -31,10 +31,15 @@
   <p id="gold"></p>
   <p id="rank"></p>
   <p id="profession"></p>
-  <label>Operacja <select id="operation"><option value="upgrades">Ulepszanie poziomu</option><option value="quality">Podnoszenie jakości</option></select></label>
-  <label>Przedmiot <select id="item"></select></label>
+  <label>Operacja <select id="operation"><option value="upgrades">Ulepszanie poziomu</option><option value="quality">Podnoszenie jakości</option><option value="crafting">Wytwarzanie</option></select></label>
+  <label><span id="selection-label">Przedmiot</span> <select id="item"></select></label>
   <div id="quote"></div>
   <button id="upgrade" disabled>Ulepsz przedmiot</button>
+  <div id="craft-result" hidden>
+   <p id="crafted-item"></p>
+   <button id="claim" type="button">Odbierz</button>
+   <button id="discard" type="button">Odrzuć</button>
+  </div>
   <div><button id="logout">Wyloguj</button></div>
  </section>
  <p id="status" role="status"></p>

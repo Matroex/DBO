@@ -11,6 +11,8 @@ const errors = {
   insufficient_gold: 'Brakuje złota.',
   insufficient_materials: 'Brakuje materiałów.',
   quote_changed: 'Warunki próby się zmieniły. Sprawdź nowy koszt.',
+  craft_pending: 'Odbierz lub odrzuć wcześniej wytworzony przedmiot.',
+  inventory_full: 'Brakuje miejsca w plecaku. Przedmiot nadal czeka na odbiór.',
   upgrade_unavailable: 'Ulepszanie tego przedmiotu jest niedostępne.',
   not_found: 'Postać lub przedmiot są niedostępne.',
   rate_limited: 'Odczekaj minutę przed następną próbą logowania.'
@@ -18,6 +20,7 @@ const errors = {
 let token, view, pending, busy = false;
 const endpoint = () => '/api/v1/characters/' + character.value + '/' + operation.value;
 const qualityMode = () => operation.value === 'quality';
+const craftMode = () => operation.value === 'crafting';
 const qualityNames = {common:'Pospolity',uncommon:'Zwyczajny',rare:'Rzadki',epic:'Epicki',legendary:'Legendarny'};
 const selection = () => view?.items.find(entry => entry.id === item.value);
 const number = new Intl.NumberFormat('pl-PL');
@@ -40,16 +43,21 @@ function text(tag, value) {
 function render() {
   const entry = selection();
   const area = find('quote');
+  const crafted = craftMode() ? view?.pending : null;
+  find('selection-label').textContent = craftMode() ? 'Receptura' : 'Przedmiot';
+  find('craft-result').hidden = !crafted;
+  find('crafted-item').textContent = crafted ? 'Czeka na odbiór: ' + crafted.name : '';
+  find('claim').disabled = find('discard').disabled = busy || Boolean(pending);
   area.replaceChildren();
   character.disabled = busy || Boolean(pending) || !character.options.length;
   operation.disabled = busy || Boolean(pending);
   item.disabled = busy || Boolean(pending) || !view?.items.length;
-  upgrade.textContent = pending ? 'Sprawdź wynik próby' : qualityMode() ? 'Podnieś jakość' : 'Ulepsz przedmiot';
-  upgrade.disabled = busy || !entry || (!pending && ((!qualityMode() && !view.smithRank) || BigInt(view.gold) < BigInt(entry.quote.gold) ||
+  upgrade.textContent = pending ? 'Sprawdź wynik próby' : craftMode() ? 'Wytwórz' : qualityMode() ? 'Podnieś jakość' : 'Ulepsz przedmiot';
+  upgrade.disabled = busy || !entry || (!pending && (Boolean(crafted) || ((!craftMode() && !qualityMode()) && !view.smithRank) || BigInt(view.gold) < BigInt(entry.quote.gold) ||
     entry.materials.some(material => BigInt(material.available) < BigInt(material.count))));
   if (!entry) return;
   const {quote, materials} = entry;
-  const target = qualityMode() ? (qualityNames[quote.qualityId] ?? quote.qualityId) :
+  const target = craftMode() ? 'Możliwe wyniki: ' + entry.outputs.join(', ') : qualityMode() ? (qualityNames[quote.qualityId] ?? quote.qualityId) :
     entry.targetName ? entry.targetName + ' +0' : entry.name + ' +' + (entry.level + 1);
   area.append(text('p', target +
     ' · ' + number.format(quote.chance) + '% szansy'), text('p', 'Koszt złota: ' + number.format(quote.gold)));
@@ -64,11 +72,12 @@ function render() {
 async function refresh() {
   const previous = item.value;
   view = character.value ? await request(endpoint()) : {items: [], gold: '0', smithRank: 0};
-  item.replaceChildren(...view.items.map(entry => new Option(entry.name + ' +' + entry.level +
-    (qualityMode() ? ' · ' + (qualityNames[entry.qualityId] ?? entry.qualityId) : ''), entry.id)));
+  if (craftMode() && view.recipes) view.items = view.recipes.map(recipe => ({...recipe,quote:recipe}));
+  item.replaceChildren(...view.items.map(entry => new Option(craftMode() ? entry.name + ' · poz. ' + entry.level :
+    entry.name + ' +' + entry.level + (qualityMode() ? ' · ' + (qualityNames[entry.qualityId] ?? entry.qualityId) : ''), entry.id)));
   if (view.items.some(entry => entry.id === previous)) item.value = previous;
   find('gold').textContent = 'Złoto: ' + number.format(BigInt(view.gold));
-  find('rank').textContent = qualityMode() ? '' :
+  find('rank').textContent = qualityMode() || craftMode() ? '' :
     view.smithRank ? 'Podstawowe kowalstwo: ' + view.smithRank : 'Wymagana umiejętność Podstawowe kowalstwo.';
   const profession = view.profession;
   find('profession').textContent = profession ? 'Profesja kowalstwa · poziom ' + profession.level +
@@ -118,14 +127,14 @@ login.addEventListener('submit', event => {
 const refreshSelection = () => run(async () => {
   view = undefined;
   await refresh();
-  if (!view.items.length) status.textContent = 'Brak przedmiotów do ulepszenia w plecaku.';
+  if (!view.items.length) status.textContent = craftMode() ? 'Brak dostępnych receptur.' : 'Brak przedmiotów do ulepszenia w plecaku.';
 });
 character.addEventListener('change', refreshSelection);
 operation.addEventListener('change', refreshSelection);
 item.addEventListener('change', render);
 upgrade.addEventListener('click', () => run(async () => {
   const entry = selection();
-  pending ??= {itemId: entry.id, operationId: crypto.randomUUID(), expectedQuote: entry.quoteKey};
+  pending ??= {[craftMode()?'recipeId':'itemId']: entry.id, operationId: crypto.randomUUID(), expectedQuote: entry.quoteKey};
   let outcome;
   try { outcome = await request(endpoint(), 'POST', pending); }
   catch (error) {
@@ -137,13 +146,19 @@ upgrade.addEventListener('click', () => run(async () => {
   }
   pending = undefined;
   view = undefined;
-  const result = (outcome.success ? qualityMode() ?
+  const result = (outcome.success ? craftMode() ? 'Wytworzono: ' + outcome.name + '. Odbierz przedmiot.' : qualityMode() ?
     'Nowa jakość: ' + (qualityNames[outcome.qualityId] ?? outcome.qualityId) + '.' :
     'Ulepszenie udane. Poziom +' + outcome.level + '.' :
     'Próba nieudana. Koszt został pobrany.') +
     (outcome.experienceGained ? ' +' + outcome.experienceGained + ' EXP kowalstwa.' : '');
   try { await refresh(); status.textContent = result; }
   catch { status.textContent = result + ' Nie udało się odświeżyć plecaka.'; }
+}));
+for (const action of ['claim','discard']) find(action).addEventListener('click', () => run(async () => {
+  await request(endpoint(),'POST',{operationId:view.pending.operationId,action});
+  const result=action==='claim'?'Przedmiot trafił do plecaka.':'Przedmiot odrzucony.';
+  try { await refresh(); status.textContent=result; }
+  catch { status.textContent=result+' Nie udało się odświeżyć panelu.'; }
 }));
 find('logout').addEventListener('click', () => run(async () => {
   await request('/api/v1/auth/logout', 'POST');

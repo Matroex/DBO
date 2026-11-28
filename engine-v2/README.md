@@ -33,3 +33,15 @@ nie jest częścią tego commitu.
 Po uruchomieniu serwera Engine v2 otwórz `http://127.0.0.1:3000/smith` i zaloguj się kontem Engine v2. Panel korzysta z postaci, portfela i plecaka zapisanych w PostgreSQL. Do próby potrzebne są odblokowane Podstawowe kowalstwo (`kowalstwo`) i definicje przedmiotów w opublikowanej wersji katalogu.
 
 Panel pobiera warunki próby z serwera i odświeża plecak po jej rozstrzygnięciu. Gdy warunki się zmienią, serwer wymaga akceptacji nowego kosztu. W razie utraty odpowiedzi przycisk sprawdzenia wyniku ponawia tę samą operację.
+
+## Lokalna instancja testowa
+
+Ustaw `POSTGRES_PASSWORD` w pliku `.env` w katalogu Engine v2. Następnie uruchom poniższe polecenia w tym katalogu z Docker Compose i powłoką POSIX.
+
+```sh
+docker compose up -d --wait postgres
+sh tools/migrate.sh
+docker compose --profile staging up -d --build --wait engine
+```
+
+Panel jest pod `http://127.0.0.1:3000/smith`. Instancja nasłuchuje tylko lokalnie. Oddzielne konta i postacie korzystają ze wspólnej bazy, a test CI sprawdza izolację ich plecaków.
