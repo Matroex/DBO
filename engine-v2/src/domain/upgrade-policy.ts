@@ -1,4 +1,4 @@
-const blocked=new Set(['chi','symbol','stroj','stroj treningowy','esencja','scouter']);
+const blocked=new Set(['chi','symbol','znak','stroj','stroj treningowy','esencja','scouter']);
 const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 export function standardUpgradeAllowed(slot:string,name=''):boolean{
  const normalizedName=normalize(name);

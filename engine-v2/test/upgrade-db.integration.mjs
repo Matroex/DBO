@@ -6,6 +6,48 @@ import pg from 'pg';
 import {upgradeBagItem} from '../src/inventory/upgrade.mjs';
 import {newSession} from '../src/auth/credentials.mjs';
 import {makeServer} from '../src/server.mjs';
+import {upgradeRulesV1 as rules} from '../dist/domain/upgrade-rules-v1.js';
+import {quoteUpgrade} from '../dist/domain/upgrade.js';
+import {validateBonusMap} from '../dist/domain/equipment-bonuses.js';
+
+test('published smith catalog covers both race trees and every default ingredient',async()=>{
+ const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
+ try{
+  const {rows}=await pool.query("SELECT d.definition_id,d.data FROM content_definitions d JOIN content_revisions r ON r.id=d.revision_id WHERE r.status='published' AND d.kind='item'");
+  const definitions=new Map(rows.map(({definition_id,data})=>[definition_id,data]));
+  const catalog=new Map();
+  for(const [id,data] of definitions){
+   assert.ok(data.name,id);
+   const quality=data.qualityIds.indexOf(data.defaultQualityId);
+   assert.ok(quality>=0,id);
+   catalog.set(id,{id,...data,quality,base:validateBonusMap(data.base)});
+  }
+  const checkCosts=quote=>{
+   for(const {id} of quote.materials)assert.equal(definitions.get(id)?.stackable,true,id);
+  };
+  for(const [race,recipes] of Object.entries(rules.recipes)){
+   const context={race,catalog};
+   for(const [source,target] of Object.entries(recipes)){
+    assert.equal(definitions.get(source)?.stackable,false,source);
+    assert.equal(definitions.get(target)?.stackable,false,target);
+    assert.equal(definitions.get(source).slot,definitions.get(target).slot,source);
+    if(source==='earth-100-zbroja'){
+     assert.equal(quoteUpgrade(source,9,context),null);
+     continue;
+    }
+    for(let level=0;level<=9;level++)checkCosts(quoteUpgrade(source,level,context));
+    assert.equal(quoteUpgrade(source,9,context).targetId,target,source);
+   }
+   for(const id of Object.values(recipes).filter(id=>!Object.hasOwn(recipes,id))){
+    for(let level=0;level<=11;level++)checkCosts(quoteUpgrade(id,level,context));
+   }
+  }
+  const staff=definitions.get('starter-red-staff');
+  assert.equal(staff.name,'Magiczny Czerwony Kij');
+  assert.equal(definitions.get('sayan-50-miecz').base.techniqueAttackMax,60);
+  assert.equal(definitions.get('dragon-ball-dust-common').defaultQualityId,'uncommon');
+ }finally{await pool.end();}
+});
 
 test('upgrade charges once, rolls back incomplete payment and preserves a reforged item',async()=>{
  const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
@@ -23,10 +65,6 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
    const old=(await setup.query("SELECT id FROM content_revisions WHERE status='published'")).rows[0].id;
    revisionId=(await setup.query("INSERT INTO content_revisions(schema_version,parent_revision_id) VALUES(1,$1) RETURNING id",[old])).rows[0].id;
    await setup.query("INSERT INTO content_definitions(revision_id,kind,definition_id,data) SELECT $1,kind,definition_id,data FROM content_definitions WHERE revision_id=$2",[revisionId,old]);
-   for(const id of ['starter-red-staff','sayan-50-miecz']){
-    await setup.query("INSERT INTO content_definitions(revision_id,kind,definition_id,data) VALUES($1,'item',$2,$3) ON CONFLICT(revision_id,kind,definition_id) DO UPDATE SET data=EXCLUDED.data",
-     [revisionId,id,{slot:'weapon',stackable:false,qualityIds:['common'],requiredRace:'saiyan',base:{attack:10}}]);
-   }
    await setup.query("INSERT INTO content_definitions(revision_id,kind,definition_id,data) VALUES($1,'recipe','equipment-upgrades',$2)",
     [revisionId,{upgradeRecipes:{'saiyan:sayan-50-miecz:1':{chance:0,materials:[]}}}]);
    await setup.query("UPDATE content_revisions SET status='archived' WHERE id=$1",[old]);
@@ -77,7 +115,7 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   const {rows}=await pool.query('SELECT id,quantity,attributes FROM inventory_items WHERE character_id=$1 ORDER BY bag_slot',[characterId]);
   assert.deepEqual(rows.map(row=>[row.id,row.quantity]),[[itemId,'1'],[dustId,'2']]);
   assert.deepEqual(rows[0].attributes.plans,[1]);
-  assert.ok(rows[0].attributes.inheritance.attack>0);
+  assert.ok(Object.values(rows[0].attributes.inheritance).some(value=>value>0));
   assert.equal((await pool.query('SELECT 1 FROM wallet_ledger WHERE character_id=$1',[characterId])).rowCount,1);
   await pool.query("UPDATE wallets SET balance=55000 WHERE character_id=$1 AND currency_id='gold'",[characterId]);
   const failed=await upgradeBagItem(pool,{...request,operationId:randomUUID(),bonuses:{smithRank:1,main:-1}});
