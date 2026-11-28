@@ -9,6 +9,8 @@ import {makeServer} from '../src/server.mjs';
 import {upgradeRulesV1 as rules} from '../dist/domain/upgrade-rules-v1.js';
 import {quoteUpgrade} from '../dist/domain/upgrade.js';
 import {validateBonusMap} from '../dist/domain/equipment-bonuses.js';
+import {recordSmithExperience} from '../src/inventory/smith-experience.mjs';
+import {changeWallet} from '../src/economy/wallet.mjs';
 
 test('published smith catalog covers both race trees and every default ingredient',async()=>{
  const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
@@ -47,6 +49,58 @@ test('published smith catalog covers both race trees and every default ingredien
   assert.equal(definitions.get('sayan-50-miecz').base.techniqueAttackMax,60);
   assert.equal(definitions.get('dragon-ball-dust-common').defaultQualityId,'uncommon');
  }finally{await pool.end();}
+});
+
+test('profession experience commits with the paid action, replays once and supports rollback',async()=>{
+ const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
+ let accountId,characterId;
+ async function record(input,commit=true){
+  const db=await pool.connect();
+  try{
+   await db.query('BEGIN');
+   const result=await recordSmithExperience(db,input);
+   if(!result.replayed)await changeWallet(db,{characterId,currencyId:'gold',delta:-1n,
+    operationId:input.operationId,reason:'smith_integration'});
+   await db.query(commit?'COMMIT':'ROLLBACK');
+   return result;
+  }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}
+ }
+ try{
+  accountId=(await pool.query("INSERT INTO accounts(login,password_hash) VALUES($1,'test') RETURNING id",
+   ['smith_'+randomUUID()])).rows[0].id;
+  characterId=(await pool.query("INSERT INTO characters(account_id,name,race_id,slot) VALUES($1,$2,'saiyan',0) RETURNING id",
+   [accountId,'Smith '+randomUUID()])).rows[0].id;
+  await pool.query('INSERT INTO character_smith_progress(character_id,experience) VALUES($1,1049)',[characterId]);
+  await pool.query("INSERT INTO wallets(character_id,currency_id,balance) VALUES($1,'gold',100)",[characterId]);
+  const balance=async()=>(await pool.query("SELECT balance FROM wallets WHERE character_id=$1 AND currency_id='gold'",[characterId])).rows[0].balance;
+  const craft={characterId,operationId:randomUUID(),kind:'craft',tier:500,success:true};
+  const concurrent=await Promise.all([record(craft),record(craft)]);
+  for(const result of concurrent){
+   assert.equal(result.gained,5);
+   assert.equal(result.progress.total,1054);
+  }
+  assert.deepEqual(concurrent.map(result=>result.replayed).sort(),[false,true]);
+  await assert.rejects(record({...craft,success:false}),/operation conflict/);
+  const unpaid={characterId,operationId:randomUUID(),kind:'quality',tier:1,success:true};
+  assert.equal((await record(unpaid,false)).gained,6);
+  assert.equal((await pool.query('SELECT experience FROM character_smith_progress WHERE character_id=$1',[characterId])).rows[0].experience,1054);
+  assert.equal(await balance(),'99');
+  const paid=await record(unpaid);
+  assert.deepEqual([paid.gained,paid.progress.total,paid.replayed],[6,1060,false]);
+  const failed={characterId,operationId:randomUUID(),kind:'quality',tier:0,success:false};
+  assert.equal((await record(failed)).gained,0);
+  assert.equal((await record(failed)).replayed,true);
+  assert.equal((await record(craft)).progress.total,1054);
+  assert.equal(await balance(),'97');
+ }finally{
+  try{
+   if(characterId){
+    await pool.query('DELETE FROM wallet_ledger WHERE character_id=$1',[characterId]);
+    await pool.query('DELETE FROM characters WHERE id=$1',[characterId]);
+   }
+   if(accountId)await pool.query('DELETE FROM accounts WHERE id=$1',[accountId]);
+  }finally{await pool.end();}
+ }
 });
 
 test('upgrade charges once, rolls back incomplete payment and preserves a reforged item',async()=>{
