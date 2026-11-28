@@ -1,0 +1,3 @@
+# Internal battle orchestration
+
+The duel service reads hit, technique and round rules from one pinned content revision, uses server randomness and persists the computed outcome. Reward orchestration uses the existing locked, replay-safe claim transaction and grants XP, gold and inventory together; a failure rolls back the entire claim. These functions are internal, not HTTP endpoints. Trusted participant construction, enemy definitions, encounter authorization, reward calculation and integration tests with real PostgreSQL remain necessary before exposure. No legacy gameplay or main branch changes. Inventory-full rewards currently fail atomically and may be retried after space is freed; the final player-facing policy is not yet decided.
