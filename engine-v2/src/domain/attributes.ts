@@ -28,3 +28,7 @@ function vital(base:number,m:VitalModifiers,min:number){
 export function modifiedVitals(r:VitalRules,endurance:number,intelligence:number,hp:VitalModifiers,ki:VitalModifiers,mode:'pvm'|'pvp'){
  return {maxHp:vital(r.baseHp+endurance*r.hpPerEndurance,hp,mode==='pvp'?1:.01),maxKi:vital(r.baseKi+intelligence*r.kiPerIntelligence,ki,0)};
 }
+
+export function pvpAttack(r:AttributeRules,strength:number,attackPct:number,spiritAttackPct:number,pvpFlat:number,gearAttack:number,gearRange:number,planPvp:number,skillAttack:number,guildAttack:number){
+ return Math.max(0,finite(Math.ceil(strength*r.attackPerStrength*pct(attackPct+spiritAttackPct*r.spiritAttackFactor))+pvpFlat+gearAttack+gearRange+planPvp+skillAttack+guildAttack));
+}

@@ -1,0 +1,1 @@
+Ports legacy story-combat technique calculation, KI eligibility, cooldown and intelligence reduction. Cooldown uses round-lastRound > 13, not >=13. Rules are editable versioned content. Technique definitions, ownership, actual KI debit, turn state, PvM timing and API integration are not yet implemented. No change to legacy gameplay.
