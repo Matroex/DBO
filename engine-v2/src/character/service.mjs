@@ -1,4 +1,5 @@
 import {validateStarterRules} from '../../dist/domain/content.js';
+import {baseVitals,validateVitalRules} from '../../dist/domain/vitals.js';
 export class CharacterService {
  constructor(pool){this.pool=pool;}
  async list(accountId){
@@ -25,6 +26,7 @@ export class CharacterService {
    if(slot>=account.character_limit||rows.length>=account.character_limit)throw Error('slot_limit');
    const {rows:[character]}=await db.query('INSERT INTO characters(account_id,name,race_id,slot,level,child_code,creation_revision_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,race_id,slot,level,experience',[accountId,name,input.raceId,slot,rules.level,childCode,config.id]);
    for(const [key,value] of Object.entries(rules.stats))await db.query('INSERT INTO character_stats(character_id,stat_id,value) VALUES($1,$2,$3)',[character.id,key,value]);
+   for(const currency of ['gold','zeni','dragon_coin'])await db.query('INSERT INTO wallets(character_id,currency_id,balance) VALUES($1,$2,0)',[character.id,currency]);
    await db.query('COMMIT');return character;
   }catch(e){await db.query('ROLLBACK');throw e;}finally{db.release();}
  }
@@ -33,6 +35,11 @@ export class CharacterService {
   const {rows:[character]}=await this.pool.query('SELECT id,name,race_id,slot,level,experience FROM characters WHERE account_id=$1 AND id=$2',[accountId,id]);
   if(!character)return null;
   const {rows}=await this.pool.query('SELECT stat_id,value FROM character_stats WHERE character_id=$1',[id]);
-  return {...character,stats:Object.fromEntries(rows.map(r=>[r.stat_id,r.value]))};
+  const stats=Object.fromEntries(rows.map(r=>[r.stat_id,r.value]));
+  const {rows:[config]}=await this.pool.query("SELECT d.data FROM content_revisions r JOIN content_definitions d ON d.revision_id=r.id WHERE r.status='published' AND d.kind='combat_rules' AND d.definition_id='vitals'");
+  if(!config)throw Error('missing_vital_rules');
+  const vitals=baseVitals(validateVitalRules(config.data),Number(stats.endurance),Number(stats.intelligence));
+  const {rows:wallets}=await this.pool.query('SELECT currency_id,balance FROM wallets WHERE character_id=$1 ORDER BY currency_id',[id]);
+  return {...character,stats,baseVitals:vitals,wallets:Object.fromEntries(wallets.map(r=>[r.currency_id,r.balance]))};
  }
 }

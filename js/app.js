@@ -995,7 +995,7 @@ function dbiArenaPvpStats(character,isSelf){
  const atk=Math.max(0,Math.ceil(strength*.5*(1+percent/100))+sum('pvpAttack')+sum('attackMax','attackMin','attack','physicalAttack','physicalAttackPower','attackPower')+sum('attackRange')+sum('planAttackPvp')+skills.attack+gb.attack);
  return {...dbiCombatHitBonuses(character,gear,skills),...dbiPlanCombatFields(character,gear),level:Number(character.level)||1,speed,
   attack:atk,defense:Math.max(0,(endurance*.1+skills.defense+sum('defense')+(Number(source.questDefenseBonus)||0))*(1+sum('defensePct')/100)*(1+gb.defensePct/100)),
-  maxHp:Math.max(1,(Number(source.gmMaxHp??(300+endurance*.01+sum('hp','maxHp','health')))+(source.gmMaxHp!=null?dbiPlanRolledTotal(gear,'hp'):0)+skills.hp+(Number(source.questMaxHp)||0))*(1+sum('maxHpPct')/100)*(1+gb.hpPct/100)+gb.hp),
+  maxHp:Math.max(1,(Number(source.gmMaxHp??(300+endurance*.1+sum('hp','maxHp','health')))+(source.gmMaxHp!=null?dbiPlanRolledTotal(gear,'hp'):0)+skills.hp+(Number(source.questMaxHp)||0))*(1+sum('maxHpPct')/100)*(1+gb.hpPct/100)+gb.hp),
   maxKi:Math.max(0,(Number(source.gmMaxKi??(500+intelligence*.01+sum('kiPoints','maxKi','maxMp','mana','ki')))+(source.gmMaxKi!=null?dbiPlanRolledTotal(gear,'maxKi'):0))*(1+sum('maxKiPct')/100)*(1+gb.kiPct/100)+gb.ki),
   intelligence,techniqueKi,techniqueAttackPvp,techniqueDamageBonusPct,techniqueValuePct:sum('techniqueValuePct'),gloryBonus:sum('gloryBonus'),
   moves:tech.moves,unlockedTechniques:tech.unlocked,statusSkills:dbiCombatStatusSkills(character.id)};
@@ -3955,7 +3955,7 @@ function renderGM(message='',activeSection='items',selectedItem=null){
  <button type="submit">Zapisz statystyki</button><p id="gmStatInfo" role="status"></p></form></section>
  <section class="eq-panel"><h2>GM · HP I KI</h2><p class="eq-caption">Ustaw maksymalne HP i KI aktywnej postaci. Wartości zostaną użyte podczas kolejnych walk.</p>
  <form id="gmVitalsForm" class="dbi-gm-form">
- <label>Maksymalne HP<input type="number" name="hp" min="0.01" max="999999999999" step="any" required value="${gmChar.stats?.gmMaxHp??Math.max(.01,300+gmStatVal(['endurance','wytrzymalosc'])*.01)}"></label>
+ <label>Maksymalne HP<input type="number" name="hp" min="0.01" max="999999999999" step="any" required value="${gmChar.stats?.gmMaxHp??Math.max(.01,300+gmStatVal(['endurance','wytrzymalosc'])*.1)}"></label>
  <label>Maksymalne KI<input type="number" name="ki" min="0" max="999999999999" step="any" required value="${gmChar.stats?.gmMaxKi??Math.max(0,500+gmStatVal(['intelligence','inteligencja'])*.01)}"></label>
  <button type="submit">Zapisz HP i KI</button><p id="gmVitalsInfo" role="status"></p></form></section>`;
  const dungeonSection=document.createElement('section');
@@ -4893,7 +4893,7 @@ window.DBIWorldInventory={
       techniqueAttackMax:techniqueAttackPvp,
       techniqueAttackPvm,techniqueAttackPvp,techniqueDamageBonusPct,techniqueValuePct:bonus('techniqueValuePct'),
       defense:Math.max(0,(endurance*.1+skills.defense+bonus('defense')+(Number(character.stats?.questDefenseBonus)||0))*(1+bonus('defensePct')/100)*(1+gb.defensePct/100)),
-      maxHp:Math.max(.01,(Number(character.stats?.gmMaxHp??(300+endurance*.01+bonus('hp','maxHp','health')))+(character.stats?.gmMaxHp!=null?dbiPlanRolledTotal(worn,'hp'):0)+skills.hp+(Number(character.stats?.questMaxHp)||0))*(1+bonus('maxHpPct')/100)*(1+gb.hpPct/100)+gb.hp),
+      maxHp:Math.max(.01,(Number(character.stats?.gmMaxHp??(300+endurance*.1+bonus('hp','maxHp','health')))+(character.stats?.gmMaxHp!=null?dbiPlanRolledTotal(worn,'hp'):0)+skills.hp+(Number(character.stats?.questMaxHp)||0))*(1+bonus('maxHpPct')/100)*(1+gb.hpPct/100)+gb.hp),
       maxKi:Math.max(0,(Number(character.stats?.gmMaxKi??(500+intelligence*.01+bonus('kiPoints','maxKi','maxMp','mana','ki')))+(character.stats?.gmMaxKi!=null?dbiPlanRolledTotal(worn,'maxKi'):0))*(1+bonus('maxKiPct')/100)*(1+gb.kiPct/100)+gb.ki),
       moveSpeedPct:dbiCharacterBonus(character,worn,['moveSpeedPct','moveSpeed'])+(dbiZenActive('purple')?50:0),
       attackSpeedPct:dbiCharacterBonus(character,worn,['attackSpeedPct','attackSpeed'])+(Number(character.stats?.questAttackSpeedPct)||0)};

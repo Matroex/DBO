@@ -15,6 +15,8 @@ test('character creation uses published content and isolates accounts',async()=>
   const saved=await service.get(a.id,c.id);
   assert.equal(Number(saved.stats.strength),4);
   assert.equal(Number(saved.stats.speed),5);
+  assert.deepEqual(saved.baseVitals,{maxHp:300.6,maxKi:500.02});
+  assert.deepEqual(saved.wallets,{gold:'0',zeni:'0',dragon_coin:'0'});
   assert.equal(await service.get(b.id,c.id),null);
   assert.deepEqual(await service.list(b.id),[]);
   await assert.rejects(service.create(a.id,{name:'Invalid',raceId:'unknown'}));
