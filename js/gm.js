@@ -6,7 +6,7 @@
  const prefix='dboidle_characters_v1_';
  const target=byId('target'),status=byId('gmStatus'),forms=byId('gmForms');
  const statsForm=byId('stats'),grantForm=byId('grant');
- const fields=[['level','Poziom',500],['exp','EXP',Number.MAX_SAFE_INTEGER],
+ const fields=[['level','Poziom',window.DBIGmAccess.maxCharacterLevel],['exp','EXP',Number.MAX_SAFE_INTEGER],
   ['strength','Siła'],['speed','Szybkość'],['endurance','Wytrzymałość'],['intelligence','Inteligencja'],['ki','KI'],
   ['gold','Złoto'],['dragon','Smocze Monety'],['premium','Zeni']];
  const attrs=new Set(['strength','speed','endurance','intelligence','ki']);
@@ -101,6 +101,8 @@
    post.log(updated.id,updated.name,'Zapis postaci',fields.map(([name,label])=>label+' '+data.get(name)).join(', '))]);
   return 'Zapisano postać.';
  });
+ submit(byId('grantLevels'),({key,character},data)=>
+  window.DBIGmAccess.grantLevels(key,character.id,Number(data.get('count'))).message);
  submit(grantForm,({character},data,mode)=>{
   const item=catalog().find(entry=>entry.id===data.get('item'));
   const count=Number(data.get('count')),enhancement=Number(data.get('enhancement')),quality=data.get('quality');

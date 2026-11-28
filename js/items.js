@@ -26,6 +26,24 @@ const DBI_SAYAN_250_ITEMS=DBI_SAYAN_50_ITEMS.map(source=>{
   image:'assets/items/sayan-250-'+key+'.png',requiredLevel:250,
   description:'Zestaw Elitarnych Sayan na 250. poziom.'};
 });
+const DBI_EARTH_EQUIPMENT=[
+ ['bron','Kij Wojownika','Kij Wszechmogącego','Kij Smoczego Wysłannika'],
+ ['opaska','Nakrycie głowy Ucznia','Maska Umarłego','Hełm Herosa'],
+ ['zbroja','Strój Ucznia','Ubranie Bojowe','Zbroja Herosa'],
+ ['naszyjnik','Smoczy Naszyjnik','Naszyjnik Mistrza','Naszyjnik Z'],
+ ['kolczyki','Smocze Kolczyki','Kolczyki Mistrza','Kolczyki Z'],
+ ['pas','Pas Ucznia','Pas Bojowy','Pas Herosa'],
+ ['pierscien','Smoczy Pierścień','Pierścień Bestii','Zegarek Herosa'],
+ ['rekawice','Opaski Ucznia','Rękawice Bojowe','Rękawice Herosa'],
+ ['buty','Buty Ucznia','Buty Bojowe','Buty Herosa']
+];
+const DBI_EARTH_ITEMS=[100,250,500].flatMap((requiredLevel,tier)=>
+ DBI_EARTH_EQUIPMENT.map(([slot,...names])=>({
+  id:'earth-'+requiredLevel+'-'+slot,name:names[tier],slot,
+  image:'assets/items/earth-'+requiredLevel+'-'+slot+'.png',
+  requiredLevel,requiredRace:'ziemianin',quality:'Pospolity',attack:0,defense:0,ki:0,
+  description:'Zestaw Ziemianina na '+requiredLevel+'. poziom.'
+ })));
 // Nowe materiały — bez dropów, receptur i automatycznych nagród.
 const DBI_NEW_MATERIALS_20261125=[
  {
@@ -292,7 +310,7 @@ function dbiLoadCatalog(){
   else items[index]={...item,...items[index],slot:item.slot,requiredLevel:item.requiredLevel,requiredRace:item.requiredRace};
  }
  // Uzupełnij zapisany wcześniej katalog, bez nadpisywania edycji GM.
- for(const item of DBI_NEW_MATERIALS_20261125){
+ for(const item of [...DBI_NEW_MATERIALS_20261125,...DBI_EARTH_ITEMS]){
   if(!items.some(entry=>entry.id===item.id))items.push({...item});
  }
  dbiAddAdventureItems(items);

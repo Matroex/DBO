@@ -4,12 +4,13 @@
 <body><main class="game"><section class="dbi-admin gm-workbench"><p id="gmAccessNotice" role="status" hidden>Panel jest dostępny po zalogowaniu na konto Game Mastera. <a href="login.html">Przejdź do logowania</a>.</p><div id="gmPage" hidden>
 <header class="dbi-admin-head"><h1>Panel GM</h1><a href="index.html">Wróć do gry</a></header>
 <p>Tryb lokalny. Panel obsługuje postacie zapisane w tej przeglądarce.</p>
-<nav class="gm-workbench-nav" aria-label="Panel GM"><a class="ghost-button" href="index.html#gm-items">Przedmioty</a> <a class="ghost-button" href="index.html#gm-chests">Skrzynie</a> <a class="ghost-button" href="index.html#gm-enemies">Moby i bossowie</a> <a class="ghost-button" href="index.html#gm-smith">Kowalstwo i ewolucje</a></nav>
+<nav class="gm-workbench-nav" aria-label="Panel GM"><a class="ghost-button" href="index.html#gm-items">Przedmioty</a> <a class="ghost-button" href="index.html#gm-chests">Skrzynie</a> <a class="ghost-button" href="index.html#gm-enemies">Moby i bossowie</a> <a class="ghost-button" href="index.html#gm-smith">Kowalstwo i ewolucje</a> <a class="ghost-button" href="index.html#gm-upgrades">Ulepszanie</a></nav>
 <label for="characterSearch">Szukaj po postaci lub koncie</label><input id="characterSearch" type="search">
 <label for="target">Postać</label><select id="target"></select>
 <p id="gmStatus" role="status"></p>
 <div id="gmForms" class="dbi-admin-grid" hidden>
 <form id="stats"><h2>Postać</h2><div id="statsFields" class="dbi-admin-fields"></div><button class="gold-button">Zapisz postać</button></form>
+<form id="grantLevels"><h2>Poziomy postaci</h2><label>Liczba poziomów<input type="number" name="count" min="1" step="1" value="1" required></label><button class="gold-button">Dodaj poziomy</button></form>
 <form id="grant"><h2>Przedmioty i poczta</h2>
 <label>Przedmiot<select name="item"></select></label>
 <div class="dbi-admin-fields">
@@ -24,6 +25,6 @@
 <section><h2>Ekwipunek</h2><p id="inventory"></p><form id="teleport"><label>Lokacja<select name="location" id="gmLocation"></select></label><button class="ghost-button">Teleportuj</button></form></section>
 <section><h2>Historia zmian</h2><ol id="history"></ol></section>
 </div></div></section></main>
-<script src="js/items.js?v=chi1"></script><script src="js/local-post.js"></script><link rel="stylesheet" href="css/forms.css"><script src="js/forms.js"></script><script src="js/world-tiles.js?v=4120"></script><script src="data/gm-world-published.js?v=palace-editor1"></script><script src="js/world-data.js?v=1" id="dbi-world-data-loader"></script><script src="js/world.js?v=optional-spawn1"></script><script src="js/gm-access.js?v=1"></script><script src="js/gm-content-editor.js?v=workbench1"></script><script src="js/gm.js?v=zeni1"></script>
+<script src="js/items.js?v=chi1"></script><script src="js/local-post.js"></script><link rel="stylesheet" href="css/forms.css"><script src="js/forms.js"></script><script src="js/world-tiles.js?v=4120"></script><script src="data/gm-world-published.js?v=palace-editor1"></script><script src="js/world-data.js?v=1" id="dbi-world-data-loader"></script><script src="js/world.js?v=optional-spawn1"></script><script src="js/gm-access.js?v=gm-level1"></script><script src="js/gm-content-editor.js?v=workbench1"></script><script src="js/gm.js?v=gm-level1"></script>
 </body></html>
 
