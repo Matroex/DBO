@@ -1,0 +1,3 @@
+# Legacy world loot sale policy
+
+Audit of js/world.js found no positive sale prices for current world drops. Common, regional, hidden, boss fallback and dungeon loot are explicitly emitted with sell:0 and sellable:false. Custom encounter loot is also emitted with these flags by lootItems. Migration 029 explicitly marks known catalog item IDs unsellable in the new published revision, where those IDs exist; it does not create missing items or invent prices. Other items without explicit prices remain denied by the claim service. Future reward adapters must preserve encounter-specific unsellability even if a catalog item later becomes sellable elsewhere. No changes to legacy client or shop pricing.
