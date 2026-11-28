@@ -206,6 +206,36 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   assert.deepEqual([failed.success,failed.level,await balance()],[false,0,'0']);
   const {rows:[progress]}=await pool.query('SELECT experience FROM character_smith_progress WHERE character_id=$1',[characterId]);
   assert.equal(progress.experience,1900);
+  const qualityPath=base+'/api/v1/characters/'+characterId+'/quality';
+  const qualityPost=input=>fetch(qualityPath,{method:'POST',headers,body:JSON.stringify(input)});
+  const getQuality=async()=>(await (await fetch(qualityPath,{headers})).json()).items.find(entry=>entry.id===itemId);
+  await pool.query("INSERT INTO character_skills(character_id,skill_id,level) VALUES($1,'kowalstwo2',10)",[characterId]);
+  await pool.query("UPDATE wallets SET balance=40000 WHERE character_id=$1 AND currency_id='gold'",[characterId]);
+  const common=await getQuality();
+  assert.equal(common.quote.chance,100);
+  assert.equal(common.quote.gold,10000);
+  const qualityAttempt={itemId,operationId:randomUUID(),expectedQuote:common.quoteKey};
+  assert.equal((await qualityPost(qualityAttempt)).status,409);
+  assert.equal(await balance(),'40000');
+  assert.equal((await pool.query('SELECT experience FROM character_smith_progress WHERE character_id=$1',[characterId])).rows[0].experience,1900);
+  await add('smith-upgrade-1',4,20);
+  await add('smith-upgrade-2',5,20);
+  await add('smith-quality-common',6,1);
+  await add('smith-quality-rare',7,1);
+  const completed=await qualityPost(qualityAttempt);
+  assert.equal(completed.status,200);
+  const qualityResult=await completed.json();
+  assert.deepEqual([qualityResult.success,qualityResult.qualityId,qualityResult.level,qualityResult.experienceGained],[true,'uncommon',0,3]);
+  assert.deepEqual(await (await qualityPost(qualityAttempt)).json(),qualityResult);
+  assert.deepEqual(await (await post(qualityAttempt)).json(),{error:'operation_conflict'});
+  assert.equal(await balance(),'30000');
+  await pool.query("INSERT INTO character_stats(character_id,stat_id,value) VALUES($1,'qualityChancePct',-100)",[characterId]);
+  const uncommon=await getQuality();
+  const failQuality=await qualityPost({itemId,operationId:randomUUID(),expectedQuote:uncommon.quoteKey});
+  assert.equal(failQuality.status,200);
+  const lost=await failQuality.json();
+  assert.deepEqual([lost.success,lost.qualityId,lost.experienceGained,await balance()],[false,'uncommon',0,'0']);
+  assert.equal((await pool.query('SELECT experience FROM character_smith_progress WHERE character_id=$1',[characterId])).rows[0].experience,1903);
  }finally{
   try{
    if(characterId){

@@ -3,6 +3,7 @@ export const smithProfessionV1 = {
   maxLevel: 30,
   experiencePerLevel: 10,
   upgradeCheckpoint: {level: 20, chance: 10},
+  qualityCheckpoint: {level: 30, chance: 10},
   experienceCheckpoint: {level: 15, bonus: 2},
   rewardBandLevels: [10,20],
   craftExperience: [

@@ -2,6 +2,7 @@ const find = id => document.getElementById(id);
 const login = find('login');
 const character = find('character');
 const item = find('item');
+const operation = find('operation');
 const upgrade = find('upgrade');
 const status = find('status');
 const errors = {
@@ -15,7 +16,9 @@ const errors = {
   rate_limited: 'Odczekaj minutę przed następną próbą logowania.'
 };
 let token, view, pending, busy = false;
-const endpoint = () => '/api/v1/characters/' + character.value + '/upgrades';
+const endpoint = () => '/api/v1/characters/' + character.value + '/' + operation.value;
+const qualityMode = () => operation.value === 'quality';
+const qualityNames = {common:'Pospolity',uncommon:'Zwyczajny',rare:'Rzadki',epic:'Epicki',legendary:'Legendarny'};
 const selection = () => view?.items.find(entry => entry.id === item.value);
 const number = new Intl.NumberFormat('pl-PL');
 
@@ -39,13 +42,16 @@ function render() {
   const area = find('quote');
   area.replaceChildren();
   character.disabled = busy || Boolean(pending) || !character.options.length;
+  operation.disabled = busy || Boolean(pending);
   item.disabled = busy || Boolean(pending) || !view?.items.length;
-  upgrade.textContent = pending ? 'Sprawdź wynik próby' : 'Ulepsz przedmiot';
-  upgrade.disabled = busy || !entry || (!pending && (!view.smithRank || BigInt(view.gold) < BigInt(entry.quote.gold) ||
+  upgrade.textContent = pending ? 'Sprawdź wynik próby' : qualityMode() ? 'Podnieś jakość' : 'Ulepsz przedmiot';
+  upgrade.disabled = busy || !entry || (!pending && ((!qualityMode() && !view.smithRank) || BigInt(view.gold) < BigInt(entry.quote.gold) ||
     entry.materials.some(material => BigInt(material.available) < BigInt(material.count))));
   if (!entry) return;
   const {quote, materials} = entry;
-  area.append(text('p', (entry.targetName ? entry.targetName + ' +0' : entry.name + ' +' + (entry.level + 1)) +
+  const target = qualityMode() ? (qualityNames[quote.qualityId] ?? quote.qualityId) :
+    entry.targetName ? entry.targetName + ' +0' : entry.name + ' +' + (entry.level + 1);
+  area.append(text('p', target +
     ' · ' + number.format(quote.chance) + '% szansy'), text('p', 'Koszt złota: ' + number.format(quote.gold)));
   if (materials.length) {
     const list = document.createElement('ul');
@@ -58,10 +64,12 @@ function render() {
 async function refresh() {
   const previous = item.value;
   view = character.value ? await request(endpoint()) : {items: [], gold: '0', smithRank: 0};
-  item.replaceChildren(...view.items.map(entry => new Option(entry.name + ' +' + entry.level, entry.id)));
+  item.replaceChildren(...view.items.map(entry => new Option(entry.name + ' +' + entry.level +
+    (qualityMode() ? ' · ' + (qualityNames[entry.qualityId] ?? entry.qualityId) : ''), entry.id)));
   if (view.items.some(entry => entry.id === previous)) item.value = previous;
   find('gold').textContent = 'Złoto: ' + number.format(BigInt(view.gold));
-  find('rank').textContent = view.smithRank ? 'Podstawowe kowalstwo: ' + view.smithRank : 'Wymagana umiejętność Podstawowe kowalstwo.';
+  find('rank').textContent = qualityMode() ? '' :
+    view.smithRank ? 'Podstawowe kowalstwo: ' + view.smithRank : 'Wymagana umiejętność Podstawowe kowalstwo.';
   const profession = view.profession;
   find('profession').textContent = profession ? 'Profesja kowalstwa · poziom ' + profession.level +
     (profession.needed ? ' · ' + number.format(profession.experience) + ' / ' + number.format(profession.needed) + ' EXP' : ' · maksymalny poziom') +
@@ -107,11 +115,13 @@ login.addEventListener('submit', event => {
     else if (!view.items.length) status.textContent = 'Brak przedmiotów do ulepszenia w plecaku.';
   });
 });
-character.addEventListener('change', () => run(async () => {
+const refreshSelection = () => run(async () => {
   view = undefined;
   await refresh();
   if (!view.items.length) status.textContent = 'Brak przedmiotów do ulepszenia w plecaku.';
-}));
+});
+character.addEventListener('change', refreshSelection);
+operation.addEventListener('change', refreshSelection);
 item.addEventListener('change', render);
 upgrade.addEventListener('click', () => run(async () => {
   const entry = selection();
@@ -127,8 +137,11 @@ upgrade.addEventListener('click', () => run(async () => {
   }
   pending = undefined;
   view = undefined;
-  const result = outcome.success ? 'Ulepszenie udane. Poziom +' + outcome.level + '.' :
-    'Próba nieudana. Poziom pozostaje bez zmian, koszt został pobrany.';
+  const result = (outcome.success ? qualityMode() ?
+    'Nowa jakość: ' + (qualityNames[outcome.qualityId] ?? outcome.qualityId) + '.' :
+    'Ulepszenie udane. Poziom +' + outcome.level + '.' :
+    'Próba nieudana. Koszt został pobrany.') +
+    (outcome.experienceGained ? ' +' + outcome.experienceGained + ' EXP kowalstwa.' : '');
   try { await refresh(); status.textContent = result; }
   catch { status.textContent = result + ' Nie udało się odświeżyć plecaka.'; }
 }));

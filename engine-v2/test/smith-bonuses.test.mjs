@@ -10,7 +10,7 @@ test('smith bonuses combine character stats, sign thresholds and validated plans
  const chi={id:'smith-chi-1',base:{upgradeChancePct:2},level:0,reinforced:true,
   plans:[['upgradeChancePct',11],['upgradeChancePct',3],['upgradeChancePct',7],['defense',3],['hp',5],['upgradeMaterialDiscount',1]]};
  const character={upgradeChancePct:2,upgradeMaterialDiscount:1};
- assert.deepEqual(resolveSmithBonuses(scaling,signs,character,[sign,chi]),{main:7,mainMaterialDiscount:1});
+ assert.deepEqual(resolveSmithBonuses(scaling,signs,character,[sign,chi]),{main:7,mainMaterialDiscount:1,qualityChance:0});
  assert.deepEqual(resolveSmithBonuses(scaling,signs,character,[{...sign,level:8},{...chi,reinforced:false}]),
-  {main:9,mainMaterialDiscount:2});
+  {main:9,mainMaterialDiscount:2,qualityChance:0});
 });

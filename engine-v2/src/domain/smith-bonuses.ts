@@ -4,6 +4,7 @@ import {resolveSignBonuses} from './signs.js';
 
 const chanceKey='upgradeChancePct';
 const discountKey='upgradeMaterialDiscount';
+const qualityKey='qualityChancePct';
 interface EquippedSmithItem {
   id: string;
   level: number;
@@ -29,7 +30,7 @@ export function resolveSmithBonuses(
         if (!Array.isArray(roll)) continue;
         const [key,value]=roll;
         if (typeof key!=='string'||typeof value!=='number'||!Number.isFinite(value)||seen.has(key)) continue;
-        const max=key===chanceKey?10:key===discountKey?1:undefined;
+        const max=key===chanceKey?10:key===qualityKey?5:key===discountKey?1:undefined;
         if (max!==undefined) {
           if (!Number.isInteger(value)||value<1||value>max) continue;
           bonuses[key]=(readBonus(bonuses,[key])??0)+value;
@@ -41,6 +42,7 @@ export function resolveSmithBonuses(
   });
   return {
     main: characterBonus([character],worn,[chanceKey]),
+    qualityChance: characterBonus([character],worn,[qualityKey]),
     mainMaterialDiscount: Math.trunc(characterBonus([character],worn,[discountKey]))
   };
 }

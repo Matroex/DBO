@@ -2,7 +2,7 @@ import {listBagUpgrades,upgradeBagItem} from './upgrade.mjs';
 
 const uuid='[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}';
 const idPattern=new RegExp('^'+uuid+'$','i');
-const pathPattern=new RegExp('^/api/v1/characters/('+uuid+')/upgrades$','i');
+const pathPattern=new RegExp('^/api/v1/characters/('+uuid+')/(upgrades|quality)$','i');
 const conflicts=new Map([
  ['Upgrade item changed','quote_changed'],['Upgrade operation conflict','operation_conflict'],
  ['Insufficient funds','insufficient_gold'],['Insufficient upgrade materials','insufficient_materials'],
@@ -31,7 +31,7 @@ export function upgradeHandler(auth,pool){
   const token=/^Bearer ([A-Za-z0-9_-]{43})$/.exec(req.headers.authorization??'')?.[1];
   const account=token?await auth.authenticate(token):null;
   if(!account)return reply(401,{error:'unauthorized'});
-  const input={accountId:account.id,characterId:match[1]};
+  const input={accountId:account.id,characterId:match[1],kind:match[2].toLowerCase()==='quality'?'quality':'upgrade'};
   try{
    if(req.method==='GET')return reply(200,await listBagUpgrades(pool,input));
    let attempt;

@@ -2,7 +2,9 @@ import {createHash,randomInt} from 'node:crypto';
 import {quoteUpgrade,resolveUpgrade} from '../../dist/domain/upgrade.js';
 import {validateItemScalingRules} from '../../dist/domain/item-scaling.js';
 import {resolveSmithBonuses} from '../../dist/domain/smith-bonuses.js';
-import {smithProfessionProgress} from '../../dist/domain/smith-profession.js';
+import {smithProfessionProgress,smithProfessionV1} from '../../dist/domain/smith-profession.js';
+import {quoteQuality} from '../../dist/domain/quality-upgrade.js';
+import {recordSmithExperience} from './smith-experience.mjs';
 import {changeWallet} from '../economy/wallet.mjs';
 
 function readCatalog(rows){
@@ -50,10 +52,10 @@ async function loadContext(db,characterId,race,bonuses){
  let profession;
  if(!bonuses){
   const {rows:[progress]}=await db.query(
-   "SELECT COALESCE(s.level,0) AS rank,COALESCE(p.experience,0) AS experience FROM characters c LEFT JOIN character_skills s ON s.character_id=c.id AND s.skill_id='kowalstwo' LEFT JOIN character_smith_progress p ON p.character_id=c.id WHERE c.id=$1",
+   "SELECT COALESCE(s.level,0) AS rank,COALESCE(q.level,0) AS quality_rank,COALESCE(p.experience,0) AS experience FROM characters c LEFT JOIN character_skills s ON s.character_id=c.id AND s.skill_id='kowalstwo' LEFT JOIN character_skills q ON q.character_id=c.id AND q.skill_id='kowalstwo2' LEFT JOIN character_smith_progress p ON p.character_id=c.id WHERE c.id=$1",
    [characterId]);
   profession=smithProfessionProgress(progress.experience);
-  const {rows:stats}=await db.query("SELECT stat_id,value FROM character_stats WHERE character_id=$1 AND stat_id IN ('upgradeChancePct','upgradeMaterialDiscount')",[characterId]);
+  const {rows:stats}=await db.query("SELECT stat_id,value FROM character_stats WHERE character_id=$1 AND stat_id IN ('upgradeChancePct','upgradeMaterialDiscount','qualityChancePct')",[characterId]);
   const {rows:worn}=await db.query(
    "SELECT definition_id,upgrade_level,attributes FROM inventory_items WHERE character_id=$1 AND equipment_slot LIKE 'main:%'",[characterId]);
   const equipment=worn.filter(item=>definitions.get(item.definition_id)?.stackable===false).map(item=>({
@@ -61,8 +63,11 @@ async function loadContext(db,characterId,race,bonuses){
    plans:item.attributes.plans,reinforced:item.attributes.reinforced===true
   }));
   const signs=content.find(row=>row.definition_id==='sign_bonuses'&&row.kind==='combat_rules')?.data??{};
-  bonuses={smithRank:progress.rank,smithCheckpoint:profession.upgradeBonus,...resolveSmithBonuses(scaling,signs,
-   Object.fromEntries(stats.map(row=>[row.stat_id,Number(row.value)])),equipment)};
+  const equipmentBonuses=resolveSmithBonuses(scaling,signs,Object.fromEntries(stats.map(row=>[row.stat_id,Number(row.value)])),equipment);
+  const checkpoint=smithProfessionV1.qualityCheckpoint;
+  const qualityBonus=Math.min(10,progress.quality_rank)+equipmentBonuses.qualityChance+
+   (profession.level>=checkpoint.level?checkpoint.chance:0);
+  bonuses={smithRank:progress.rank,smithCheckpoint:profession.upgradeBonus,...equipmentBonuses,qualityBonus};
  }
  const overrides=content.find(row=>row.kind==='recipe')?.data;
  return {revision,definitions,scaling,profession,context:{race,catalog,bonuses,overrides}};
@@ -76,7 +81,7 @@ function itemQuality(source,row,scaling){
 const quoteKey=(revision,row,quote)=>createHash('sha256')
  .update(JSON.stringify([revision.id,row.definition_id,row.quality_id,row.upgrade_level,quote])).digest('hex');
 
-export async function listBagUpgrades(pool,{accountId,characterId}){
+export async function listBagUpgrades(pool,{accountId,characterId,kind='upgrade'}){
  const db=await pool.connect();
  try{
   await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
@@ -90,10 +95,12 @@ export async function listBagUpgrades(pool,{accountId,characterId}){
   const items=[];
   for(const row of rows){
    const source=definitions.get(row.definition_id);
-   if(BigInt(row.quantity)!==1n||itemQuality(source,row,scaling)<0)continue;
-   const quote=quoteUpgrade(row.definition_id,row.upgrade_level,context);
+   const quality=itemQuality(source,row,scaling);
+   if(BigInt(row.quantity)!==1n||quality<0)continue;
+   const quote=kind==='quality'?quoteQuality(source,quality,context.bonuses.qualityBonus):
+    quoteUpgrade(row.definition_id,row.upgrade_level,context);
    if(!quote||quote.requiresReforge&&!quote.targetId)continue;
-   items.push({id:row.id,name:source.name??row.definition_id,level:row.upgrade_level,quote,quoteKey:quoteKey(revision,row,quote),
+   items.push({id:row.id,name:source.name??row.definition_id,level:row.upgrade_level,qualityId:row.quality_id,quote,quoteKey:quoteKey(revision,row,quote),
     targetName:quote.targetId?(definitions.get(quote.targetId)?.name??quote.targetId):null,
     materials:quote.materials.map(entry=>({...entry,name:definitions.get(entry.id)?.name??entry.id,
      available:(quantityById.get(entry.id)??0n).toString()}))});
@@ -104,7 +111,7 @@ export async function listBagUpgrades(pool,{accountId,characterId}){
 }
 
 // Internal service. Bonuses come from server-side character state, never request data.
-export async function upgradeBagItem(pool,{accountId,characterId,itemId,operationId,expectedQuote,bonuses}){
+export async function upgradeBagItem(pool,{accountId,characterId,itemId,operationId,expectedQuote,bonuses,kind='upgrade'}){
  const db=await pool.connect();
  try{
   await db.query('BEGIN');
@@ -112,9 +119,9 @@ export async function upgradeBagItem(pool,{accountId,characterId,itemId,operatio
    'SELECT race_id FROM characters WHERE id=$1 AND account_id=$2 FOR UPDATE',[characterId,accountId]);
   if(!character)throw Error('Character missing');
   const {rows:[previous]}=await db.query(
-   'SELECT item_id,result FROM upgrade_attempts WHERE character_id=$1 AND operation_id=$2',[characterId,operationId]);
+   'SELECT item_id,kind,result FROM upgrade_attempts WHERE character_id=$1 AND operation_id=$2',[characterId,operationId]);
   if(previous){
-   if(previous.item_id!==itemId.toLowerCase())throw Error('Upgrade operation conflict');
+   if(previous.item_id!==itemId.toLowerCase()||previous.kind!==kind)throw Error('Upgrade operation conflict');
    await db.query('COMMIT');
    return previous.result;
   }
@@ -127,7 +134,9 @@ export async function upgradeBagItem(pool,{accountId,characterId,itemId,operatio
   if(quality<0)throw Error('Invalid upgrade item');
   const instance={id:row.id,definitionId:row.definition_id,quality,level:row.upgrade_level,bagSlot:row.bag_slot,
    attributes:row.attributes,inheritance:row.attributes.inheritance??{}};
-  const outcome=resolveUpgrade(instance,context,scaling,randomInt(1_000_000_000)/1_000_000_000);
+  const roll=randomInt(1_000_000_000)/1_000_000_000;
+  const outcome=kind==='quality'?resolveQuality(source,instance,context.bonuses.qualityBonus??0,roll):
+   resolveUpgrade(instance,context,scaling,roll);
   if(!outcome)throw Error('Upgrade unavailable');
   const {quote,success,item}=outcome;
   if(expectedQuote!==undefined&&expectedQuote!==quoteKey(revision,row,quote))throw Error('Upgrade item changed');
@@ -135,7 +144,8 @@ export async function upgradeBagItem(pool,{accountId,characterId,itemId,operatio
   const qualityId=target?.qualityIds?.[item.quality];
   if(target?.stackable!==false||!qualityId||item.level>2147483647)throw Error('Invalid upgrade result');
   if(quote.gold){
-   const debit=await changeWallet(db,{characterId,currencyId:'gold',delta:-BigInt(quote.gold),operationId,reason:'equipment_upgrade'});
+   const debit=await changeWallet(db,{characterId,currencyId:'gold',delta:-BigInt(quote.gold),operationId,
+    reason:kind==='quality'?'equipment_quality':'equipment_upgrade'});
    if(debit.replayed)throw Error('Upgrade operation conflict');
   }
   await consumeMaterials(db,characterId,row.id,quote.materials);
@@ -145,12 +155,24 @@ export async function upgradeBagItem(pool,{accountId,characterId,itemId,operatio
     [row.id,item.definitionId,qualityId,item.level,JSON.stringify(attributes)]);
   }
   const result={success,quote,itemId:row.id,definitionId:item.definitionId,qualityId,level:item.level,bagSlot:item.bagSlot};
-  await db.query('INSERT INTO upgrade_attempts(character_id,operation_id,item_id,revision_id,result) VALUES($1,$2,$3,$4,$5)',
-   [characterId,operationId,row.id,revision.id,JSON.stringify(result)]);
+  if(kind==='quality'){
+   const award=await recordSmithExperience(db,{characterId,operationId,kind,tier:quality,success});
+   if(award.replayed)throw Error('Upgrade operation conflict');
+   result.experienceGained=award.gained;
+  }
+  await db.query('INSERT INTO upgrade_attempts(character_id,operation_id,item_id,revision_id,result,kind) VALUES($1,$2,$3,$4,$5,$6)',
+   [characterId,operationId,row.id,revision.id,JSON.stringify(result),kind]);
   await db.query('COMMIT');
   return result;
  }catch(error){
   await db.query('ROLLBACK');
   throw error;
  }finally{db.release();}
+}
+
+function resolveQuality(source,instance,bonus,roll){
+ const quote=quoteQuality(source,instance.quality,bonus);
+ if(!quote)return null;
+ const success=roll*100<quote.chance;
+ return {quote,success,item:success?{...instance,quality:instance.quality+1}:instance};
 }
