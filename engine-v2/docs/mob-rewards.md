@@ -1,0 +1,1 @@
+Versioned mob XP rules and deterministic bonus calculation ported from dbiGrantMobKills, dbiExpMultiplier and dbiDoublePvmExp. Quality is explicit. Double XP multiplier configurable; fractional results floor to integer. Bonus inputs must be server-derived. No loot, wallet, battle claim integration or batch kills yet. Existing progression helper remains unchanged.
