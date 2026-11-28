@@ -29,6 +29,7 @@ jobs:
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/content-schema.sql
       - run: node --test test/auth-db.integration.mjs test/character-db.integration.mjs test/character-http.integration.mjs test/wallet-db.integration.mjs test/inventory-db.integration.mjs test/equipment-db.integration.mjs
       - run: node --test test/upgrade-db.integration.mjs
+      - run: node --test test/battle-db.integration.mjs
       - run: docker compose --profile staging up -d --build --wait engine
       - run: node test/staging-smoke.mjs
       - if: always()
