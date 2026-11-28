@@ -2,7 +2,7 @@ name: Engine v2 database checks
 on:
   push:
     branches: [engine-v2]
-    paths: ['engine-v2/migrations/**','engine-v2/tools/migrate.sh','engine-v2/test/**','engine-v2/compose.yaml','.github/workflows/engine-v2-db.yml']
+    paths: ['engine-v2/**','.github/workflows/engine-v2-db.yml']
 permissions:
   contents: read
 jobs:
@@ -13,13 +13,20 @@ jobs:
         working-directory: engine-v2
     env:
       POSTGRES_PASSWORD: ci-disposable-only
+      DATABASE_URL: postgresql://dboidle:ci-disposable-only@127.0.0.1:5432/dboidle
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm run build
       - run: docker compose up -d --wait
       - run: sh tools/migrate.sh
       - run: sh tools/migrate.sh
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/schema.sql
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/character-compat.sql
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/content-schema.sql
+      - run: node --test test/auth-db.integration.mjs
       - if: always()
         run: docker compose down -v
