@@ -94,12 +94,29 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   assert.equal((await fetch(path)).status,401);
   assert.equal((await fetch(base+'/api/v1/characters/'+randomUUID()+'/upgrades',{headers})).status,404);
   await pool.query("INSERT INTO character_skills(character_id,skill_id,level) VALUES($1,'kowalstwo',1)",[characterId]);
+  const probeId=await add('starter-red-staff',3,1,8);
+  for(const [id,slot,level,attributes] of [
+   ['znak-mistrza','main:symbol',5,{}],
+   ['smith-chi-1','main:chi',0,{plans:[['upgradeMaterialDiscount',1],['upgradeChancePct',3]]}],
+   ['znak-mistrza','pvp:symbol',9,{}]
+  ])await pool.query(
+   "INSERT INTO inventory_items(character_id,definition_id,quality_id,equipment_slot,upgrade_level,attributes) VALUES($1,$2,'common',$3,$4,$5)",
+   [characterId,id,slot,level,attributes]);
+  await pool.query("INSERT INTO character_stats(character_id,stat_id,value) VALUES($1,'upgradeChancePct',2)",[characterId]);
   const view=await (await fetch(path,{headers})).json();
   const entry=view.items.find(item=>item.id===itemId);
   assert.equal(view.smithRank,1);
   assert.equal(entry.quote.gold,50000);
   const body={itemId,operationId:request.operationId,expectedQuote:entry.quoteKey};
   const post=input=>fetch(path,{method:'POST',headers,body:JSON.stringify(input)});
+  const probe=view.items.find(item=>item.id===probeId);
+  assert.equal(probe.quote.chance,37);
+  assert.deepEqual(probe.quote.materials.map(material=>material.count),[1,1,1]);
+  await pool.query("UPDATE inventory_items SET upgrade_level=4 WHERE character_id=$1 AND equipment_slot='main:symbol'",[characterId]);
+  const changed=await post({itemId:probeId,operationId:randomUUID(),expectedQuote:probe.quoteKey});
+  assert.equal(changed.status,409);
+  assert.deepEqual(await changed.json(),{error:'quote_changed'});
+  await pool.query('DELETE FROM inventory_items WHERE id=$1',[probeId]);
   assert.equal((await post({...body,bonuses:{smithRank:10}})).status,400);
   const stale=await post({...body,expectedQuote:'0'.repeat(64)});
   assert.equal(stale.status,409);
@@ -112,7 +129,7 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   assert.deepEqual(result,replay);
   assert.deepEqual([result.success,result.itemId,result.definitionId,result.level,result.bagSlot],[true,itemId,'sayan-50-miecz',0,0]);
   assert.equal(await balance(),'0');
-  const {rows}=await pool.query('SELECT id,quantity,attributes FROM inventory_items WHERE character_id=$1 ORDER BY bag_slot',[characterId]);
+  const {rows}=await pool.query('SELECT id,quantity,attributes FROM inventory_items WHERE character_id=$1 AND bag_slot IS NOT NULL ORDER BY bag_slot',[characterId]);
   assert.deepEqual(rows.map(row=>[row.id,row.quantity]),[[itemId,'1'],[dustId,'2']]);
   assert.deepEqual(rows[0].attributes.plans,[1]);
   assert.ok(Object.values(rows[0].attributes.inheritance).some(value=>value>0));

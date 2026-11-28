@@ -1,6 +1,7 @@
 import {createHash,randomInt} from 'node:crypto';
 import {quoteUpgrade,resolveUpgrade} from '../../dist/domain/upgrade.js';
 import {validateItemScalingRules} from '../../dist/domain/item-scaling.js';
+import {resolveSmithBonuses} from '../../dist/domain/smith-bonuses.js';
 import {changeWallet} from '../economy/wallet.mjs';
 
 function readCatalog(rows){
@@ -42,14 +43,23 @@ async function loadContext(db,characterId,race,bonuses){
  const {rows:[revision]}=await db.query("SELECT id FROM content_revisions WHERE status='published'");
  if(!revision)throw Error('Missing published content');
  const {rows:content}=await db.query(
-  "SELECT kind,definition_id,data FROM content_definitions WHERE revision_id=$1 AND (kind='item' OR (kind='combat_rules' AND definition_id='item_scaling') OR (kind='recipe' AND definition_id='equipment-upgrades'))",[revision.id]);
+  "SELECT kind,definition_id,data FROM content_definitions WHERE revision_id=$1 AND (kind='item' OR (kind='combat_rules' AND definition_id IN ('item_scaling','sign_bonuses')) OR (kind='recipe' AND definition_id='equipment-upgrades'))",[revision.id]);
  const {definitions,catalog}=readCatalog(content.filter(row=>row.kind==='item'));
+ const scaling=validateItemScalingRules(content.find(row=>row.definition_id==='item_scaling'&&row.kind==='combat_rules')?.data);
  if(!bonuses){
   const {rows:[skill]}=await db.query("SELECT level FROM character_skills WHERE character_id=$1 AND skill_id='kowalstwo'",[characterId]);
-  bonuses={smithRank:skill?.level??0};
+  const {rows:stats}=await db.query("SELECT stat_id,value FROM character_stats WHERE character_id=$1 AND stat_id IN ('upgradeChancePct','upgradeMaterialDiscount')",[characterId]);
+  const {rows:worn}=await db.query(
+   "SELECT definition_id,upgrade_level,attributes FROM inventory_items WHERE character_id=$1 AND equipment_slot LIKE 'main:%'",[characterId]);
+  const equipment=worn.filter(item=>definitions.get(item.definition_id)?.stackable===false).map(item=>({
+   id:item.definition_id,level:item.upgrade_level,base:definitions.get(item.definition_id).base??{},
+   plans:item.attributes.plans,reinforced:item.attributes.reinforced===true
+  }));
+  const signs=content.find(row=>row.definition_id==='sign_bonuses'&&row.kind==='combat_rules')?.data??{};
+  bonuses={smithRank:skill?.level??0,...resolveSmithBonuses(scaling,signs,
+   Object.fromEntries(stats.map(row=>[row.stat_id,Number(row.value)])),equipment)};
  }
  const overrides=content.find(row=>row.kind==='recipe')?.data;
- const scaling=validateItemScalingRules(content.find(row=>row.kind==='combat_rules')?.data);
  return {revision,definitions,scaling,context:{race,catalog,bonuses,overrides}};
 }
 
