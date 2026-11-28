@@ -31,3 +31,8 @@ export function scaleItem(r:ItemScalingRules,base:BonusMap,quality:number,level:
  }
  return values;
 }
+
+export function reforgeInheritance(resolvedBase:BonusMap,factor=0.5):BonusMap{
+ if(!Number.isFinite(factor)||factor<0||factor>1)throw Error('Invalid inheritance factor');
+ return Object.fromEntries(Object.entries(validateBonusMap(resolvedBase)).filter(([key,value])=>(flat.has(key)||percent.has(key))&&value>0).map(([key,value])=>[key,Number((value*factor).toFixed(4))]));
+}

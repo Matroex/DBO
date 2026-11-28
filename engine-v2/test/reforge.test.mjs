@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {reforge} from '../dist/domain/reforge.js';
+import {scaleItem} from '../dist/domain/item-scaling.js';
+const r={qualityMultipliers:[1,1.1,1.25,1.5,2],flatGrowth:1.5,percentTarget:5,percentTargetLevel:9,maxUpgrade:10};
+const source={id:'starter-red-staff',slot:'weapon',quality:0,base:{attack:5,critChance:1}};
+const target={id:'sayan-50-miecz',slot:'weapon',quality:0,requiredRace:'saiyan',base:{attack:10}};
+const item={id:'instance',definitionId:source.id,quality:2,level:9,bagSlot:12,inheritance:{},attributes:{plans:[['attack',50]],reinforced:true}};
+test('reforge preserves identity, position and plans, inherits half base',()=>{const x=reforge(r,item,source,target,'saiyan',target.id);assert.equal(x.id,item.id);assert.equal(x.bagSlot,12);assert.equal(x.level,0);assert.equal(x.quality,0);assert.deepEqual(x.attributes,item.attributes);assert.equal(x.inheritance.attack,scaleItem(r,source.base,2,9,true,true).attack/2);assert.equal(x.inheritance.critChance,3.125);});
+test('blocked categories and wrong race cannot reforge',()=>{assert.throws(()=>reforge(r,item,{...source,slot:'symbol'},{...target,slot:'symbol'},'saiyan',target.id));assert.throws(()=>reforge(r,item,source,target,'ziemianin',target.id));});
