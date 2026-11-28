@@ -1,0 +1,1 @@
+Ports legacy alias precedence, equipment summation, plan attribute multiplier and combat bonus aggregation. Inputs are trusted resolved item maps, not raw client attributes. Does not yet resolve quality/upgrade/inheritance/plan/chip values from catalog, nor load character snapshots from DB. Main/PvP caller selects the appropriate loadout. No change to legacy UI or balance.
