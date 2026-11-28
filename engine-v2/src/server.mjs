@@ -16,7 +16,7 @@ export function makeServer({pool}={}) {
    const path=new URL(req.url??'/','http://localhost').pathname;
    if(path==='/api/v1/ready'&&req.method==='GET'){
     if(!pool)result={status:503,body:{status:'not_ready'}};
-    else{try{await pool.query('SELECT 1 FROM schema_migrations WHERE version=$1',['005_race_availability']).then(r=>{if(!r.rowCount)throw Error('migration missing');});result={status:200,body:{status:'ready'}};}catch{result={status:503,body:{status:'not_ready'}};}}
+    else{try{await pool.query('SELECT 1 FROM schema_migrations WHERE version=$1',['006_vital_rules']).then(r=>{if(!r.rowCount)throw Error('migration missing');});result={status:200,body:{status:'ready'}};}catch{result={status:503,body:{status:'not_ready'}};}}
    }else result=(auth?await auth(req,path):null)??(characters?await characters(req,path):null)??route(req.method??'',path);
   }catch{result={status:500,body:{error:'internal_error'}};}
   res.writeHead(result.status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...result.headers});

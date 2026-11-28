@@ -2478,8 +2478,8 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
    if(battle.boss&&battle.status==='running'){for(const enemy of battle.enemies){const damageAlreadyTaken=Math.max(0,(Number(enemy.max)||0)-(Number(enemy.hp)||0));enemy.max=battleBoss().stats.hp;enemy.hp=Math.max(0,battleBoss().stats.hp-damageAlreadyTaken)}}
    if(!battle.combatVersion){
     const ch=hero();
-    battle.maxHp=ch.maxHp??50;battle.hp=battle.maxHp;
-    battle.maxKi=ch.maxKi??100;battle.ki=battle.maxKi;
+    battle.maxHp=ch.maxHp??300;battle.hp=battle.maxHp;
+    battle.maxKi=ch.maxKi??500;battle.ki=battle.maxKi;
     battle.enemies.forEach(e=>{e.max=mobHp(e.level);e.hp=e.max;e.nextAttack=Date.now()+mobInterval(e.level,e.stats);e.rewarded=false;});
     battle.nextHeroAttack=Date.now()+heroInterval(Date.now());battle.nextRegen=Date.now()+REGEN_MS;
     battle.updated=Date.now();battle.combatVersion=2;
@@ -3021,7 +3021,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
   if(worldTrainingActive()){worldTrainingNotice();return}
   if(battle?.status==='running'||!canFightBoss())return;
   const now=Date.now(),ch=hero(),{level,name,stats,portrait}=bossTypes[player.location];
-  const nextBattle={location:player.location,bossConfig:bossTypes[player.location],nextBossRegen:player.location==='forestEdge'?now+3000:null,boss:true,combatVersion:2,status:'running',started:now,updated:now,round:0,kills:0,gold:0,exp:0,totalDamage:0,loot:[],log:[],enemies:[{id:0,level,name,portrait,hp:stats.hp,max:stats.hp,nextAttack:now+bossInterval(stats.speed*enemyStatFactor())}],hp:ch.maxHp??50,maxHp:ch.maxHp??50,ki:ch.maxKi??100,maxKi:ch.maxKi??100,nextHeroAttack:now+500,nextRegen:now+REGEN_MS,nextZenUse:now+1000,heroHits:0,heroDamageTaken:0,pveOptions:pveSettings(),nextWaveAt:now,nextGreenAt:now};
+  const nextBattle={location:player.location,bossConfig:bossTypes[player.location],nextBossRegen:player.location==='forestEdge'?now+3000:null,boss:true,combatVersion:2,status:'running',started:now,updated:now,round:0,kills:0,gold:0,exp:0,totalDamage:0,loot:[],log:[],enemies:[{id:0,level,name,portrait,hp:stats.hp,max:stats.hp,nextAttack:now+bossInterval(stats.speed*enemyStatFactor())}],hp:ch.maxHp??300,maxHp:ch.maxHp??300,ki:ch.maxKi??500,maxKi:ch.maxKi??500,nextHeroAttack:now+500,nextRegen:now+REGEN_MS,nextZenUse:now+1000,heroHits:0,heroDamageTaken:0,pveOptions:pveSettings(),nextWaveAt:now,nextGreenAt:now};
   try{localStorage.setItem(battleKey,JSON.stringify(nextBattle))}
   catch{
    const counter=side.querySelector('#forestBossAttempts');
@@ -3061,7 +3061,7 @@ function start(container,id){stop();const turtleDropKey='dboidle_turtle_first_dr
     const unit=mobList[i],stats=configuredStats(unit);
     return {id:i,name:unit.name,portrait:unit.portrait||unit.art||'',level:unit.level,...(unit.combat?{stats,drops:unit.combat.drops,gold:unit.combat.gold,exp:unit.combat.exp}:{}),hp:stats.hp,max:stats.hp,nextAttack:now+mobInterval(unit.level,stats)};
    }),
-   hp:ch.maxHp??50,maxHp:ch.maxHp??50,ki:ch.maxKi??100,maxKi:ch.maxKi??100,
+   hp:ch.maxHp??300,maxHp:ch.maxHp??300,ki:ch.maxKi??500,maxKi:ch.maxKi??500,
    nextHeroAttack:now+500,nextRegen:now+REGEN_MS,nextZenUse:now+1000,heroHits:0,heroDamageTaken:0,pveOptions:pveSettings(),nextWaveAt:now,nextGreenAt:now};
   if(isDungeon){
    nextBattle.dungeonStage=0;nextBattle.dungeonLayout=2;
