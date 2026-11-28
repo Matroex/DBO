@@ -2637,6 +2637,7 @@ function dbiUpgradeReturn(){
 }
 function dbiUpgradePick(index){
  const ref=inventory[index],item=itemById(ref);
+ if(item&&dbiUpgradeExcluded(item)){dbiUpgradeMessage='Ulepszanie tej kategorii: wkrótce.';renderUpgradePanel();return;}
  if(!item||!DBI_SLOTS.some(slot=>slot[1]===item.slot)){
   dbiUpgradeMessage='Do okienka ulepszania można włożyć wyłącznie wyposażenie.';
   renderUpgradePanel();return;
@@ -2653,7 +2654,7 @@ function dbiUpgradePick(index){
 }
 // Wymagania ulepszania dla wyposażenia; wyłączone kategorie nie zużywają tych materiałów.
 const DBI_UPGRADE_CHANCES=[95,90,80,75,70,65,60,50,30,100];
-const DBI_UPGRADE_EXCLUDED=['chi','symbol','stroj treningowy','esencja','scouter'];
+const DBI_UPGRADE_EXCLUDED=['chi','symbol','stroj','stroj treningowy','esencja','scouter'];
 function dbiUpgradeExcluded(item){
  const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pl').trim();
  const slot=normalize(item?.slot),name=normalize(item?.name);
@@ -2670,6 +2671,7 @@ const DBI_SAIYAN_UPGRADE_TIERS=[
   early:['sayanski-metal','sayanska-ruda'],late:['skrawek-sayanskiej-duszy','iskra-super-sayana','sayanska-duma']}
 ];
 function dbiUpgradeRequirements(level,item){
+ if(dbiUpgradeExcluded(item))return null;
  const evolution=level===9?dbiConfiguredEvolution(item):null;
  if(evolution)return {chance:100,gold:evolution.gold??0,reforger:1,materials:evolution.materials};
  const tier=DBI_SAIYAN_UPGRADE_TIERS.find(entry=>item?.id?.startsWith(entry.prefix)),royal=tier&&!tier.reforge;
@@ -2895,6 +2897,7 @@ function dbiUpgradeBaseRows(ref,req){
 }
 
 function renderUpgradePanel(){
+ if(dbiUpgradeSelected&&dbiUpgradeExcluded(itemById(dbiUpgradeSelected.ref))){dbiUpgradeReturn();return;}
  hideItemPopups();
  document.querySelector('#breadcrumb').textContent='WZMOCNIENIA / ULEPSZANIE';
  // Nagłówek startowy znika po otwarciu pierwszej strony; nie można go wymagać przy nawigacji.
