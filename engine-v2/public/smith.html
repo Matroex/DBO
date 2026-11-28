@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pl">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kowalstwo · DBO Engine v2</title>
+<style>
+ :root { color-scheme: dark; background: #141616; color: #f2ebdd; font: 1rem system-ui, sans-serif }
+ body { margin: 0; padding: clamp(1rem, 5vw, 4rem) }
+ main { max-width: 46rem; margin: auto }
+ h1 { font: bold clamp(2.4rem, 6vw, 4rem) Georgia, serif; margin: 0 0 1.5rem }
+ section, form { background: #202423; border: 1px solid #42443c; padding: 1.25rem; border-radius: .5rem }
+ label { display: block; margin-bottom: 1rem }
+ input, select, button { box-sizing: border-box; font: inherit; padding: .6rem; border: 1px solid #716b5d; border-radius: .25rem }
+ input, select { display: block; width: 100%; margin-top: .35rem; background: #161a19; color: inherit }
+ button { background: #e6b969; color: #221908; font-weight: 650; cursor: pointer }
+ button:disabled { opacity: .55; cursor: default }
+ #logout { margin-top: 1rem; background: transparent; color: inherit }
+ :focus-visible { outline: 2px solid #f5cc86; outline-offset: 3px }
+ #status { min-height: 1.5em }
+ li { margin-block: .3rem }
+</style>
+<main>
+ <h1>Kowalstwo</h1>
+ <form id="login">
+  <label>Login <input name="login" autocomplete="username" required></label>
+  <label>Hasło <input name="password" type="password" autocomplete="current-password" required></label>
+  <button>Zaloguj się do Engine v2</button>
+ </form>
+ <section id="smith" hidden aria-label="Ulepszanie wyposażenia">
+  <label>Postać <select id="character"></select></label>
+  <p id="gold"></p>
+  <p id="rank"></p>
+  <label>Przedmiot <select id="item"></select></label>
+  <div id="quote"></div>
+  <button id="upgrade" disabled>Ulepsz przedmiot</button>
+  <div><button id="logout">Wyloguj</button></div>
+ </section>
+ <p id="status" role="status"></p>
+</main>
+<script type="module" src="/smith.mjs"></script>
+</html>

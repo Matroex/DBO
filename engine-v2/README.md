@@ -28,3 +28,8 @@ nie dowodzi utraty danych. Nie odczytuje danych graczy, haseł ani sesji.
 Dokumenty: [audyt](docs/baseline.md), [architektura](docs/architecture.md),
 [warunki migracji](docs/migration.md). Żadna zmiana w zachowaniu produkcji
 nie jest częścią tego commitu.
+## Panel kowalstwa Engine v2
+
+Po uruchomieniu serwera Engine v2 otwórz `http://127.0.0.1:3000/smith` i zaloguj się kontem Engine v2. Panel korzysta z postaci, portfela i plecaka zapisanych w PostgreSQL. Do próby potrzebne są odblokowane Podstawowe kowalstwo (`kowalstwo`) i definicje przedmiotów w opublikowanej wersji katalogu.
+
+Panel pobiera warunki próby z serwera i odświeża plecak po jej rozstrzygnięciu. Gdy warunki się zmienią, serwer wymaga akceptacji nowego kosztu. W razie utraty odpowiedzi przycisk sprawdzenia wyniku ponawia tę samą operację.

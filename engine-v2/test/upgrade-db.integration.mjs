@@ -1,13 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
+import {once} from 'node:events';
 import pg from 'pg';
 import {upgradeBagItem} from '../src/inventory/upgrade.mjs';
+import {newSession} from '../src/auth/credentials.mjs';
+import {makeServer} from '../src/server.mjs';
 
 test('upgrade charges once, rolls back incomplete payment and preserves a reforged item',async()=>{
  const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
+ const server=makeServer({pool}).listen(0,'127.0.0.1');
  let accountId,characterId,revisionId,previousRevision;
  try{
+  await once(server,'listening');
   accountId=(await pool.query("INSERT INTO accounts(login,password_hash) VALUES($1,'test') RETURNING id",
    ['upgrade_'+randomUUID()])).rows[0].id;
   characterId=(await pool.query("INSERT INTO characters(account_id,name,race_id,slot) VALUES($1,'Upgrade test','saiyan',0) RETURNING id",
@@ -41,7 +46,31 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   const balance=async()=>(await pool.query("SELECT balance FROM wallets WHERE character_id=$1 AND currency_id='gold'",[characterId])).rows[0].balance;
   assert.equal(await balance(),'50000');
   await add('upgrade-reforger',2,1);
-  const [result,replay]=await Promise.all([upgradeBagItem(pool,request),upgradeBagItem(pool,request)]);
+  const {token,hash}=newSession();
+  await pool.query("INSERT INTO sessions(token_hash,account_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",[hash,accountId]);
+  const base='http://127.0.0.1:'+server.address().port;
+  const path=base+'/api/v1/characters/'+characterId+'/upgrades';
+  const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
+  assert.equal((await fetch(base+'/smith')).status,200);
+  assert.equal((await fetch(base+'/smith.mjs')).status,200);
+  assert.equal((await fetch(path)).status,401);
+  assert.equal((await fetch(base+'/api/v1/characters/'+randomUUID()+'/upgrades',{headers})).status,404);
+  await pool.query("INSERT INTO character_skills(character_id,skill_id,level) VALUES($1,'kowalstwo',1)",[characterId]);
+  const view=await (await fetch(path,{headers})).json();
+  const entry=view.items.find(item=>item.id===itemId);
+  assert.equal(view.smithRank,1);
+  assert.equal(entry.quote.gold,50000);
+  const body={itemId,operationId:request.operationId,expectedQuote:entry.quoteKey};
+  const post=input=>fetch(path,{method:'POST',headers,body:JSON.stringify(input)});
+  assert.equal((await post({...body,bonuses:{smithRank:10}})).status,400);
+  const stale=await post({...body,expectedQuote:'0'.repeat(64)});
+  assert.equal(stale.status,409);
+  assert.deepEqual(await stale.json(),{error:'quote_changed'});
+  assert.equal(await balance(),'50000');
+  const [first,second]=await Promise.all([post(body),post(body)]);
+  assert.equal(first.status,200);
+  assert.equal(second.status,200);
+  const [result,replay]=await Promise.all([first.json(),second.json()]);
   assert.deepEqual(result,replay);
   assert.deepEqual([result.success,result.itemId,result.definitionId,result.level,result.bagSlot],[true,itemId,'sayan-50-miecz',0,0]);
   assert.equal(await balance(),'0');
@@ -63,6 +92,6 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
    if(previousRevision)await pool.query(
     "UPDATE content_revisions SET status='archived' WHERE id=$1 AND status='published'",[revisionId])
     .then(()=>pool.query("UPDATE content_revisions SET status='published' WHERE id=$1",[previousRevision]));
-  }finally{await pool.end();}
+  }finally{await new Promise(resolve=>server.close(resolve));await pool.end();}
  }
 });
