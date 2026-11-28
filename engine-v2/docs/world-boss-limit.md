@@ -1,0 +1,3 @@
+# World boss limit integration
+
+The start transaction checks the pinned boss catalog and daily rules while holding the character lock. Settlement records a boss win and registers its daily slot in the same transaction as rewards, bean consumption and state. Losses do not register a victory. The victory date is derived from the simulated kill timestamp in the configured Europe/Warsaw zone. Existing one-running-battle constraint serializes starts. The battle record uses zero rounds because world combat is time-based; confirm schema permits zero in integration tests. Boss cooldown, trusted start state, legacy timezone parity and dedicated integration tests remain pending. No HTTP exposure.

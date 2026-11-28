@@ -1,3 +1,4 @@
+import {registerBossVictory} from './boss-victories.mjs';
 import {randomUUID} from 'node:crypto';
 import {advanceWorldBattle} from '../../dist/domain/world-battle.js';
 import {updateWorldBattle} from './world-repository.mjs';
@@ -15,6 +16,12 @@ export async function settleWorldBattle(pool,{characterId,battleId},buildContext
    if(!item)return false;item.quantity=Number(item.quantity)-1;used.set(item.id,item.quantity);return true;
   };
   advanceWorldBattle(state,Math.max(state.processedThrough,Date.now()),{...context,consume,onKill:(enemy,at)=>kills.push({enemy:structuredClone(enemy),at})},1000);
+  if(state.mode==='boss'&&state.outcome==='win'){
+   if(kills.length!==1)throw Error('Invalid boss victory');
+   const result={enemyId:row.encounter_id,worldBattleId:row.id};
+   const q=await c.query("INSERT INTO battle_records(character_id,revision_id,mode,outcome,rounds,result,created_at) VALUES($1,$2,'boss','win',0,$3::jsonb,$4) RETURNING id",[characterId,row.revision_id,JSON.stringify(result),new Date(kills[0].at)]);
+   state.bossVictory=await registerBossVictory(c,{characterId,battleId:q.rows[0].id});
+  }
   for(const [id,qty] of used){
    if(qty===0)await c.query('DELETE FROM inventory_items WHERE id=$1 AND character_id=$2',[id,characterId]);
    else await c.query('UPDATE inventory_items SET quantity=$2 WHERE id=$1 AND character_id=$3',[id,qty,characterId]);
