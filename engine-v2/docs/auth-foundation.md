@@ -1,0 +1,3 @@
+# Authentication foundation
+AuthService accepts a PostgreSQL-compatible pool and uses parameterized queries. Passwords use salted scrypt; session tokens are random 256-bit secrets, only SHA-256 digests stored, expiry 24h. Registration grants player only; GM roles come from database. New development account policy: ASCII login 3–32 and password 8+; review before production (legacy minimum password 6). No legacy credentials imported.
+Not yet wired to HTTP or a real pool. Before exposing endpoints: rate limiting, bounded request bodies, TLS, secure cookie/CSRF policy, generic errors, session cleanup, integration tests with PostgreSQL and account isolation. No public deployment. No automatic GM assignment.
