@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {resolveTurn} from '../dist/domain/turn.js';
+const r={normalCritPct:120,techniqueCritPct:200,dodgeThreshold:1000000,speedPerDodgePct:10000,techniqueArmorPct:20,minimumDamagePct:10,armorDivisor:2};
+const t={kiAttackFactor:.01,intelligenceReductionFactor:.00001,maxIntelligenceReduction:.5,cooldownRounds:13};
+const hit={attack:0,armor:0,attackerSpeed:0,defenderSpeed:0,technique:false,penetrationPct:0,criticalChancePct:0,criticalBonusPct:0,criticalReductionPct:0,averageDamagePct:0,outgoingRacePct:0,incomingRacePct:0,techniqueReductionPct:0,intelligenceReduction:0,guardReduction:0};
+const fighter=()=>({hp:500,ki:100,attack:100,armor:0,speed:100,intelligence:0,kiStat:0,techniquePvm:0,techniquePvp:0,techniqueValuePct:0,techniqueDamagePct:0,normal:hit,technique:hit,stunChancePct:0,stunResistancePct:0,bleedTurns:0,bleedDamage:0,stunTurns:0,guardTurns:0,guardReduction:0,lastTechniqueRound:{}});
+const turn=(a,d,m,round=1)=>resolveTurn(r,t,a,d,m,round,'pvm',()=>0);
+test('technique consumes KI and records cooldown without mutating input',()=>{const a=fighter(),d=fighter(),m={kind:'technique',id:'beam',cost:30,baseDamage:150};const x=turn(a,d,m);assert.equal(x.actor.ki,70);assert.equal(x.target.hp,350);assert.equal(a.ki,100);assert.equal(x.actor.lastTechniqueRound.beam,1);const y=turn(x.actor,x.target,m,2);assert.equal(y.actor.ki,70);assert.equal(y.target.hp,250);});
+test('stun skips next move and bleed ticks first',()=>{const a={...fighter(),stunTurns:2,bleedTurns:3,bleedDamage:10};const x=turn(a,fighter(),{kind:'normal'});assert.equal(x.actor.hp,490);assert.equal(x.actor.stunTurns,1);assert.equal(x.target.hp,500);});
+test('guard and bleed effects',()=>{const x=turn(fighter(),fighter(),{kind:'guard',rank:5});assert.equal(x.actor.guardReduction,.1);const y=turn(fighter(),x.actor,{kind:'bleed',rank:1});assert.equal(y.target.hp,410);assert.equal(y.target.guardTurns,1);assert.equal(y.target.bleedTurns,3);assert.equal(y.target.bleedDamage,9);});
