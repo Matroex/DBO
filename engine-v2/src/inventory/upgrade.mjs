@@ -2,6 +2,7 @@ import {createHash,randomInt} from 'node:crypto';
 import {quoteUpgrade,resolveUpgrade} from '../../dist/domain/upgrade.js';
 import {validateItemScalingRules} from '../../dist/domain/item-scaling.js';
 import {resolveSmithBonuses} from '../../dist/domain/smith-bonuses.js';
+import {smithProfessionProgress} from '../../dist/domain/smith-profession.js';
 import {changeWallet} from '../economy/wallet.mjs';
 
 function readCatalog(rows){
@@ -46,8 +47,12 @@ async function loadContext(db,characterId,race,bonuses){
   "SELECT kind,definition_id,data FROM content_definitions WHERE revision_id=$1 AND (kind='item' OR (kind='combat_rules' AND definition_id IN ('item_scaling','sign_bonuses')) OR (kind='recipe' AND definition_id='equipment-upgrades'))",[revision.id]);
  const {definitions,catalog}=readCatalog(content.filter(row=>row.kind==='item'));
  const scaling=validateItemScalingRules(content.find(row=>row.definition_id==='item_scaling'&&row.kind==='combat_rules')?.data);
+ let profession;
  if(!bonuses){
-  const {rows:[skill]}=await db.query("SELECT level FROM character_skills WHERE character_id=$1 AND skill_id='kowalstwo'",[characterId]);
+  const {rows:[progress]}=await db.query(
+   "SELECT COALESCE(s.level,0) AS rank,COALESCE(p.experience,0) AS experience FROM characters c LEFT JOIN character_skills s ON s.character_id=c.id AND s.skill_id='kowalstwo' LEFT JOIN character_smith_progress p ON p.character_id=c.id WHERE c.id=$1",
+   [characterId]);
+  profession=smithProfessionProgress(progress.experience);
   const {rows:stats}=await db.query("SELECT stat_id,value FROM character_stats WHERE character_id=$1 AND stat_id IN ('upgradeChancePct','upgradeMaterialDiscount')",[characterId]);
   const {rows:worn}=await db.query(
    "SELECT definition_id,upgrade_level,attributes FROM inventory_items WHERE character_id=$1 AND equipment_slot LIKE 'main:%'",[characterId]);
@@ -56,11 +61,11 @@ async function loadContext(db,characterId,race,bonuses){
    plans:item.attributes.plans,reinforced:item.attributes.reinforced===true
   }));
   const signs=content.find(row=>row.definition_id==='sign_bonuses'&&row.kind==='combat_rules')?.data??{};
-  bonuses={smithRank:skill?.level??0,...resolveSmithBonuses(scaling,signs,
+  bonuses={smithRank:progress.rank,smithCheckpoint:profession.upgradeBonus,...resolveSmithBonuses(scaling,signs,
    Object.fromEntries(stats.map(row=>[row.stat_id,Number(row.value)])),equipment)};
  }
  const overrides=content.find(row=>row.kind==='recipe')?.data;
- return {revision,definitions,scaling,context:{race,catalog,bonuses,overrides}};
+ return {revision,definitions,scaling,profession,context:{race,catalog,bonuses,overrides}};
 }
 
 function itemQuality(source,row,scaling){
@@ -77,7 +82,7 @@ export async function listBagUpgrades(pool,{accountId,characterId}){
   await db.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   const {rows:[character]}=await db.query('SELECT race_id FROM characters WHERE id=$1 AND account_id=$2',[characterId,accountId]);
   if(!character)throw Error('Character missing');
-  const {revision,definitions,scaling,context}=await loadContext(db,characterId,character.race_id);
+  const {revision,definitions,scaling,profession,context}=await loadContext(db,characterId,character.race_id);
   const {rows}=await db.query('SELECT id,definition_id,upgrade_level,quality_id,quantity FROM inventory_items WHERE character_id=$1 AND bag_slot IS NOT NULL ORDER BY bag_slot',[characterId]);
   const {rows:[wallet]}=await db.query("SELECT balance FROM wallets WHERE character_id=$1 AND currency_id='gold'",[characterId]);
   const quantityById=new Map();
@@ -94,7 +99,7 @@ export async function listBagUpgrades(pool,{accountId,characterId}){
      available:(quantityById.get(entry.id)??0n).toString()}))});
   }
   await db.query('COMMIT');
-  return {smithRank:context.bonuses.smithRank,gold:wallet?.balance??'0',items};
+  return {smithRank:context.bonuses.smithRank,profession,gold:wallet?.balance??'0',items};
  }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}
 }
 

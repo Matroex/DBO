@@ -106,6 +106,7 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   const view=await (await fetch(path,{headers})).json();
   const entry=view.items.find(item=>item.id===itemId);
   assert.equal(view.smithRank,1);
+  assert.deepEqual(view.profession,{total:0,level:1,experience:0,needed:10,upgradeBonus:0});
   assert.equal(entry.quote.gold,50000);
   const body={itemId,operationId:request.operationId,expectedQuote:entry.quoteKey};
   const post=input=>fetch(path,{method:'POST',headers,body:JSON.stringify(input)});
@@ -116,6 +117,18 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   const changed=await post({itemId:probeId,operationId:randomUUID(),expectedQuote:probe.quoteKey});
   assert.equal(changed.status,409);
   assert.deepEqual(await changed.json(),{error:'quote_changed'});
+  await pool.query('INSERT INTO character_smith_progress(character_id,experience) VALUES($1,1899)',[characterId]);
+  const before=(await (await fetch(path,{headers})).json());
+  const beforeProbe=before.items.find(item=>item.id===probeId);
+  assert.deepEqual(before.profession,{total:1899,level:19,experience:189,needed:190,upgradeBonus:0});
+  assert.equal(beforeProbe.quote.chance,36);
+  await pool.query('UPDATE character_smith_progress SET experience=1900 WHERE character_id=$1',[characterId]);
+  const after=(await (await fetch(path,{headers})).json());
+  assert.deepEqual(after.profession,{total:1900,level:20,experience:0,needed:200,upgradeBonus:10});
+  assert.equal(after.items.find(item=>item.id===probeId).quote.chance,46);
+  const beforeCheckpoint=await post({itemId:probeId,operationId:randomUUID(),expectedQuote:beforeProbe.quoteKey});
+  assert.equal(beforeCheckpoint.status,409);
+  assert.deepEqual(await beforeCheckpoint.json(),{error:'quote_changed'});
   await pool.query('DELETE FROM inventory_items WHERE id=$1',[probeId]);
   assert.equal((await post({...body,bonuses:{smithRank:10}})).status,400);
   const stale=await post({...body,expectedQuote:'0'.repeat(64)});
@@ -137,6 +150,8 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   await pool.query("UPDATE wallets SET balance=55000 WHERE character_id=$1 AND currency_id='gold'",[characterId]);
   const failed=await upgradeBagItem(pool,{...request,operationId:randomUUID(),bonuses:{smithRank:1,main:-1}});
   assert.deepEqual([failed.success,failed.level,await balance()],[false,0,'0']);
+  const {rows:[progress]}=await pool.query('SELECT experience FROM character_smith_progress WHERE character_id=$1',[characterId]);
+  assert.equal(progress.experience,1900);
  }finally{
   try{
    if(characterId){

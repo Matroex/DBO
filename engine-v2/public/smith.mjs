@@ -62,6 +62,10 @@ async function refresh() {
   if (view.items.some(entry => entry.id === previous)) item.value = previous;
   find('gold').textContent = 'Złoto: ' + number.format(BigInt(view.gold));
   find('rank').textContent = view.smithRank ? 'Podstawowe kowalstwo: ' + view.smithRank : 'Wymagana umiejętność Podstawowe kowalstwo.';
+  const profession = view.profession;
+  find('profession').textContent = profession ? 'Profesja kowalstwa · poziom ' + profession.level +
+    (profession.needed ? ' · ' + number.format(profession.experience) + ' / ' + number.format(profession.needed) + ' EXP' : ' · maksymalny poziom') +
+    (profession.upgradeBonus ? ' · +' + profession.upgradeBonus + ' pkt proc. do szansy ulepszenia' : '') : '';
 }
 
 function reset() {
