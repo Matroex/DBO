@@ -1,0 +1,3 @@
+# Character service (development)
+Migration 004 seeds published starter rules and five races from legacy values. CharacterService creates a row and five stats atomically, records creation revision, locks the account to enforce slots under concurrency, and scopes reads to account. No client-supplied stats. Numeric values returned as PostgreSQL decimal strings.
+Not yet wired to HTTP. Not full gameplay initialization: inventory, HP, currencies, quests and other legacy defaults must be audited. Slot purchases not implemented. Configured initial slot count is not yet consumed by registration; existing account limits are intentionally preserved. No production use. Future publication tests must account for the seeded published revision.

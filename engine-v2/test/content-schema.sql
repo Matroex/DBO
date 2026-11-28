@@ -2,6 +2,7 @@ BEGIN;
 DO $$
 DECLARE r uuid; rejected boolean:=false;
 BEGIN
+ UPDATE content_revisions SET status='archived' WHERE status='published';
  INSERT INTO content_revisions(schema_version) VALUES(1) RETURNING id INTO r;
  INSERT INTO content_definitions VALUES(r,'quest','test','{}');
  UPDATE content_revisions SET status='published' WHERE id=r;
