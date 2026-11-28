@@ -1,0 +1,3 @@
+# Active world battle persistence
+
+One running battle per character, enforced by a partial unique index. State is stored with its content revision and encounter ID. Updates lock the character first and then the battle row, and callbacks run inside the same transaction. Finished battles are returned without replaying effects. The internal repository is not exposed over HTTP. The future service must authorize ownership, validate encounter availability, enforce training locks, construct trusted state, use server time and debit/grant inventory atomically. PostgreSQL integration tests and state schema validation remain pending.
