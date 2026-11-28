@@ -27,6 +27,6 @@ jobs:
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/schema.sql
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/character-compat.sql
       - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/content-schema.sql
-      - run: node --test test/auth-db.integration.mjs test/character-db.integration.mjs test/character-http.integration.mjs test/wallet-db.integration.mjs
+      - run: node --test test/auth-db.integration.mjs test/character-db.integration.mjs test/character-http.integration.mjs test/wallet-db.integration.mjs test/inventory-db.integration.mjs
       - if: always()
         run: docker compose down -v
