@@ -1,0 +1,17 @@
+{
+  "name": "dboidle-engine",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs tools/*.test.mjs",
+    "start": "node src/server.mjs"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  }
+}

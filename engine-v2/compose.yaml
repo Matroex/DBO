@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: dboidle
+      POSTGRES_USER: dboidle
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in local .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - dboidle_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dboidle -d dboidle"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  dboidle_pg:
