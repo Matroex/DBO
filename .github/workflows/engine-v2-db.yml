@@ -1,0 +1,23 @@
+name: Engine v2 database checks
+on:
+  push:
+    branches: [engine-v2]
+    paths: ['engine-v2/migrations/**','engine-v2/tools/migrate.sh','engine-v2/test/schema.sql','engine-v2/compose.yaml','.github/workflows/engine-v2-db.yml']
+permissions:
+  contents: read
+jobs:
+  schema:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine-v2
+    env:
+      POSTGRES_PASSWORD: ci-disposable-only
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --wait
+      - run: sh tools/migrate.sh
+      - run: sh tools/migrate.sh
+      - run: docker compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U dboidle -d dboidle < test/schema.sql
+      - if: always()
+        run: docker compose down -v
