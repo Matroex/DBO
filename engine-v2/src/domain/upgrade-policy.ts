@@ -1,5 +1,6 @@
 const blocked=new Set(['chi','symbol','stroj','stroj treningowy','esencja','scouter']);
-export function standardUpgradeAllowed(slot:string):boolean{
- const normalized=slot.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
- return !blocked.has(normalized);
+const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+export function standardUpgradeAllowed(slot:string,name=''):boolean{
+ const normalizedName=normalize(name);
+ return !blocked.has(normalize(slot))&&![...blocked].some(category=>normalizedName===category||normalizedName.startsWith(category+' '));
 }
