@@ -55,7 +55,10 @@ test('upgrade charges once, rolls back incomplete payment and preserves a reforg
   assert.deepEqual([failed.success,failed.level,await balance()],[false,0,'0']);
  }finally{
   try{
-   if(characterId)await pool.query('DELETE FROM wallet_ledger WHERE character_id=$1',[characterId]);
+   if(characterId){
+    await pool.query('DELETE FROM wallet_ledger WHERE character_id=$1',[characterId]);
+    await pool.query('DELETE FROM characters WHERE id=$1',[characterId]);
+   }
    if(accountId)await pool.query('DELETE FROM accounts WHERE id=$1',[accountId]);
    if(previousRevision)await pool.query(
     "UPDATE content_revisions SET status='archived' WHERE id=$1 AND status='published'",[revisionId])
